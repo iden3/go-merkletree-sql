@@ -69,7 +69,7 @@ func NewNodeFromBytes(b []byte) (*Node, error) {
 		if len(b) != 2*ElemBytesLen {
 			return nil, ErrNodeDataBadSize
 		}
-		n.Entry = [2]*Hash{&Hash{}, &Hash{}}
+		n.Entry = [2]*Hash{{}, {}}
 		copy(n.Entry[0][:], b[0:32])
 		copy(n.Entry[1][:], b[32:64])
 	case NodeTypeEmpty:

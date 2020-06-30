@@ -52,6 +52,7 @@ func HashElemsKey(key *big.Int, elems ...*big.Int) (*Hash, error) {
 	return NewHashFromBigInt(poseidonHash), nil
 }
 
+// BigIntsToPoseidonInput takes *big.Ints and returns a fixed-length array of the size `poseidon.T`
 func BigIntsToPoseidonInput(bigints ...*big.Int) ([poseidon.T]*big.Int, error) {
 	z := big.NewInt(0)
 	b := [poseidon.T]*big.Int{z, z, z, z, z, z}

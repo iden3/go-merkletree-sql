@@ -46,26 +46,31 @@ var (
 	ErrEntryIndexAlreadyExists = errors.New("the entry index already exists in the tree")
 	// ErrNotWritable is used when the MerkleTree is not writable and a write function is called
 	ErrNotWritable = errors.New("Merkle Tree not writable")
-
-	rootNodeValue = []byte("currentroot")
-	HashZero      = Hash{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	rootNodeValue  = []byte("currentroot")
+	// HashZero is used at Empty nodes
+	HashZero = Hash{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 )
 
+// Hash is the generic type stored in the MerkleTree
 type Hash [32]byte
 
 func (h Hash) String() string {
 	return new(big.Int).SetBytes(h[:]).String()
 }
+
+// BigInt returns the *big.Int representation of the *Hash
 func (h *Hash) BigInt() *big.Int {
 	return new(big.Int).SetBytes(common.SwapEndianness(h[:]))
 }
 
+// NewHashFromBigInt returns a *Hash representation of the given *big.Int
 func NewHashFromBigInt(b *big.Int) *Hash {
 	r := &Hash{}
 	copy(r[:], common.SwapEndianness(b.Bytes()))
 	return r
 }
 
+// MerkleTree is the struct with the main elements of the MerkleTree
 type MerkleTree struct {
 	sync.RWMutex
 	db        db.Storage
@@ -74,6 +79,7 @@ type MerkleTree struct {
 	maxLevels int
 }
 
+// NewMerkleTree loads a new Merkletree. If in the sotrage already exists one will open that one, if not, will create a new one.
 func NewMerkleTree(storage db.Storage, maxLevels int) (*MerkleTree, error) {
 	mt := MerkleTree{db: storage, maxLevels: maxLevels, writable: true}
 
@@ -96,10 +102,12 @@ func NewMerkleTree(storage db.Storage, maxLevels int) (*MerkleTree, error) {
 	return &mt, nil
 }
 
+// Root returns the MerkleRoot
 func (mt *MerkleTree) Root() *Hash {
 	return mt.rootKey
 }
 
+// Add adds a Key & Value into the MerkleTree. Where the `k` determines the path from the Root to the Leaf.
 func (mt *MerkleTree) Add(k, v *big.Int) error {
 	// verify that the MerkleTree is writable
 	if !mt.writable {
