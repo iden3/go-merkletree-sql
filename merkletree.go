@@ -300,3 +300,133 @@ func getPath(numLevels int, k []byte) []bool {
 	}
 	return path
 }
+
+// NodeAux contains the auxiliary node used in a non-existence proof.
+type NodeAux struct {
+	Key   *Hash
+	Value *Hash
+}
+
+// Proof defines the required elements for a MT proof of existence or non-existence.
+type Proof struct {
+	// existence indicates wether this is a proof of existence or non-existence.
+	Existence bool
+	// depth indicates how deep in the tree the proof goes.
+	depth uint
+	// notempties is a bitmap of non-empty Siblings found in Siblings.
+	notempties [ElemBytesLen - proofFlagsLen]byte
+	// Siblings is a list of non-empty sibling keys.
+	Siblings []*Hash
+	NodeAux  *NodeAux
+}
+
+// NewProofFromBytes parses a byte array into a Proof.
+func NewProofFromBytes(bs []byte) (*Proof, error) {
+	if len(bs) < ElemBytesLen {
+		return nil, ErrInvalidProofBytes
+	}
+	p := &Proof{}
+	if (bs[0] & 0x01) == 0 {
+		p.Existence = true
+	}
+	p.depth = uint(bs[1])
+	copy(p.notempties[:], bs[proofFlagsLen:ElemBytesLen])
+	siblingBytes := bs[ElemBytesLen:]
+	sibIdx := 0
+	for i := uint(0); i < p.depth; i++ {
+		if common.TestBitBigEndian(p.notempties[:], i) {
+			if len(siblingBytes) < (sibIdx+1)*ElemBytesLen {
+				return nil, ErrInvalidProofBytes
+			}
+			var sib Hash
+			copy(sib[:], siblingBytes[sibIdx*ElemBytesLen:(sibIdx+1)*ElemBytesLen])
+			p.Siblings = append(p.Siblings, &sib)
+			sibIdx++
+		}
+	}
+
+	if !p.Existence && ((bs[0] & 0x02) != 0) {
+		p.NodeAux = &NodeAux{Key: &Hash{}, Value: &Hash{}}
+		nodeAuxBytes := siblingBytes[len(p.Siblings)*ElemBytesLen:]
+		if len(nodeAuxBytes) != 2*ElemBytesLen {
+			return nil, ErrInvalidProofBytes
+		}
+		copy(p.NodeAux.Key[:], nodeAuxBytes[:ElemBytesLen])
+		copy(p.NodeAux.Value[:], nodeAuxBytes[ElemBytesLen:2*ElemBytesLen])
+	}
+	return p, nil
+}
+
+// Bytes serializes a Proof into a byte array.
+func (p *Proof) Bytes() []byte {
+	bsLen := proofFlagsLen + len(p.notempties) + ElemBytesLen*len(p.Siblings)
+	if p.NodeAux != nil {
+		bsLen += 2 * ElemBytesLen
+	}
+	bs := make([]byte, bsLen)
+
+	if !p.Existence {
+		bs[0] |= 0x01
+	}
+	bs[1] = byte(p.depth)
+	copy(bs[proofFlagsLen:len(p.notempties)+proofFlagsLen], p.notempties[:])
+	siblingsBytes := bs[len(p.notempties)+proofFlagsLen:]
+	for i, k := range p.Siblings {
+		copy(siblingsBytes[i*ElemBytesLen:(i+1)*ElemBytesLen], k[:])
+	}
+	if p.NodeAux != nil {
+		bs[0] |= 0x02
+		copy(bs[len(bs)-2*ElemBytesLen:], p.NodeAux.Key[:])
+		copy(bs[len(bs)-1*ElemBytesLen:], p.NodeAux.Value[:])
+	}
+	return bs
+}
+
+// GenerateProof generates the proof of existence (or non-existence) of an
+// Entry's hash Index for a Merkle Tree given the root.
+// If the rootKey is nil, the current merkletree root is used
+func (mt *MerkleTree) GenerateProof(k *big.Int, rootKey *Hash) (*Proof, error) {
+	p := &Proof{}
+	var siblingKey *Hash
+
+	kHash := NewHashFromBigInt(k)
+	path := getPath(mt.maxLevels, kHash[:])
+	if rootKey == nil {
+		rootKey = mt.Root()
+	}
+	nextKey := rootKey
+	for p.depth = 0; p.depth < uint(mt.maxLevels); p.depth++ {
+		n, err := mt.GetNode(nextKey)
+		if err != nil {
+			return nil, err
+		}
+		switch n.Type {
+		case NodeTypeEmpty:
+			return p, nil
+		case NodeTypeLeaf:
+			if bytes.Equal(kHash[:], n.Entry[0][:]) {
+				p.Existence = true
+				return p, nil
+			} else {
+				// We found a leaf whose entry didn't match hIndex
+				p.NodeAux = &NodeAux{Key: n.Entry[0], Value: n.Entry[1]}
+				return p, nil
+			}
+		case NodeTypeMiddle:
+			if path[p.depth] {
+				nextKey = n.ChildR
+				siblingKey = n.ChildL
+			} else {
+				nextKey = n.ChildL
+				siblingKey = n.ChildR
+			}
+		default:
+			return nil, ErrInvalidNodeFound
+		}
+		if !bytes.Equal(siblingKey[:], HashZero[:]) {
+			common.SetBitBigEndian(p.notempties[:], uint(p.depth))
+			p.Siblings = append(p.Siblings, siblingKey)
+		}
+	}
+	return nil, ErrEntryIndexNotFound
+}
