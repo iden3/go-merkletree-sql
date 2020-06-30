@@ -25,4 +25,10 @@ func TestNewTree(t *testing.T) {
 	err = mt.Add(big.NewInt(1234), big.NewInt(9876))
 	assert.Nil(t, err)
 	assert.Equal(t, "16970503620176669663662021947486532860010370357132361783766545149750777353066", mt.Root().BigInt().String())
+
+	proof, err := mt.GenerateProof(big.NewInt(33), nil)
+	assert.Nil(t, err)
+
+	assert.True(t, VerifyProof(mt.Root(), proof, big.NewInt(33), big.NewInt(44)))
+	assert.True(t, !VerifyProof(mt.Root(), proof, big.NewInt(33), big.NewInt(45)))
 }

@@ -3,6 +3,7 @@ package merkletree
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -429,4 +430,64 @@ func (mt *MerkleTree) GenerateProof(k *big.Int, rootKey *Hash) (*Proof, error) {
 		}
 	}
 	return nil, ErrEntryIndexNotFound
+}
+
+// VerifyProof verifies the Merkle Proof for the entry and root.
+func VerifyProof(rootKey *Hash, proof *Proof, k, v *big.Int) bool {
+	rootFromProof, err := RootFromProof(proof, k, v)
+	if err != nil {
+		return false
+	}
+	return bytes.Equal(rootKey[:], rootFromProof[:])
+}
+
+// RootFromProof calculates the root that would correspond to a tree whose
+// siblings are the ones in the proof with the claim hashing to hIndex and
+// hValue.
+func RootFromProof(proof *Proof, k, v *big.Int) (*Hash, error) {
+	kHash := NewHashFromBigInt(k)
+	vHash := NewHashFromBigInt(v)
+	sibIdx := len(proof.Siblings) - 1
+	var err error
+	var midKey *Hash
+	if proof.Existence {
+		midKey, err = LeafKey(kHash, vHash)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if proof.NodeAux == nil {
+			midKey = &HashZero
+		} else {
+			if bytes.Equal(kHash[:], proof.NodeAux.Key[:]) {
+				return nil, fmt.Errorf("Non-existence proof being checked against hIndex equal to nodeAux")
+			}
+			midKey, err = LeafKey(proof.NodeAux.Key, proof.NodeAux.Value)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	path := getPath(int(proof.depth), kHash[:])
+	var siblingKey *Hash
+	for lvl := int(proof.depth) - 1; lvl >= 0; lvl-- {
+		if common.TestBitBigEndian(proof.notempties[:], uint(lvl)) {
+			siblingKey = proof.Siblings[sibIdx]
+			sibIdx--
+		} else {
+			siblingKey = &HashZero
+		}
+		if path[lvl] {
+			midKey, err = NewNodeMiddle(siblingKey, midKey).Key()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			midKey, err = NewNodeMiddle(midKey, siblingKey).Key()
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return midKey, nil
 }
