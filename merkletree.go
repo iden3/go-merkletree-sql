@@ -2,6 +2,7 @@ package merkletree
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -56,6 +57,9 @@ type Hash [32]byte
 
 func (h Hash) String() string {
 	return new(big.Int).SetBytes(h[:]).String()
+}
+func (h Hash) Hex() string {
+	return hex.EncodeToString(h[:])
 }
 
 // BigInt returns the *big.Int representation of the *Hash
@@ -390,6 +394,39 @@ func (p *Proof) Bytes() []byte {
 		copy(bs[len(bs)-1*ElemBytesLen:], p.NodeAux.Value[:])
 	}
 	return bs
+}
+
+// SiblingsFromProof returns all the siblings of the proof. This function is used to generate the siblings input for the circom circuits.
+func SiblingsFromProof(proof *Proof) []*Hash {
+	sibIdx := 0
+	var siblings []*Hash
+	for lvl := 0; lvl < int(proof.depth); lvl++ {
+		if common.TestBitBigEndian(proof.notempties[:], uint(lvl)) {
+			siblings = append(siblings, proof.Siblings[sibIdx])
+			sibIdx++
+		} else {
+			siblings = append(siblings, &HashZero)
+		}
+	}
+	return siblings
+}
+
+func (p *Proof) AllSiblings() []*Hash {
+	return SiblingsFromProof(p)
+}
+
+func (p *Proof) AllSiblingsCircom(levels int) []*big.Int {
+	siblings := p.AllSiblings()
+	// Add the rest of empty levels to the siblings
+	for i := len(siblings); i < levels; i++ {
+		siblings = append(siblings, &HashZero)
+	}
+	siblings = append(siblings, &HashZero) // add extra level for circom compatibility
+	siblingsBigInt := make([]*big.Int, len(siblings))
+	for i, sibling := range siblings {
+		siblingsBigInt[i] = sibling.BigInt()
+	}
+	return siblingsBigInt
 }
 
 // GenerateProof generates the proof of existence (or non-existence) of an
