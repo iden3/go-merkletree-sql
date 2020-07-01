@@ -106,6 +106,11 @@ func NewMerkleTree(storage db.Storage, maxLevels int) (*MerkleTree, error) {
 	return &mt, nil
 }
 
+// DB returns the MerkleTree.DB()
+func (mt *MerkleTree) DB() db.Storage {
+	return mt.db
+}
+
 // Root returns the MerkleRoot
 func (mt *MerkleTree) Root() *Hash {
 	return mt.rootKey

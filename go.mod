@@ -1,4 +1,4 @@
-module go-merkletree
+module github.com/iden3/go-merkletree
 
 go 1.14
 
