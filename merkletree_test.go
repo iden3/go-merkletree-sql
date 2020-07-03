@@ -1,6 +1,7 @@
 package merkletree
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -24,6 +25,27 @@ func newTestingMerkle(f Fatalable, numLevels int) *MerkleTree {
 		return nil
 	}
 	return mt
+}
+
+func TestHashParsers(t *testing.T) {
+	h0 := NewHashFromBigInt(big.NewInt(0))
+	assert.Equal(t, "0", h0.String())
+	h1 := NewHashFromBigInt(big.NewInt(1))
+	assert.Equal(t, "1", h1.String())
+	h10 := NewHashFromBigInt(big.NewInt(10))
+	assert.Equal(t, "10", h10.String())
+
+	h7l := NewHashFromBigInt(big.NewInt(1234567))
+	assert.Equal(t, "1234567", h7l.String())
+	h8l := NewHashFromBigInt(big.NewInt(12345678))
+	assert.Equal(t, "12345678...", h8l.String())
+
+	b, ok := new(big.Int).SetString("4932297968297298434239270129193057052722409868268166443802652458940273154854", 10)
+	assert.True(t, ok)
+	h := NewHashFromBigInt(b)
+	assert.Equal(t, "4932297968297298434239270129193057052722409868268166443802652458940273154854", h.BigInt().String())
+	assert.Equal(t, "49322979...", h.String())
+	assert.Equal(t, "0ae794eb9c3d8bbb9002e993fc2ed301dcbd2af5508ed072c375e861f1aa5b26", h.Hex())
 }
 
 func TestNewTree(t *testing.T) {
@@ -73,7 +95,7 @@ func TestAddDifferentOrder(t *testing.T) {
 	}
 
 	assert.Equal(t, mt1.Root().Hex(), mt2.Root().Hex())
-	assert.Equal(t, "ee3b91f9df12d26c1430b9d6693d4d5062b95b40f3f0a0a34ae560d677b76709", mt1.Root().Hex())
+	assert.Equal(t, "0967b777d660e54aa3a0f0f3405bb962504d3d69d6b930146cd212dff9913bee", mt1.Root().Hex())
 }
 
 func TestAddRepeatedIndex(t *testing.T) {
@@ -142,12 +164,12 @@ func TestSiblingsFromProof(t *testing.T) {
 
 	siblings := SiblingsFromProof(proof)
 	assert.Equal(t, 6, len(siblings))
-	assert.Equal(t, "26bc69cfd3c982eba7b45cd2e6a2c75f218c546089f115777df47ab06f1fdb23", siblings[0].Hex())
-	assert.Equal(t, "ba7fbb5841bc8fa65193c124fbda4843aaa8d64d4132c79e7176cbed4de65621", siblings[1].Hex())
-	assert.Equal(t, "1339329b2d15e467ec3734ec06f6f4ae5a7c8c0b6ba98c26558b5a4db3e9a804", siblings[2].Hex())
-	assert.Equal(t, "b2261e6f47d9feb6fac2480928cc0fe03204d946cbc0a7b4de250d3e1384f40f", siblings[3].Hex())
-	assert.Equal(t, "b6c905f21c9928efa19a2c4e55d88d5fd0af493032f5b84620eb872e48ff5d01", siblings[4].Hex())
-	assert.Equal(t, "69873a951f49bbaff71039d672ffe52d73605aed6b40c1ce7ab068ad86a44d1e", siblings[5].Hex())
+	assert.Equal(t, "23db1f6fb07af47d7715f18960548c215fc7a2e6d25cb4a7eb82c9d3cf69bc26", siblings[0].Hex())
+	assert.Equal(t, "2156e64dedcb76719ec732414dd6a8aa4348dafb24c19351a68fbc4158bb7fba", siblings[1].Hex())
+	assert.Equal(t, "04a8e9b34d5a8b55268ca96b0b8c7c5aaef4f606ec3437ec67e4152d9b323913", siblings[2].Hex())
+	assert.Equal(t, "0ff484133e0d25deb4a7c0cb46d90432e00fcc280948c2fab6fed9476f1e26b2", siblings[3].Hex())
+	assert.Equal(t, "015dff482e87eb2046b8f5323049afd05f8dd8554e2c9aa1ef28991cf205c9b6", siblings[4].Hex())
+	assert.Equal(t, "1e4da486ad68b07acec1406bed5a60732de5ff72d63910f7afbb491f953a8769", siblings[5].Hex())
 }
 
 func TestVerifyProofCases(t *testing.T) {
@@ -228,4 +250,43 @@ func TestVerifyProofFalse(t *testing.T) {
 	proof.Existence = false
 	proof.NodeAux = &NodeAux{Key: NewHashFromBigInt(big.NewInt(int64(4))), Value: NewHashFromBigInt(big.NewInt(4))}
 	assert.True(t, !VerifyProof(mt.Root(), proof, big.NewInt(int64(4)), big.NewInt(0)))
+}
+
+func TestGraphViz(t *testing.T) {
+	mt, err := NewMerkleTree(db.NewMemoryStorage(), 10)
+	assert.Nil(t, err)
+
+	mt.Add(big.NewInt(1), big.NewInt(0))
+	mt.Add(big.NewInt(2), big.NewInt(0))
+	mt.Add(big.NewInt(3), big.NewInt(0))
+	mt.Add(big.NewInt(4), big.NewInt(0))
+	mt.Add(big.NewInt(5), big.NewInt(0))
+	mt.Add(big.NewInt(100), big.NewInt(0))
+
+	// mt.PrintGraphViz(nil)
+
+	expected := `digraph hierarchy {
+node [fontname=Monospace,fontsize=10,shape=box]
+"60195538..." -> {"19759736..." "18893277..."}
+"19759736..." -> {"16152312..." "43945008..."}
+"16152312..." -> {"empty0" "13952255..."}
+"empty0" [style=dashed,label=0];
+"13952255..." -> {"61769925..." "empty1"}
+"empty1" [style=dashed,label=0];
+"61769925..." -> {"92723289..." "empty2"}
+"empty2" [style=dashed,label=0];
+"92723289..." -> {"21082735..." "82784818..."}
+"21082735..." [style=filled];
+"82784818..." [style=filled];
+"43945008..." [style=filled];
+"18893277..." -> {"19855703..." "17718670..."}
+"19855703..." -> {"11499909..." "15828714..."}
+"11499909..." [style=filled];
+"15828714..." [style=filled];
+"17718670..." [style=filled];
+}
+`
+	w := bytes.NewBufferString("")
+	mt.GraphViz(w, nil)
+	assert.Equal(t, []byte(expected), w.Bytes())
 }

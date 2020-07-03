@@ -55,11 +55,18 @@ var (
 // Hash is the generic type stored in the MerkleTree
 type Hash [32]byte
 
+// String returns decimal representation in string format of the Hash
 func (h Hash) String() string {
-	return new(big.Int).SetBytes(h[:]).String()
+	s := h.BigInt().String()
+	if len(s) < 8 {
+		return s
+	}
+	return s[0:8] + "..."
 }
+
+// Hex returns the hexadecimal representation of the Hash
 func (h Hash) Hex() string {
-	return hex.EncodeToString(h[:])
+	return hex.EncodeToString(h.BigInt().Bytes())
 }
 
 // BigInt returns the *big.Int representation of the *Hash
@@ -597,17 +604,19 @@ node [fontname=Monospace,fontsize=10,shape=box]
 		switch n.Type {
 		case NodeTypeEmpty:
 		case NodeTypeLeaf:
-			fmt.Fprintf(w, "\"%v\" [style=filled];\n", k.BigInt().String())
+			fmt.Fprintf(w, "\"%v\" [style=filled];\n", k.String())
 		case NodeTypeMiddle:
-			lr := [2]string{n.ChildL.BigInt().String(), n.ChildR.BigInt().String()}
+			lr := [2]string{n.ChildL.String(), n.ChildR.String()}
+			emptyNodes := ""
 			for i := range lr {
 				if lr[i] == "0" {
 					lr[i] = fmt.Sprintf("empty%v", cnt)
-					fmt.Fprintf(w, "\"%v\" [style=dashed,label=0];\n", lr[i])
+					emptyNodes += fmt.Sprintf("\"%v\" [style=dashed,label=0];\n", lr[i])
 					cnt++
 				}
 			}
-			fmt.Fprintf(w, "\"%v\" -> {\"%v\" \"%v\"}\n", k.BigInt().String(), lr[0], lr[1])
+			fmt.Fprintf(w, "\"%v\" -> {\"%v\" \"%v\"}\n", k.String(), lr[0], lr[1])
+			fmt.Fprint(w, emptyNodes)
 		default:
 		}
 	})
