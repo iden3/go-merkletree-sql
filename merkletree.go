@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"strings"
 	"sync"
 
 	"github.com/iden3/go-iden3-core/common"
@@ -603,11 +604,15 @@ node [fontname=Monospace,fontsize=10,shape=box]
 			for i := range lr {
 				if lr[i] == "0" {
 					lr[i] = fmt.Sprintf("empty%v", cnt)
-					fmt.Fprintf(w, "\"%v\" [style=dashed,label=0];\n", lr[i])
 					cnt++
 				}
 			}
 			fmt.Fprintf(w, "\"%v\" -> {\"%v\" \"%v\"}\n", k.BigInt().String(), lr[0], lr[1])
+			for i := range lr {
+				if strings.HasPrefix(lr[i], "empty") {
+					fmt.Fprintf(w, "\"%v\" [style=dashed,label=0];\n", lr[i])
+				}
+			}
 		default:
 		}
 	})
