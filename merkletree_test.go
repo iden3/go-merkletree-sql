@@ -290,3 +290,133 @@ node [fontname=Monospace,fontsize=10,shape=box]
 	mt.GraphViz(w, nil)
 	assert.Equal(t, []byte(expected), w.Bytes())
 }
+
+func TestDelete(t *testing.T) {
+	mt, err := NewMerkleTree(db.NewMemoryStorage(), 10)
+	assert.Nil(t, err)
+	assert.Equal(t, "0", mt.Root().String())
+
+	// test vectors generated using https://github.com/iden3/circomlib smt.js
+	err = mt.Add(big.NewInt(1), big.NewInt(2))
+	assert.Nil(t, err)
+	assert.Equal(t, "4932297968297298434239270129193057052722409868268166443802652458940273154854", mt.Root().BigInt().String())
+
+	err = mt.Add(big.NewInt(33), big.NewInt(44))
+	assert.Nil(t, err)
+	assert.Equal(t, "13563340744765267202993741297198970774200042973817962221376874695587906013050", mt.Root().BigInt().String())
+
+	err = mt.Add(big.NewInt(1234), big.NewInt(9876))
+	assert.Nil(t, err)
+	assert.Equal(t, "16970503620176669663662021947486532860010370357132361783766545149750777353066", mt.Root().BigInt().String())
+
+	// mt.PrintGraphViz(nil)
+
+	err = mt.Delete(big.NewInt(33))
+	// mt.PrintGraphViz(nil)
+	assert.Nil(t, err)
+	assert.Equal(t, "12820263606494630162816839760750120928463716794691735985748071431547370997091", mt.Root().BigInt().String())
+}
+
+func TestDelete2(t *testing.T) {
+	mt := newTestingMerkle(t, 140)
+	defer mt.db.Close()
+	for i := 0; i < 8; i++ {
+		k := big.NewInt(int64(i))
+		v := big.NewInt(0)
+		if err := mt.Add(k, v); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	expectedRoot := mt.Root()
+
+	k := big.NewInt(8)
+	v := big.NewInt(0)
+	err := mt.Add(k, v)
+	require.Nil(t, err)
+
+	err = mt.Delete(big.NewInt(8))
+	assert.Nil(t, err)
+	assert.Equal(t, expectedRoot, mt.Root())
+
+	mt2 := newTestingMerkle(t, 140)
+	defer mt2.db.Close()
+	for i := 0; i < 8; i++ {
+		k := big.NewInt(int64(i))
+		v := big.NewInt(0)
+		if err := mt2.Add(k, v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	assert.Equal(t, mt2.Root(), mt.Root())
+}
+
+func TestDelete3(t *testing.T) {
+	mt := newTestingMerkle(t, 140)
+	defer mt.db.Close()
+
+	err := mt.Add(big.NewInt(1), big.NewInt(1))
+	assert.Nil(t, err)
+
+	err = mt.Add(big.NewInt(2), big.NewInt(2))
+	assert.Nil(t, err)
+
+	assert.Equal(t, "2427629547967522489273866134471574861207714751136138191708011221765688788661", mt.Root().BigInt().String())
+	err = mt.Delete(big.NewInt(1))
+	assert.Nil(t, err)
+	assert.Equal(t, "10822920717809411688334493481050035035708810950159417482558569847174767667301", mt.Root().BigInt().String())
+
+	mt2 := newTestingMerkle(t, 140)
+	defer mt2.db.Close()
+	err = mt2.Add(big.NewInt(2), big.NewInt(2))
+	assert.Nil(t, err)
+	assert.Equal(t, mt2.Root(), mt.Root())
+}
+
+func TestDelete4(t *testing.T) {
+	mt := newTestingMerkle(t, 140)
+	defer mt.db.Close()
+
+	err := mt.Add(big.NewInt(1), big.NewInt(1))
+	assert.Nil(t, err)
+
+	err = mt.Add(big.NewInt(2), big.NewInt(2))
+	assert.Nil(t, err)
+
+	err = mt.Add(big.NewInt(3), big.NewInt(3))
+	assert.Nil(t, err)
+
+	assert.Equal(t, "16614298246517994771186095530428786749320098419259206061045083278756632941513", mt.Root().BigInt().String())
+	err = mt.Delete(big.NewInt(1))
+	assert.Nil(t, err)
+	assert.Equal(t, "6117330520107511783353383870014397665359816230889739699667943862706617498952", mt.Root().BigInt().String())
+
+	mt2 := newTestingMerkle(t, 140)
+	defer mt2.db.Close()
+	err = mt2.Add(big.NewInt(2), big.NewInt(2))
+	assert.Nil(t, err)
+	err = mt2.Add(big.NewInt(3), big.NewInt(3))
+	assert.Nil(t, err)
+	assert.Equal(t, mt2.Root(), mt.Root())
+}
+
+func TestDelete5(t *testing.T) {
+	mt, err := NewMerkleTree(db.NewMemoryStorage(), 10)
+	assert.Nil(t, err)
+
+	err = mt.Add(big.NewInt(1), big.NewInt(2))
+	assert.Nil(t, err)
+	err = mt.Add(big.NewInt(33), big.NewInt(44))
+	assert.Nil(t, err)
+	assert.Equal(t, "13563340744765267202993741297198970774200042973817962221376874695587906013050", mt.Root().BigInt().String())
+
+	err = mt.Delete(big.NewInt(1))
+	assert.Nil(t, err)
+	assert.Equal(t, "12075524681474630909546786277734445038384732558409197537058769521806571391765", mt.Root().BigInt().String())
+
+	mt2 := newTestingMerkle(t, 140)
+	defer mt2.db.Close()
+	err = mt2.Add(big.NewInt(33), big.NewInt(44))
+	assert.Nil(t, err)
+	assert.Equal(t, mt2.Root(), mt.Root())
+}
