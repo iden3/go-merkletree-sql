@@ -2,7 +2,7 @@
 
 MerkleTree compatible with version from [circomlib](https://github.com/iden3/circomlib).
 
-Adaptation of the merkletree from https://github.com/iden3/go-iden3-core/tree/v0.0.8
+Adaptation of the merkletree from https://github.com/iden3/go-iden3-core/tree/v0.0.8 with several changes and more functionalities.
 
 ## Usage
 More detailed examples can be found at the [tests](https://github.com/iden3/go-merkletree/blob/master/merkletree_test.go), and in the [documentation](https://godoc.org/github.com/iden3/go-merkletree).
@@ -33,5 +33,8 @@ func TestExampleMerkleTree(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.True(t, VerifyProof(mt.Root(), proof, key, value))
+
+	err := mt.Delete(big.NewInt(1)) // delete the leaf of key=1
+	assert.Nil(t, err)
 }
 ```

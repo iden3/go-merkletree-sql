@@ -53,21 +53,21 @@ func NewNodeEmpty() *Node {
 // NewNodeFromBytes creates a new node by parsing the input []byte.
 func NewNodeFromBytes(b []byte) (*Node, error) {
 	if len(b) < 1 {
-		return nil, ErrNodeDataBadSize
+		return nil, ErrNodeBytesBadSize
 	}
 	n := Node{Type: NodeType(b[0])}
 	b = b[1:]
 	switch n.Type {
 	case NodeTypeMiddle:
 		if len(b) != 2*ElemBytesLen {
-			return nil, ErrNodeDataBadSize
+			return nil, ErrNodeBytesBadSize
 		}
 		n.ChildL, n.ChildR = &Hash{}, &Hash{}
 		copy(n.ChildL[:], b[:ElemBytesLen])
 		copy(n.ChildR[:], b[ElemBytesLen:ElemBytesLen*2])
 	case NodeTypeLeaf:
 		if len(b) != 2*ElemBytesLen {
-			return nil, ErrNodeDataBadSize
+			return nil, ErrNodeBytesBadSize
 		}
 		n.Entry = [2]*Hash{{}, {}}
 		copy(n.Entry[0][:], b[0:32])

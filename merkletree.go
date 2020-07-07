@@ -27,9 +27,9 @@ var (
 	ErrNodeKeyAlreadyExists = errors.New("node already exists")
 	// ErrEntryIndexNotFound is used when no entry is found for an index.
 	ErrEntryIndexNotFound = errors.New("node index not found in the DB")
-	// ErrNodeDataBadSize is used when the data of a node has an incorrect
+	// ErrNodeBytesBadSize is used when the data of a node has an incorrect
 	// size and can't be parsed.
-	ErrNodeDataBadSize = errors.New("node data has incorrect size in the DB")
+	ErrNodeBytesBadSize = errors.New("node data has incorrect size in the DB")
 	// ErrReachedMaxLevel is used when a traversal of the MT reaches the
 	// maximum level.
 	ErrReachedMaxLevel = errors.New("reached maximum level of the merkle tree")
@@ -47,6 +47,8 @@ var (
 	ErrEntryIndexAlreadyExists = errors.New("the entry index already exists in the tree")
 	// ErrNotWritable is used when the MerkleTree is not writable and a write function is called
 	ErrNotWritable = errors.New("Merkle Tree not writable")
+	// ErrKeyNotFound is used when a key is not found in the MerkleTree.
+	ErrKeyNotFound = errors.New("Key not found in the tree")
 	rootNodeValue  = []byte("currentroot")
 	// HashZero is used at Empty nodes
 	HashZero = Hash{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -275,6 +277,128 @@ func (mt *MerkleTree) addNode(tx db.Tx, n *Node) (*Hash, error) {
 	}
 	tx.Put(k[:], v)
 	return k, nil
+}
+
+// Delete removes the specified Key from the MerkleTree, and updates the pad from the delted key to the Root with the new values.
+// This method removes the key from the MerkleTree, but does not remove the old nodes from the key-value database; this means that if the tree is accessed by an old Root where the key was not deleted yet, the key will still exist. If is desired to remove the key-values from the database that are not under the current Root, an option could be to dump all the claims and import them in a new MerkleTree in a new database, but this will loose all the Root history of the MerkleTree
+func (mt *MerkleTree) Delete(k *big.Int) error {
+	// verify that the MerkleTree is writable
+	if !mt.writable {
+		return ErrNotWritable
+	}
+
+	// verfy that the ElemBytes are valid and fit inside the Finite Field.
+	if !cryptoUtils.CheckBigIntInField(k) {
+		return errors.New("Key not inside the Finite Field")
+	}
+	tx, err := mt.db.NewTx()
+	if err != nil {
+		return err
+	}
+	mt.Lock()
+	defer mt.Unlock()
+
+	kHash := NewHashFromBigInt(k)
+	path := getPath(mt.maxLevels, kHash[:])
+
+	nextKey := mt.rootKey
+	var siblings []*Hash
+	for i := 0; i < mt.maxLevels; i++ {
+		n, err := mt.GetNode(nextKey)
+		if err != nil {
+			return err
+		}
+		switch n.Type {
+		case NodeTypeEmpty:
+			return nil
+		case NodeTypeLeaf:
+			if bytes.Equal(kHash[:], n.Entry[0][:]) {
+				// remove and go up with the sibling
+				err = mt.rmAndUpload(tx, path, kHash, siblings)
+				return err
+			} else {
+				return ErrKeyNotFound
+			}
+		case NodeTypeMiddle:
+			if path[i] {
+				nextKey = n.ChildR
+				siblings = append(siblings, n.ChildL)
+			} else {
+				nextKey = n.ChildL
+				siblings = append(siblings, n.ChildR)
+			}
+		default:
+			return ErrInvalidNodeFound
+		}
+	}
+
+	return nil
+}
+
+// rmAndUpload removes the key, and goes up until the root updating all the nodes with the new values.
+func (mt *MerkleTree) rmAndUpload(tx db.Tx, path []bool, kHash *Hash, siblings []*Hash) error {
+	toUpload := siblings[len(siblings)-1]
+	if len(siblings) < 2 {
+		mt.rootKey = siblings[0]
+		mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+		return tx.Commit()
+	}
+	for i := len(siblings) - 2; i >= 0; i-- {
+		if !bytes.Equal(siblings[i][:], HashZero[:]) {
+			var newNode *Node
+			if path[i] {
+				newNode = NewNodeMiddle(siblings[i], toUpload)
+			} else {
+				newNode = NewNodeMiddle(toUpload, siblings[i])
+			}
+			_, err := mt.addNode(tx, newNode)
+			if err != ErrNodeKeyAlreadyExists && err != nil {
+				return err
+			}
+			// go up until the root
+			newRootKey, err := mt.recalculatePathUntilRoot(tx, path, newNode, siblings[:i])
+			if err != nil {
+				return err
+			}
+			mt.rootKey = newRootKey
+			mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+			break
+		}
+		// if i==0 (root position), stop and store the sibling of the deleted leaf as root
+		if i == 0 {
+			mt.rootKey = toUpload
+			mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+			break
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// recalculatePathUntilRoot recalculates the nodes until the Root
+func (mt *MerkleTree) recalculatePathUntilRoot(tx db.Tx, path []bool, node *Node, siblings []*Hash) (*Hash, error) {
+	for i := len(siblings) - 1; i >= 0; i-- {
+		nodeKey, err := node.Key()
+		if err != nil {
+			return nil, err
+		}
+		if path[i] {
+			node = NewNodeMiddle(siblings[i], nodeKey)
+		} else {
+			node = NewNodeMiddle(nodeKey, siblings[i])
+		}
+		_, err = mt.addNode(tx, node)
+		if err != ErrNodeKeyAlreadyExists && err != nil {
+			return nil, err
+		}
+	}
+
+	// return last node added, which is the root
+	nodeKey, err := node.Key()
+	return nodeKey, err
 }
 
 // dbGet is a helper function to get the node of a key from the internal
