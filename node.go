@@ -11,7 +11,7 @@ type NodeType byte
 const (
 	// NodeTypeMiddle indicates the type of middle Node that has children.
 	NodeTypeMiddle NodeType = 0
-	// NodeTypeLeaf indicates the type of a leaf Node that contains a claim.
+	// NodeTypeLeaf indicates the type of a leaf Node that contains a key & value.
 	NodeTypeLeaf NodeType = 1
 	// NodeTypeEmpty indicates the type of an empty Node.
 	NodeTypeEmpty NodeType = 2

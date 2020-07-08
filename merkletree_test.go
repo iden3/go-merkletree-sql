@@ -449,3 +449,27 @@ func TestDeleteNonExistingKeys(t *testing.T) {
 	err = mt.Delete(big.NewInt(33))
 	assert.Equal(t, ErrKeyNotFound, err)
 }
+
+func TestDumpLeafsImportLeafs(t *testing.T) {
+	mt, err := NewMerkleTree(db.NewMemoryStorage(), 140)
+	require.Nil(t, err)
+	defer mt.db.Close()
+
+	for i := 0; i < 10; i++ {
+		k := big.NewInt(int64(i))
+		v := big.NewInt(0)
+		err = mt.Add(k, v)
+		require.Nil(t, err)
+	}
+
+	d, err := mt.DumpLeafs(nil)
+	assert.Nil(t, err)
+
+	mt2, err := NewMerkleTree(db.NewMemoryStorage(), 140)
+	require.Nil(t, err)
+	defer mt2.db.Close()
+	err = mt2.ImportDumpedLeafs(d)
+	assert.Nil(t, err)
+
+	assert.Equal(t, mt.Root(), mt2.Root())
+}

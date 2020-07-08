@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 
-	cryptoConstants "github.com/iden3/go-iden3-crypto/constants"
 	"github.com/iden3/go-iden3-crypto/poseidon"
 )
 
@@ -24,9 +23,6 @@ func HashElems(elems ...*big.Int) (*Hash, error) {
 
 	poseidonHash, err := poseidon.PoseidonHash(bi)
 	if err != nil {
-		fmt.Println("ERR HashElems PoseidonHash")
-		fmt.Println("e", bi[0])
-		fmt.Println("q", cryptoConstants.Q)
 		return nil, err
 	}
 	return NewHashFromBigInt(poseidonHash), nil
