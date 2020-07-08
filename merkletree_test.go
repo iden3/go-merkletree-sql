@@ -315,6 +315,12 @@ func TestDelete(t *testing.T) {
 	// mt.PrintGraphViz(nil)
 	assert.Nil(t, err)
 	assert.Equal(t, "12820263606494630162816839760750120928463716794691735985748071431547370997091", mt.Root().BigInt().String())
+
+	err = mt.Delete(big.NewInt(1234))
+	assert.Nil(t, err)
+	err = mt.Delete(big.NewInt(1))
+	assert.Nil(t, err)
+	assert.Equal(t, "0", mt.Root().String())
 }
 
 func TestDelete2(t *testing.T) {
@@ -419,4 +425,27 @@ func TestDelete5(t *testing.T) {
 	err = mt2.Add(big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
 	assert.Equal(t, mt2.Root(), mt.Root())
+}
+
+func TestDeleteNonExistingKeys(t *testing.T) {
+	mt, err := NewMerkleTree(db.NewMemoryStorage(), 10)
+	assert.Nil(t, err)
+
+	err = mt.Add(big.NewInt(1), big.NewInt(2))
+	assert.Nil(t, err)
+	err = mt.Add(big.NewInt(33), big.NewInt(44))
+	assert.Nil(t, err)
+
+	err = mt.Delete(big.NewInt(33))
+	assert.Nil(t, err)
+	err = mt.Delete(big.NewInt(33))
+	assert.Equal(t, ErrKeyNotFound, err)
+
+	err = mt.Delete(big.NewInt(1))
+	assert.Nil(t, err)
+
+	assert.Equal(t, "0", mt.Root().String())
+
+	err = mt.Delete(big.NewInt(33))
+	assert.Equal(t, ErrKeyNotFound, err)
 }

@@ -310,7 +310,7 @@ func (mt *MerkleTree) Delete(k *big.Int) error {
 		}
 		switch n.Type {
 		case NodeTypeEmpty:
-			return nil
+			return ErrKeyNotFound
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
 				// remove and go up with the sibling
@@ -337,6 +337,12 @@ func (mt *MerkleTree) Delete(k *big.Int) error {
 
 // rmAndUpload removes the key, and goes up until the root updating all the nodes with the new values.
 func (mt *MerkleTree) rmAndUpload(tx db.Tx, path []bool, kHash *Hash, siblings []*Hash) error {
+	if len(siblings) == 0 {
+		mt.rootKey = &HashZero
+		mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+		return tx.Commit()
+	}
+
 	toUpload := siblings[len(siblings)-1]
 	if len(siblings) < 2 {
 		mt.rootKey = siblings[0]
