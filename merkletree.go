@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/iden3/go-iden3-core/common"
-	"github.com/iden3/go-iden3-core/db"
+	"github.com/iden3/go-merkletree/db"
 	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
 )
 

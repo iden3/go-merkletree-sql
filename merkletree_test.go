@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/iden3/go-iden3-core/db"
+	"github.com/iden3/go-merkletree/db/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +19,7 @@ type Fatalable interface {
 }
 
 func newTestingMerkle(f Fatalable, numLevels int) *MerkleTree {
-	mt, err := NewMerkleTree(db.NewMemoryStorage(), numLevels)
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), numLevels)
 	if err != nil {
 		f.Fatal(err)
 		return nil
@@ -49,7 +49,7 @@ func TestHashParsers(t *testing.T) {
 }
 
 func TestNewTree(t *testing.T) {
-	mt, err := NewMerkleTree(db.NewMemoryStorage(), 10)
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 10)
 	assert.Nil(t, err)
 	assert.Equal(t, "0", mt.Root().String())
 
@@ -112,7 +112,7 @@ func TestAddRepeatedIndex(t *testing.T) {
 }
 
 func TestGenerateAndVerifyProof128(t *testing.T) {
-	mt, err := NewMerkleTree(db.NewMemoryStorage(), 140)
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 140)
 	require.Nil(t, err)
 	defer mt.db.Close()
 
@@ -129,7 +129,7 @@ func TestGenerateAndVerifyProof128(t *testing.T) {
 }
 
 func TestTreeLimit(t *testing.T) {
-	mt, err := NewMerkleTree(db.NewMemoryStorage(), 5)
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 5)
 	require.Nil(t, err)
 	defer mt.db.Close()
 
@@ -145,7 +145,7 @@ func TestTreeLimit(t *testing.T) {
 }
 
 func TestSiblingsFromProof(t *testing.T) {
-	mt, err := NewMerkleTree(db.NewMemoryStorage(), 140)
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 140)
 	require.Nil(t, err)
 	defer mt.db.Close()
 
@@ -253,7 +253,7 @@ func TestVerifyProofFalse(t *testing.T) {
 }
 
 func TestGraphViz(t *testing.T) {
-	mt, err := NewMerkleTree(db.NewMemoryStorage(), 10)
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 10)
 	assert.Nil(t, err)
 
 	mt.Add(big.NewInt(1), big.NewInt(0))
@@ -292,7 +292,7 @@ node [fontname=Monospace,fontsize=10,shape=box]
 }
 
 func TestDelete(t *testing.T) {
-	mt, err := NewMerkleTree(db.NewMemoryStorage(), 10)
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 10)
 	assert.Nil(t, err)
 	assert.Equal(t, "0", mt.Root().String())
 
@@ -407,7 +407,7 @@ func TestDelete4(t *testing.T) {
 }
 
 func TestDelete5(t *testing.T) {
-	mt, err := NewMerkleTree(db.NewMemoryStorage(), 10)
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 10)
 	assert.Nil(t, err)
 
 	err = mt.Add(big.NewInt(1), big.NewInt(2))
@@ -428,7 +428,7 @@ func TestDelete5(t *testing.T) {
 }
 
 func TestDeleteNonExistingKeys(t *testing.T) {
-	mt, err := NewMerkleTree(db.NewMemoryStorage(), 10)
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 10)
 	assert.Nil(t, err)
 
 	err = mt.Add(big.NewInt(1), big.NewInt(2))
@@ -451,7 +451,7 @@ func TestDeleteNonExistingKeys(t *testing.T) {
 }
 
 func TestDumpLeafsImportLeafs(t *testing.T) {
-	mt, err := NewMerkleTree(db.NewMemoryStorage(), 140)
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 140)
 	require.Nil(t, err)
 	defer mt.db.Close()
 
@@ -465,7 +465,7 @@ func TestDumpLeafsImportLeafs(t *testing.T) {
 	d, err := mt.DumpLeafs(nil)
 	assert.Nil(t, err)
 
-	mt2, err := NewMerkleTree(db.NewMemoryStorage(), 140)
+	mt2, err := NewMerkleTree(memory.NewMemoryStorage(), 140)
 	require.Nil(t, err)
 	defer mt2.db.Close()
 	err = mt2.ImportDumpedLeafs(d)
