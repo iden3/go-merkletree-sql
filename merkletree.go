@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	"github.com/iden3/go-iden3-core/common"
-	"github.com/iden3/go-merkletree/db"
 	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
+	"github.com/iden3/go-merkletree/db"
 )
 
 const (
@@ -139,6 +139,16 @@ func (mt *MerkleTree) DB() db.Storage {
 // Root returns the MerkleRoot
 func (mt *MerkleTree) Root() *Hash {
 	return mt.rootKey
+}
+
+func (mt *MerkleTree) Snapshot(rootKey *Hash) (*MerkleTree, error) {
+	mt.RLock()
+	defer mt.RUnlock()
+	_, err := mt.GetNode(rootKey)
+	if err != nil {
+		return nil, err
+	}
+	return &MerkleTree{db: mt.db, maxLevels: mt.maxLevels, rootKey: rootKey, writable: false}, nil
 }
 
 // Add adds a Key & Value into the MerkleTree. Where the `k` determines the path from the Root to the Leaf.

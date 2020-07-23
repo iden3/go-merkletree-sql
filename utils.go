@@ -8,7 +8,7 @@ import (
 )
 
 // HashElems performs a poseidon hash over the array of ElemBytes.
-// Uses poseidon.PoseidonHash to be compatible with the circom circuits
+// Uses poseidon.Hash to be compatible with the circom circuits
 // implementations.
 // The maxim slice input size is poseidon.T
 func HashElems(elems ...*big.Int) (*Hash, error) {
@@ -21,7 +21,7 @@ func HashElems(elems ...*big.Int) (*Hash, error) {
 		return nil, err
 	}
 
-	poseidonHash, err := poseidon.PoseidonHash(bi)
+	poseidonHash, err := poseidon.Hash(bi)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func HashElemsKey(key *big.Int, elems ...*big.Int) (*Hash, error) {
 		return nil, err
 	}
 	copy(bi[len(elems):], []*big.Int{key})
-	poseidonHash, err := poseidon.PoseidonHash(bi)
+	poseidonHash, err := poseidon.Hash(bi)
 	if err != nil {
 		return nil, err
 	}
