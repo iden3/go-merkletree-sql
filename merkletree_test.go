@@ -136,6 +136,60 @@ func TestGet(t *testing.T) {
 	assert.Nil(t, v)
 }
 
+func TestUpdate(t *testing.T) {
+	mt := newTestingMerkle(t, 140)
+	defer mt.db.Close()
+
+	for i := 0; i < 16; i++ {
+		k := big.NewInt(int64(i))
+		v := big.NewInt(int64(i * 2))
+		if err := mt.Add(k, v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	v, err := mt.Get(big.NewInt(10))
+	assert.Nil(t, err)
+	assert.Equal(t, big.NewInt(20), v)
+
+	err = mt.Update(big.NewInt(10), big.NewInt(1024))
+	v, err = mt.Get(big.NewInt(10))
+	assert.Nil(t, err)
+	assert.Equal(t, big.NewInt(1024), v)
+
+	err = mt.Update(big.NewInt(1000), big.NewInt(1024))
+	assert.Equal(t, ErrKeyNotFound, err)
+}
+
+func TestUpdate2(t *testing.T) {
+	mt1 := newTestingMerkle(t, 140)
+	defer mt1.db.Close()
+	mt2 := newTestingMerkle(t, 140)
+	defer mt2.db.Close()
+
+	err := mt1.Add(big.NewInt(1), big.NewInt(119))
+	assert.Nil(t, err)
+	err = mt1.Add(big.NewInt(2), big.NewInt(229))
+	assert.Nil(t, err)
+	err = mt1.Add(big.NewInt(9876), big.NewInt(6789))
+	assert.Nil(t, err)
+
+	err = mt2.Add(big.NewInt(1), big.NewInt(11))
+	assert.Nil(t, err)
+	err = mt2.Add(big.NewInt(2), big.NewInt(22))
+	assert.Nil(t, err)
+	err = mt2.Add(big.NewInt(9876), big.NewInt(10))
+	assert.Nil(t, err)
+
+	err = mt1.Update(big.NewInt(1), big.NewInt(11))
+	assert.Nil(t, err)
+	err = mt1.Update(big.NewInt(2), big.NewInt(22))
+	assert.Nil(t, err)
+	err = mt2.Update(big.NewInt(9876), big.NewInt(6789))
+	assert.Nil(t, err)
+
+	assert.Equal(t, mt1.Root(), mt2.Root())
+}
+
 func TestGenerateAndVerifyProof128(t *testing.T) {
 	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 140)
 	require.Nil(t, err)
@@ -346,6 +400,7 @@ func TestDelete(t *testing.T) {
 	err = mt.Delete(big.NewInt(1))
 	assert.Nil(t, err)
 	assert.Equal(t, "0", mt.Root().String())
+
 }
 
 func TestDelete2(t *testing.T) {

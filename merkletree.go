@@ -342,6 +342,73 @@ func (mt *MerkleTree) Get(k *big.Int) (*big.Int, error) {
 	return nil, ErrKeyNotFound
 }
 
+// Update updates the value of a specified key in the MerkleTree, and updates
+// the path from the leaf to the Root with the new values.
+func (mt *MerkleTree) Update(k, v *big.Int) error {
+	// verify that the MerkleTree is writable
+	if !mt.writable {
+		return ErrNotWritable
+	}
+
+	// verfy that k & are valid and fit inside the Finite Field.
+	if !cryptoUtils.CheckBigIntInField(k) {
+		return errors.New("Key not inside the Finite Field")
+	}
+	if !cryptoUtils.CheckBigIntInField(v) {
+		return errors.New("Key not inside the Finite Field")
+	}
+	tx, err := mt.db.NewTx()
+	if err != nil {
+		return err
+	}
+	mt.Lock()
+	defer mt.Unlock()
+
+	kHash := NewHashFromBigInt(k)
+	vHash := NewHashFromBigInt(v)
+	path := getPath(mt.maxLevels, kHash[:])
+
+	nextKey := mt.rootKey
+	var siblings []*Hash
+	for i := 0; i < mt.maxLevels; i++ {
+		n, err := mt.GetNode(nextKey)
+		if err != nil {
+			return err
+		}
+		switch n.Type {
+		case NodeTypeEmpty:
+			return ErrKeyNotFound
+		case NodeTypeLeaf:
+			if bytes.Equal(kHash[:], n.Entry[0][:]) {
+				// update leaf and upload to the root
+				newNodeLeaf := NewNodeLeaf(kHash, vHash)
+				_, err := mt.addNode(tx, newNodeLeaf)
+				newRootKey, err := mt.recalculatePathUntilRoot(tx, path, newNodeLeaf, siblings)
+				if err != nil {
+					return err
+				}
+				mt.rootKey = newRootKey
+				mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+				return tx.Commit()
+			} else {
+				return ErrKeyNotFound
+			}
+		case NodeTypeMiddle:
+			if path[i] {
+				nextKey = n.ChildR
+				siblings = append(siblings, n.ChildL)
+			} else {
+				nextKey = n.ChildL
+				siblings = append(siblings, n.ChildR)
+			}
+		default:
+			return ErrInvalidNodeFound
+		}
+	}
+
+	return ErrKeyNotFound
+}
+
 // Delete removes the specified Key from the MerkleTree and updates the path
 // from the deleted key to the Root with the new values.  This method removes
 // the key from the MerkleTree, but does not remove the old nodes from the
@@ -403,7 +470,7 @@ func (mt *MerkleTree) Delete(k *big.Int) error {
 		}
 	}
 
-	return nil
+	return ErrKeyNotFound
 }
 
 // rmAndUpload removes the key, and goes up until the root updating all the nodes with the new values.
