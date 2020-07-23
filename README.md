@@ -29,6 +29,12 @@ func TestExampleMerkleTree(t *testing.T) {
 	assert.Nil(t, err)
 	fmt.Println(mt.Root().String())
 
+	v, err := mt.Get(key)
+	asseert.Equal(t, value, v)
+
+	value = big.NewInt(3)
+	err = mt.Update(key, value)
+
 	proof, err := mt.GenerateProof(key, nil)
 	assert.Nil(t, err)
 

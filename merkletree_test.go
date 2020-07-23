@@ -152,6 +152,7 @@ func TestUpdate(t *testing.T) {
 	assert.Equal(t, big.NewInt(20), v)
 
 	err = mt.Update(big.NewInt(10), big.NewInt(1024))
+	assert.Nil(t, err)
 	v, err = mt.Get(big.NewInt(10))
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(1024), v)

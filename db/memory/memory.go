@@ -26,7 +26,7 @@ func NewMemoryStorage() *MemoryStorage {
 }
 
 // Info implements the method Info of the interface db.Storage
-func (l *MemoryStorage) Info() string {
+func (m *MemoryStorage) Info() string {
 	return "in-memory"
 }
 
@@ -41,21 +41,21 @@ func (m *MemoryStorage) NewTx() (db.Tx, error) {
 }
 
 // Get retreives a value from a key in the db.Storage
-func (l *MemoryStorage) Get(key []byte) ([]byte, error) {
-	if v, ok := l.kv.Get(db.Concat(l.prefix, key[:])); ok {
+func (m *MemoryStorage) Get(key []byte) ([]byte, error) {
+	if v, ok := m.kv.Get(db.Concat(m.prefix, key[:])); ok {
 		return v, nil
 	}
 	return nil, db.ErrNotFound
 }
 
 // Iterate implements the method Iterate of the interface db.Storage
-func (l *MemoryStorage) Iterate(f func([]byte, []byte) (bool, error)) error {
+func (m *MemoryStorage) Iterate(f func([]byte, []byte) (bool, error)) error {
 	kvs := make([]db.KV, 0)
-	for _, v := range l.kv {
-		if len(v.K) < len(l.prefix) || !bytes.Equal(v.K[:len(l.prefix)], l.prefix) {
+	for _, v := range m.kv {
+		if len(v.K) < len(m.prefix) || !bytes.Equal(v.K[:len(m.prefix)], m.prefix) {
 			continue
 		}
-		localkey := v.K[len(l.prefix):]
+		localkey := v.K[len(m.prefix):]
 		kvs = append(kvs, db.KV{K: localkey, V: v.V})
 
 	}
@@ -116,9 +116,9 @@ func (m *MemoryStorage) Close() {
 }
 
 // List implements the method List of the interface db.Storage
-func (l *MemoryStorage) List(limit int) ([]db.KV, error) {
+func (m *MemoryStorage) List(limit int) ([]db.KV, error) {
 	ret := []db.KV{}
-	err := l.Iterate(func(key []byte, value []byte) (bool, error) {
+	err := m.Iterate(func(key []byte, value []byte) (bool, error) {
 		ret = append(ret, db.KV{K: db.Clone(key), V: db.Clone(value)})
 		if len(ret) == limit {
 			return false, nil

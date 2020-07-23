@@ -24,7 +24,7 @@ type LevelDbStorageTx struct {
 	cache db.KvMap
 }
 
-// NewLevelStorage returns a new LevelDbStorage
+// NewLevelDbStorage returns a new LevelDbStorage
 func NewLevelDbStorage(path string, errorIfMissing bool) (*LevelDbStorage, error) {
 	o := &opt.Options{
 		ErrorIfMissing: errorIfMissing,
@@ -113,16 +113,16 @@ func (l *LevelDbStorage) Iterate(f func([]byte, []byte) (bool, error)) error {
 }
 
 // Get retreives a value from a key in the interface db.Tx
-func (l *LevelDbStorageTx) Get(key []byte) ([]byte, error) {
+func (tx *LevelDbStorageTx) Get(key []byte) ([]byte, error) {
 	var err error
 
-	fullkey := db.Concat(l.prefix, key)
+	fullkey := db.Concat(tx.prefix, key)
 
-	if value, ok := l.cache.Get(fullkey); ok {
+	if value, ok := tx.cache.Get(fullkey); ok {
 		return value, nil
 	}
 
-	value, err := l.ldb.Get(fullkey, nil)
+	value, err := tx.ldb.Get(fullkey, nil)
 	if err == errors.ErrNotFound {
 		return nil, db.ErrNotFound
 	}
@@ -130,7 +130,7 @@ func (l *LevelDbStorageTx) Get(key []byte) ([]byte, error) {
 	return value, err
 }
 
-// Insert saves a key:value into the db.Storage
+// Put saves a key:value into the db.Storage
 func (tx *LevelDbStorageTx) Put(k, v []byte) {
 	tx.cache.Put(db.Concat(tx.prefix, k[:]), v)
 }
@@ -144,19 +144,19 @@ func (tx *LevelDbStorageTx) Add(atx db.Tx) {
 }
 
 // Commit implements the method Commit of the interface db.Tx
-func (l *LevelDbStorageTx) Commit() error {
+func (tx *LevelDbStorageTx) Commit() error {
 	var batch leveldb.Batch
-	for _, v := range l.cache {
+	for _, v := range tx.cache {
 		batch.Put(v.K, v.V)
 	}
 
-	l.cache = nil
-	return l.ldb.Write(&batch, nil)
+	tx.cache = nil
+	return tx.ldb.Write(&batch, nil)
 }
 
 // Close implements the method Close of the interface db.Tx
-func (l *LevelDbStorageTx) Close() {
-	l.cache = nil
+func (tx *LevelDbStorageTx) Close() {
+	tx.cache = nil
 }
 
 // Close implements the method Close of the interface db.Storage

@@ -139,6 +139,7 @@ func (mt *MerkleTree) Root() *Hash {
 	return mt.rootKey
 }
 
+// Snapshot returns a read-only copy of the MerkleTree
 func (mt *MerkleTree) Snapshot(rootKey *Hash) (*MerkleTree, error) {
 	mt.RLock()
 	defer mt.RUnlock()
@@ -383,6 +384,9 @@ func (mt *MerkleTree) Update(k, v *big.Int) error {
 				// update leaf and upload to the root
 				newNodeLeaf := NewNodeLeaf(kHash, vHash)
 				_, err := mt.addNode(tx, newNodeLeaf)
+				if err != nil {
+					return err
+				}
 				newRootKey, err := mt.recalculatePathUntilRoot(tx, path, newNodeLeaf, siblings)
 				if err != nil {
 					return err
@@ -676,7 +680,7 @@ func (p *Proof) Bytes() []byte {
 	return bs
 }
 
-// SiblingsFromProof returns all the siblings of the proof. This function is used to generate the siblings input for the circom circuits.
+// SiblingsFromProof returns all the siblings of the proof.
 func SiblingsFromProof(proof *Proof) []*Hash {
 	sibIdx := 0
 	var siblings []*Hash
@@ -691,10 +695,12 @@ func SiblingsFromProof(proof *Proof) []*Hash {
 	return siblings
 }
 
+// AllSiblings returns all the siblings of the proof.
 func (p *Proof) AllSiblings() []*Hash {
 	return SiblingsFromProof(p)
 }
 
+// AllSiblingsCircom returns all the siblings of the proof. This function is used to generate the siblings input for the circom circuits.
 func (p *Proof) AllSiblingsCircom(levels int) []*big.Int {
 	siblings := p.AllSiblings()
 	// Add the rest of empty levels to the siblings
