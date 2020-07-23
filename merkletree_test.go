@@ -111,6 +111,31 @@ func TestAddRepeatedIndex(t *testing.T) {
 	assert.Equal(t, err, ErrEntryIndexAlreadyExists)
 }
 
+func TestGet(t *testing.T) {
+	mt := newTestingMerkle(t, 140)
+	defer mt.db.Close()
+
+	for i := 0; i < 16; i++ {
+		k := big.NewInt(int64(i))
+		v := big.NewInt(int64(i * 2))
+		if err := mt.Add(k, v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	v, err := mt.Get(big.NewInt(10))
+	assert.Nil(t, err)
+	assert.Equal(t, big.NewInt(20), v)
+
+	v, err = mt.Get(big.NewInt(15))
+	assert.Nil(t, err)
+	assert.Equal(t, big.NewInt(30), v)
+
+	v, err = mt.Get(big.NewInt(16))
+	assert.NotNil(t, err)
+	assert.Equal(t, ErrKeyNotFound, err)
+	assert.Nil(t, v)
+}
+
 func TestGenerateAndVerifyProof128(t *testing.T) {
 	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 140)
 	require.Nil(t, err)
