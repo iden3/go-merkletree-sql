@@ -123,18 +123,21 @@ func TestGet(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	v, _, err := mt.Get(big.NewInt(10))
+	k, v, _, err := mt.Get(big.NewInt(10))
 	assert.Nil(t, err)
+	assert.Equal(t, big.NewInt(10), k)
 	assert.Equal(t, big.NewInt(20), v)
 
-	v, _, err = mt.Get(big.NewInt(15))
+	k, v, _, err = mt.Get(big.NewInt(15))
 	assert.Nil(t, err)
+	assert.Equal(t, big.NewInt(15), k)
 	assert.Equal(t, big.NewInt(30), v)
 
-	v, _, err = mt.Get(big.NewInt(16))
+	k, v, _, err = mt.Get(big.NewInt(16))
 	assert.NotNil(t, err)
 	assert.Equal(t, ErrKeyNotFound, err)
-	assert.Nil(t, v)
+	assert.Equal(t, "0", k.String())
+	assert.Equal(t, "0", v.String())
 }
 
 func TestUpdate(t *testing.T) {
@@ -148,13 +151,13 @@ func TestUpdate(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	v, _, err := mt.Get(big.NewInt(10))
+	_, v, _, err := mt.Get(big.NewInt(10))
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(20), v)
 
 	_, err = mt.Update(big.NewInt(10), big.NewInt(1024))
 	assert.Nil(t, err)
-	v, _, err = mt.Get(big.NewInt(10))
+	_, v, _, err = mt.Get(big.NewInt(10))
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(1024), v)
 
@@ -563,22 +566,37 @@ func TestAddAndGetCircomProof(t *testing.T) {
 	assert.Equal(t, "0", mt.Root().String())
 
 	// test vectors generated using https://github.com/iden3/circomlib smt.js
-	_, err = mt.AddAndGetCircomProof(big.NewInt(1), big.NewInt(2))
+	cpp, err := mt.AddAndGetCircomProof(big.NewInt(1), big.NewInt(2))
 	assert.Nil(t, err)
-	assert.Equal(t, "4932297968297298434239270129193057052722409868268166443802652458940273154854", mt.Root().BigInt().String())
+	assert.Equal(t, "0", cpp.OldRoot.String())
+	assert.Equal(t, "49322979...", cpp.NewRoot.String())
+	assert.Equal(t, "0", cpp.OldKey.String())
+	assert.Equal(t, "0", cpp.OldValue.String())
+	assert.Equal(t, "1", cpp.NewKey.String())
+	assert.Equal(t, "2", cpp.NewValue.String())
+	assert.Equal(t, true, cpp.IsOld0)
+	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 
-	_, err = mt.AddAndGetCircomProof(big.NewInt(33), big.NewInt(44))
+	cpp, err = mt.AddAndGetCircomProof(big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
-	assert.Equal(t, "13563340744765267202993741297198970774200042973817962221376874695587906013050", mt.Root().BigInt().String())
+	assert.Equal(t, "49322979...", cpp.OldRoot.String())
+	assert.Equal(t, "13563340...", cpp.NewRoot.String())
+	assert.Equal(t, "1", cpp.OldKey.String())
+	assert.Equal(t, "2", cpp.OldValue.String())
+	assert.Equal(t, "33", cpp.NewKey.String())
+	assert.Equal(t, "44", cpp.NewValue.String())
+	assert.Equal(t, false, cpp.IsOld0)
+	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 
-	_, err = mt.AddAndGetCircomProof(big.NewInt(1234), big.NewInt(9876))
+	cpp, err = mt.AddAndGetCircomProof(big.NewInt(55), big.NewInt(66))
 	assert.Nil(t, err)
-	assert.Equal(t, "16970503620176669663662021947486532860010370357132361783766545149750777353066", mt.Root().BigInt().String())
-
-	proof, v, err := mt.GenerateProof(big.NewInt(33), nil)
-	assert.Nil(t, err)
-	assert.Equal(t, big.NewInt(44), v)
-
-	assert.True(t, VerifyProof(mt.Root(), proof, big.NewInt(33), big.NewInt(44)))
-	assert.True(t, !VerifyProof(mt.Root(), proof, big.NewInt(33), big.NewInt(45)))
+	assert.Equal(t, "13563340...", cpp.OldRoot.String())
+	assert.Equal(t, "21716426...", cpp.NewRoot.String())
+	assert.Equal(t, "0", cpp.OldKey.String())
+	assert.Equal(t, "0", cpp.OldValue.String())
+	assert.Equal(t, "55", cpp.NewKey.String())
+	assert.Equal(t, "66", cpp.NewValue.String())
+	assert.Equal(t, true, cpp.IsOld0)
+	assert.Equal(t, "[0 34319575... 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	// fmt.Println(cpp)
 }

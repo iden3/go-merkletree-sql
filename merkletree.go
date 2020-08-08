@@ -71,6 +71,9 @@ func (h Hash) Hex() string {
 
 // BigInt returns the *big.Int representation of the *Hash
 func (h *Hash) BigInt() *big.Int {
+	if new(big.Int).SetBytes(common.SwapEndianness(h[:])) == nil {
+		return big.NewInt(0)
+	}
 	return new(big.Int).SetBytes(common.SwapEndianness(h[:]))
 }
 
@@ -196,20 +199,22 @@ func (mt *MerkleTree) Add(k, v *big.Int) error {
 	return nil
 }
 func (mt *MerkleTree) AddAndGetCircomProof(k, v *big.Int) (*CircomProcessorProof, error) {
-
 	var cp CircomProcessorProof
 	cp.OldRoot = mt.rootKey
-	gettedV, siblings, err := mt.Get(k)
+	gettedK, gettedV, siblings, err := mt.Get(k)
 	if err != nil && err != ErrKeyNotFound {
 		return nil, err
 	}
-	if err == ErrKeyNotFound {
-		cp.OldKey = &HashZero
-		cp.OldValue = &HashZero
-	} else {
-		cp.OldKey = NewHashFromBigInt(k)
-		cp.OldValue = NewHashFromBigInt(gettedV)
+	cp.OldKey = NewHashFromBigInt(gettedK)
+	cp.OldValue = NewHashFromBigInt(gettedV)
+	if bytes.Equal(cp.OldKey[:], HashZero[:]) {
+		cp.IsOld0 = true
 	}
+	_, _, siblings, err = mt.Get(k)
+	if err != nil && err != ErrKeyNotFound {
+		return nil, err
+	}
+	cp.Siblings = CircomSiblingsFromSiblings(siblings, mt.maxLevels)
 
 	err = mt.Add(k, v)
 	if err != nil {
@@ -219,12 +224,6 @@ func (mt *MerkleTree) AddAndGetCircomProof(k, v *big.Int) (*CircomProcessorProof
 	cp.NewKey = NewHashFromBigInt(k)
 	cp.NewValue = NewHashFromBigInt(v)
 	cp.NewRoot = mt.rootKey
-
-	_, siblings, err = mt.Get(k)
-	if err != nil {
-		return nil, err
-	}
-	cp.Siblings = siblings
 
 	return &cp, nil
 }
@@ -343,10 +342,10 @@ func (mt *MerkleTree) addNode(tx db.Tx, n *Node) (*Hash, error) {
 }
 
 // Get returns the value of the leaf for the given key
-func (mt *MerkleTree) Get(k *big.Int) (*big.Int, []*Hash, error) {
+func (mt *MerkleTree) Get(k *big.Int) (*big.Int, *big.Int, []*Hash, error) {
 	// verfy that k is valid and fit inside the Finite Field.
 	if !cryptoUtils.CheckBigIntInField(k) {
-		return nil, nil, errors.New("Key not inside the Finite Field")
+		return nil, nil, nil, errors.New("Key not inside the Finite Field")
 	}
 
 	kHash := NewHashFromBigInt(k)
@@ -357,16 +356,16 @@ func (mt *MerkleTree) Get(k *big.Int) (*big.Int, []*Hash, error) {
 	for i := 0; i < mt.maxLevels; i++ {
 		n, err := mt.GetNode(nextKey)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		switch n.Type {
 		case NodeTypeEmpty:
-			return nil, nil, ErrKeyNotFound
+			return big.NewInt(0), big.NewInt(0), siblings, ErrKeyNotFound
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
-				return n.Entry[1].BigInt(), siblings, nil
+				return n.Entry[0].BigInt(), n.Entry[1].BigInt(), siblings, nil
 			} else {
-				return nil, nil, ErrKeyNotFound
+				return n.Entry[0].BigInt(), n.Entry[1].BigInt(), siblings, ErrKeyNotFound
 			}
 		case NodeTypeMiddle:
 			if path[i] {
@@ -377,11 +376,11 @@ func (mt *MerkleTree) Get(k *big.Int) (*big.Int, []*Hash, error) {
 				siblings = append(siblings, n.ChildR)
 			}
 		default:
-			return nil, nil, ErrInvalidNodeFound
+			return nil, nil, nil, ErrInvalidNodeFound
 		}
 	}
 
-	return nil, nil, ErrKeyNotFound
+	return nil, nil, nil, ErrKeyNotFound
 }
 
 // Update updates the value of a specified key in the MerkleTree, and updates
@@ -753,6 +752,19 @@ func (p *Proof) AllSiblings() []*Hash {
 	return SiblingsFromProof(p)
 }
 
+func CircomSiblingsFromSiblings(siblings []*Hash, levels int) []*Hash {
+	// Add the rest of empty levels to the siblings
+	for i := len(siblings); i < levels; i++ {
+		siblings = append(siblings, &HashZero)
+	}
+	siblings = append(siblings, &HashZero) // add extra level for circom compatibility
+	return siblings
+	// siblingsBigInt := make([]*big.Int, len(siblings))
+	// for i, sibling := range siblings {
+	//         siblingsBigInt[i] = sibling.BigInt()
+	// }
+}
+
 // AllSiblingsCircom returns all the siblings of the proof. This function is used to generate the siblings input for the circom circuits.
 func (p *Proof) AllSiblingsCircom(levels int) []*big.Int {
 	siblings := p.AllSiblings()
@@ -774,11 +786,31 @@ type CircomProcessorProof struct {
 	Siblings []*Hash
 	OldKey   *Hash
 	OldValue *Hash
-	IsOld0   bool
 	NewKey   *Hash
 	NewValue *Hash
+	IsOld0   bool
 	// Fnc      int // 0: NOP, 1: Update, 2: Insert, 3: Delete
 }
+
+func (p CircomProcessorProof) String() string {
+	buf := bytes.NewBufferString("{")
+	fmt.Fprintf(buf, "	OldRoot: %v,\n", p.OldRoot)
+	fmt.Fprintf(buf, "	NewRoot: %v,\n", p.NewRoot)
+	fmt.Fprintf(buf, "	Siblings: [\n		")
+	for _, s := range p.Siblings {
+		fmt.Fprintf(buf, "%v, ", s)
+	}
+	fmt.Fprintf(buf, "\n	],\n")
+	fmt.Fprintf(buf, "	OldKey: %v,\n", p.OldKey)
+	fmt.Fprintf(buf, "	OldValue: %v,\n", p.OldValue)
+	fmt.Fprintf(buf, "	NewKey: %v,\n", p.NewKey)
+	fmt.Fprintf(buf, "	NewValue: %v,\n", p.NewValue)
+	fmt.Fprintf(buf, "	IsOld0: %v,\n", p.IsOld0)
+	fmt.Fprintf(buf, "}\n")
+
+	return buf.String()
+}
+
 type CircomVerifierProof struct {
 	Root     *Hash
 	Siblings []*big.Int
