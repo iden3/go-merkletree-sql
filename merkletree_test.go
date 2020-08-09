@@ -600,3 +600,31 @@ func TestAddAndGetCircomProof(t *testing.T) {
 	assert.Equal(t, "[0 34319575... 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 	// fmt.Println(cpp)
 }
+
+func TestUpdateCircomProcessorProof(t *testing.T) {
+	mt := newTestingMerkle(t, 10)
+	defer mt.db.Close()
+
+	for i := 0; i < 16; i++ {
+		k := big.NewInt(int64(i))
+		v := big.NewInt(int64(i * 2))
+		if err := mt.Add(k, v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, v, _, err := mt.Get(big.NewInt(10))
+	assert.Nil(t, err)
+	assert.Equal(t, big.NewInt(20), v)
+
+	// test vectors generated using https://github.com/iden3/circomlib smt.js
+	cpp, err := mt.Update(big.NewInt(10), big.NewInt(1024))
+	assert.Nil(t, err)
+	assert.Equal(t, "57072083...", cpp.OldRoot.String())
+	assert.Equal(t, "11191558...", cpp.NewRoot.String())
+	assert.Equal(t, "10", cpp.OldKey.String())
+	assert.Equal(t, "20", cpp.OldValue.String())
+	assert.Equal(t, "10", cpp.NewKey.String())
+	assert.Equal(t, "1024", cpp.NewValue.String())
+	assert.Equal(t, false, cpp.IsOld0)
+	assert.Equal(t, "[12331503... 70994311... 88639181... 20174344... 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+}

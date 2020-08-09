@@ -198,6 +198,7 @@ func (mt *MerkleTree) Add(k, v *big.Int) error {
 
 	return nil
 }
+
 func (mt *MerkleTree) AddAndGetCircomProof(k, v *big.Int) (*CircomProcessorProof, error) {
 	var cp CircomProcessorProof
 	cp.OldRoot = mt.rootKey
@@ -428,7 +429,7 @@ func (mt *MerkleTree) Update(k, v *big.Int) (*CircomProcessorProof, error) {
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
 				cp.OldValue = n.Entry[1]
-				cp.Siblings = siblings
+				cp.Siblings = CircomSiblingsFromSiblings(siblings, mt.maxLevels)
 				// update leaf and upload to the root
 				newNodeLeaf := NewNodeLeaf(kHash, vHash)
 				_, err := mt.addNode(tx, newNodeLeaf)
