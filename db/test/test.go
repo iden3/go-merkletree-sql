@@ -189,5 +189,4 @@ func TestList(t *testing.T, sto db.Storage) {
 	assert.Equal(t, 2, len(r))
 	assert.Equal(t, r[0], db.KV{[]byte{1}, []byte{4}})
 	assert.Equal(t, r[1], db.KV{[]byte{2}, []byte{5}})
-
 }
