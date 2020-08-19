@@ -199,8 +199,10 @@ func (mt *MerkleTree) Add(k, v *big.Int) error {
 	return nil
 }
 
+// AddAndGetCircomProof does an Add, and returns a CircomProcessorProof
 func (mt *MerkleTree) AddAndGetCircomProof(k, v *big.Int) (*CircomProcessorProof, error) {
 	var cp CircomProcessorProof
+	cp.Fnc = 2
 	cp.OldRoot = mt.rootKey
 	gettedK, gettedV, siblings, err := mt.Get(k)
 	if err != nil && err != ErrKeyNotFound {
@@ -300,7 +302,8 @@ func (mt *MerkleTree) addLeaf(tx db.Tx, newLeaf *Node, key *Hash,
 		// We need to push newLeaf down until its path diverges from n's path
 		return mt.pushLeaf(tx, newLeaf, n, lvl, path, pathOldLeaf)
 	case NodeTypeMiddle:
-		// We need to go deeper, continue traversing the tree, left or right depending on path
+		// We need to go deeper, continue traversing the tree, left or
+		// right depending on path
 		var newNodeMiddle *Node
 		if path[lvl] {
 			nextKey, err = mt.addLeaf(tx, newLeaf, n.ChildR, lvl+1, path) // go right
@@ -385,7 +388,8 @@ func (mt *MerkleTree) Get(k *big.Int) (*big.Int, *big.Int, []*Hash, error) {
 }
 
 // Update updates the value of a specified key in the MerkleTree, and updates
-// the path from the leaf to the Root with the new values.
+// the path from the leaf to the Root with the new values. Returns the
+// CircomProcessorProof.
 func (mt *MerkleTree) Update(k, v *big.Int) (*CircomProcessorProof, error) {
 	// verify that the MerkleTree is writable
 	if !mt.writable {
@@ -411,6 +415,7 @@ func (mt *MerkleTree) Update(k, v *big.Int) (*CircomProcessorProof, error) {
 	path := getPath(mt.maxLevels, kHash[:])
 
 	var cp CircomProcessorProof
+	cp.Fnc = 1
 	cp.OldRoot = mt.rootKey
 	cp.OldKey = kHash
 	cp.NewKey = kHash
@@ -753,6 +758,7 @@ func (p *Proof) AllSiblings() []*Hash {
 	return SiblingsFromProof(p)
 }
 
+// CircomSiblingsFromSiblings returns the full siblings compatible with circom
 func CircomSiblingsFromSiblings(siblings []*Hash, levels int) []*Hash {
 	// Add the rest of empty levels to the siblings
 	for i := len(siblings); i < levels; i++ {
@@ -760,13 +766,10 @@ func CircomSiblingsFromSiblings(siblings []*Hash, levels int) []*Hash {
 	}
 	siblings = append(siblings, &HashZero) // add extra level for circom compatibility
 	return siblings
-	// siblingsBigInt := make([]*big.Int, len(siblings))
-	// for i, sibling := range siblings {
-	//         siblingsBigInt[i] = sibling.BigInt()
-	// }
 }
 
-// AllSiblingsCircom returns all the siblings of the proof. This function is used to generate the siblings input for the circom circuits.
+// AllSiblingsCircom returns all the siblings of the proof. This function is
+// used to generate the siblings input for the circom circuits.
 func (p *Proof) AllSiblingsCircom(levels int) []*big.Int {
 	siblings := p.AllSiblings()
 	// Add the rest of empty levels to the siblings
@@ -781,6 +784,8 @@ func (p *Proof) AllSiblingsCircom(levels int) []*big.Int {
 	return siblingsBigInt
 }
 
+// CircomProcessorProof defines the ProcessorProof compatible with circom. Is
+// the data of the proof between the transition from one state to another.
 type CircomProcessorProof struct {
 	OldRoot  *Hash
 	NewRoot  *Hash
@@ -790,9 +795,11 @@ type CircomProcessorProof struct {
 	NewKey   *Hash
 	NewValue *Hash
 	IsOld0   bool
-	// Fnc      int // 0: NOP, 1: Update, 2: Insert, 3: Delete
+	Fnc      int // 0: NOP, 1: Update, 2: Insert, 3: Delete
 }
 
+// String returns a human readable string representation of the
+// CircomProcessorProof
 func (p CircomProcessorProof) String() string {
 	buf := bytes.NewBufferString("{")
 	fmt.Fprintf(buf, "	OldRoot: %v,\n", p.OldRoot)
@@ -812,6 +819,8 @@ func (p CircomProcessorProof) String() string {
 	return buf.String()
 }
 
+// CircomVerifierProof defines the VerifierProof compatible with circom. Is the
+// data of the proof that a certain leaf exists in the MerkleTree.
 type CircomVerifierProof struct {
 	Root     *Hash
 	Siblings []*big.Int
@@ -820,9 +829,12 @@ type CircomVerifierProof struct {
 	IsOld0   bool
 	Key      *Hash
 	Value    *Hash
-	Fnc      int
+	Fnc      int // 0: inclusion, 1: non inclusion
 }
 
+// GenerateCircomVerifierProof returns the CircomVerifierProof for a certain
+// key in the MerkleTree.  If the rootKey is nil, the current merkletree root
+// is used.
 func (mt *MerkleTree) GenerateCircomVerifierProof(k *big.Int, rootKey *Hash) (*CircomVerifierProof, error) {
 	p, v, err := mt.GenerateProof(k, rootKey)
 	if err != nil || err != ErrKeyNotFound {
@@ -833,13 +845,12 @@ func (mt *MerkleTree) GenerateCircomVerifierProof(k *big.Int, rootKey *Hash) (*C
 	cp.Siblings = p.AllSiblingsCircom(mt.maxLevels)
 	cp.OldKey = &HashZero
 	cp.OldValue = &HashZero
-	// cp.IsOld
 	cp.Key = NewHashFromBigInt(k)
 	cp.Value = NewHashFromBigInt(v)
 	if p.Existence {
 		cp.Fnc = 0 // inclusion
 	} else {
-		cp.Fnc = 1 // not inclusion
+		cp.Fnc = 1 // non inclusion
 	}
 
 	return &cp, nil
