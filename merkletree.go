@@ -345,6 +345,25 @@ func (mt *MerkleTree) addNode(tx db.Tx, n *Node) (*Hash, error) {
 	return k, nil
 }
 
+// updateNode updates an existing node in the MT.  Empty nodes are not stored
+// in the tree; they are all the same and assumed to always exist.
+func (mt *MerkleTree) updateNode(tx db.Tx, n *Node) (*Hash, error) {
+	// verify that the MerkleTree is writable
+	if !mt.writable {
+		return nil, ErrNotWritable
+	}
+	if n.Type == NodeTypeEmpty {
+		return n.Key()
+	}
+	k, err := n.Key()
+	if err != nil {
+		return nil, err
+	}
+	v := n.Value()
+	tx.Put(k[:], v)
+	return k, nil
+}
+
 // Get returns the value of the leaf for the given key
 func (mt *MerkleTree) Get(k *big.Int) (*big.Int, *big.Int, []*Hash, error) {
 	// verfy that k is valid and fit inside the Finite Field.
@@ -437,7 +456,7 @@ func (mt *MerkleTree) Update(k, v *big.Int) (*CircomProcessorProof, error) {
 				cp.Siblings = CircomSiblingsFromSiblings(siblings, mt.maxLevels)
 				// update leaf and upload to the root
 				newNodeLeaf := NewNodeLeaf(kHash, vHash)
-				_, err := mt.addNode(tx, newNodeLeaf)
+				_, err := mt.updateNode(tx, newNodeLeaf)
 				if err != nil {
 					return nil, err
 				}
@@ -837,7 +856,7 @@ type CircomVerifierProof struct {
 // is used.
 func (mt *MerkleTree) GenerateCircomVerifierProof(k *big.Int, rootKey *Hash) (*CircomVerifierProof, error) {
 	p, v, err := mt.GenerateProof(k, rootKey)
-	if err != nil || err != ErrKeyNotFound {
+	if err != nil && err != ErrKeyNotFound {
 		return nil, err
 	}
 	var cp CircomVerifierProof
