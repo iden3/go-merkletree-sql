@@ -154,7 +154,7 @@ func (tx *PebbleStorageTx) Add(atx db.Tx) {
 func (tx *PebbleStorageTx) Commit() error {
 	batch := tx.PebbleStorage.pdb.NewBatch()
 	for _, v := range tx.cache {
-		batch.Set(v.K, v.V, nil)
+		_ = batch.Set(v.K, v.V, nil)
 	}
 
 	tx.cache = nil

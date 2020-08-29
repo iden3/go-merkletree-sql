@@ -57,7 +57,6 @@ func (m *MemoryStorage) Iterate(f func([]byte, []byte) (bool, error)) error {
 		}
 		localkey := v.K[len(m.prefix):]
 		kvs = append(kvs, db.KV{K: localkey, V: v.V})
-
 	}
 	sort.SliceStable(kvs, func(i, j int) bool { return bytes.Compare(kvs[i].K, kvs[j].K) < 0 })
 
@@ -73,7 +72,6 @@ func (m *MemoryStorage) Iterate(f func([]byte, []byte) (bool, error)) error {
 
 // Get implements the method Get of the interface db.Tx
 func (tx *MemoryStorageTx) Get(key []byte) ([]byte, error) {
-
 	if v, ok := tx.kv.Get(db.Concat(tx.s.prefix, key)); ok {
 		return v, nil
 	}

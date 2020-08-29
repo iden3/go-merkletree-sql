@@ -350,12 +350,12 @@ func TestGraphViz(t *testing.T) {
 	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 10)
 	assert.Nil(t, err)
 
-	mt.Add(big.NewInt(1), big.NewInt(0))
-	mt.Add(big.NewInt(2), big.NewInt(0))
-	mt.Add(big.NewInt(3), big.NewInt(0))
-	mt.Add(big.NewInt(4), big.NewInt(0))
-	mt.Add(big.NewInt(5), big.NewInt(0))
-	mt.Add(big.NewInt(100), big.NewInt(0))
+	_ = mt.Add(big.NewInt(1), big.NewInt(0))
+	_ = mt.Add(big.NewInt(2), big.NewInt(0))
+	_ = mt.Add(big.NewInt(3), big.NewInt(0))
+	_ = mt.Add(big.NewInt(4), big.NewInt(0))
+	_ = mt.Add(big.NewInt(5), big.NewInt(0))
+	_ = mt.Add(big.NewInt(100), big.NewInt(0))
 
 	// mt.PrintGraphViz(nil)
 
@@ -381,7 +381,8 @@ node [fontname=Monospace,fontsize=10,shape=box]
 }
 `
 	w := bytes.NewBufferString("")
-	mt.GraphViz(w, nil)
+	err = mt.GraphViz(w, nil)
+	assert.Nil(t, err)
 	assert.Equal(t, []byte(expected), w.Bytes())
 }
 
@@ -415,7 +416,6 @@ func TestDelete(t *testing.T) {
 	err = mt.Delete(big.NewInt(1))
 	assert.Nil(t, err)
 	assert.Equal(t, "0", mt.Root().String())
-
 }
 
 func TestDelete2(t *testing.T) {

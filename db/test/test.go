@@ -1,3 +1,4 @@
+//nolint:gomnd
 package test
 
 import (
@@ -108,17 +109,17 @@ func TestIterate(t *testing.T, sto db.Storage) {
 	err = sto1.Iterate(lister)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(r))
-	assert.Equal(t, db.KV{[]byte{1}, []byte{4}}, r[0])
-	assert.Equal(t, db.KV{[]byte{2}, []byte{5}}, r[1])
-	assert.Equal(t, db.KV{[]byte{3}, []byte{6}}, r[2])
+	assert.Equal(t, db.KV{K: []byte{1}, V: []byte{4}}, r[0])
+	assert.Equal(t, db.KV{K: []byte{2}, V: []byte{5}}, r[1])
+	assert.Equal(t, db.KV{K: []byte{3}, V: []byte{6}}, r[2])
 
 	r = []db.KV{}
 	err = sto2.Iterate(lister)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(r))
-	assert.Equal(t, db.KV{[]byte{1}, []byte{7}}, r[0])
-	assert.Equal(t, db.KV{[]byte{2}, []byte{8}}, r[1])
-	assert.Equal(t, db.KV{[]byte{3}, []byte{9}}, r[2])
+	assert.Equal(t, db.KV{K: []byte{1}, V: []byte{7}}, r[0])
+	assert.Equal(t, db.KV{K: []byte{2}, V: []byte{8}}, r[1])
+	assert.Equal(t, db.KV{K: []byte{3}, V: []byte{9}}, r[2])
 }
 
 // TestConcatTx checks that the implementation of the db.Storage interface
@@ -180,13 +181,13 @@ func TestList(t *testing.T, sto db.Storage) {
 	r, err := sto1.List(100)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(r))
-	assert.Equal(t, r[0], db.KV{[]byte{1}, []byte{4}})
-	assert.Equal(t, r[1], db.KV{[]byte{2}, []byte{5}})
-	assert.Equal(t, r[2], db.KV{[]byte{3}, []byte{6}})
+	assert.Equal(t, r[0], db.KV{K: []byte{1}, V: []byte{4}})
+	assert.Equal(t, r[1], db.KV{K: []byte{2}, V: []byte{5}})
+	assert.Equal(t, r[2], db.KV{K: []byte{3}, V: []byte{6}})
 
 	r, err = sto1.List(2)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(r))
-	assert.Equal(t, r[0], db.KV{[]byte{1}, []byte{4}})
-	assert.Equal(t, r[1], db.KV{[]byte{2}, []byte{5}})
+	assert.Equal(t, r[0], db.KV{K: []byte{1}, V: []byte{4}})
+	assert.Equal(t, r[1], db.KV{K: []byte{2}, V: []byte{5}})
 }

@@ -3,13 +3,12 @@ package leveldb
 import (
 	"encoding/json"
 
+	"github.com/iden3/go-merkletree/db"
 	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
-
-	"github.com/iden3/go-merkletree/db"
 )
 
 // LevelDbStorage implements the db.Storage interface
