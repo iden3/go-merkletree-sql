@@ -11,12 +11,14 @@ type NodeType byte
 const (
 	// NodeTypeMiddle indicates the type of middle Node that has children.
 	NodeTypeMiddle NodeType = 0
-	// NodeTypeLeaf indicates the type of a leaf Node that contains a key & value.
+	// NodeTypeLeaf indicates the type of a leaf Node that contains a key &
+	// value.
 	NodeTypeLeaf NodeType = 1
 	// NodeTypeEmpty indicates the type of an empty Node.
 	NodeTypeEmpty NodeType = 2
 
-	// DBEntryTypeRoot indicates the type of a DB entry that indicates the current Root of a MerkleTree
+	// DBEntryTypeRoot indicates the type of a DB entry that indicates the
+	// current Root of a MerkleTree
 	DBEntryTypeRoot NodeType = 3
 )
 
@@ -114,7 +116,8 @@ func (n *Node) Key() (*Hash, error) {
 	return n.key, nil
 }
 
-// Value returns the value of the node.  This is the content that is stored in the backend database.
+// Value returns the value of the node.  This is the content that is stored in
+// the backend database.
 func (n *Node) Value() []byte {
 	switch n.Type {
 	case NodeTypeMiddle: // {Type || ChildL || ChildR}

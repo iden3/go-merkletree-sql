@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/iden3/go-iden3-core/common"
 	"github.com/iden3/go-merkletree/db/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,6 +47,14 @@ func TestHashParsers(t *testing.T) {
 	assert.Equal(t, "4932297968297298434239270129193057052722409868268166443802652458940273154854", h.BigInt().String())
 	assert.Equal(t, "49322979...", h.String())
 	assert.Equal(t, "0ae794eb9c3d8bbb9002e993fc2ed301dcbd2af5508ed072c375e861f1aa5b26", h.Hex())
+
+	b1, err := NewBigIntFromBytes(b.Bytes())
+	assert.Nil(t, err)
+	assert.Equal(t, new(big.Int).SetBytes(common.SwapEndianness(b.Bytes())).String(), b1.String())
+
+	b2, err := NewHashFromBytes(b.Bytes())
+	assert.Nil(t, err)
+	assert.Equal(t, b.String(), b2.BigInt().String())
 }
 
 func TestNewTree(t *testing.T) {
