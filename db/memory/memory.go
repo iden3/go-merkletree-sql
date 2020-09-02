@@ -83,8 +83,9 @@ func (tx *MemoryStorageTx) Get(key []byte) ([]byte, error) {
 }
 
 // Put implements the method Put of the interface db.Tx
-func (tx *MemoryStorageTx) Put(k, v []byte) {
+func (tx *MemoryStorageTx) Put(k, v []byte) error {
 	tx.kv.Put(db.Concat(tx.s.prefix, k), v)
+	return nil
 }
 
 // Commit implements the method Commit of the interface db.Tx
@@ -97,11 +98,12 @@ func (tx *MemoryStorageTx) Commit() error {
 }
 
 // Add implements the method Add of the interface db.Tx
-func (tx *MemoryStorageTx) Add(atx db.Tx) {
+func (tx *MemoryStorageTx) Add(atx db.Tx) error {
 	mstx := atx.(*MemoryStorageTx)
 	for _, v := range mstx.kv {
 		tx.kv.Put(v.K, v.V)
 	}
+	return nil
 }
 
 // Close implements the method Close of the interface db.Tx

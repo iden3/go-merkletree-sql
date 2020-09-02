@@ -17,10 +17,8 @@ type PebbleStorage struct {
 
 // PebbleStorageTx implements the db.Tx interface
 type PebbleStorageTx struct {
-	// FUTURE currently Tx is using the same strategy than in MemoryDB and
-	// LevelDB, in next iteration can be moved to Pebble Batch strategy
 	*PebbleStorage
-	cache db.KvMap
+	batch *pebble.Batch
 }
 
 // NewPebbleStorage returns a new PebbleStorage
@@ -72,7 +70,7 @@ func (p *PebbleStorage) WithPrefix(prefix []byte) db.Storage {
 
 // NewTx implements the method NewTx of the interface db.Storage
 func (p *PebbleStorage) NewTx() (db.Tx, error) {
-	return &PebbleStorageTx{p, make(db.KvMap)}, nil
+	return &PebbleStorageTx{p, p.pdb.NewIndexedBatch()}, nil
 }
 
 // Get retreives a value from a key in the db.Storage
@@ -124,46 +122,34 @@ func (tx *PebbleStorageTx) Get(key []byte) ([]byte, error) {
 
 	fullkey := db.Concat(tx.prefix, key)
 
-	if value, ok := tx.cache.Get(fullkey); ok {
-		return value, nil
-	}
-
-	value, closer, err := tx.pdb.Get(fullkey)
+	v, closer, err := tx.batch.Get(fullkey)
 	if err == pebble.ErrNotFound {
 		return nil, db.ErrNotFound
 	}
 	closer.Close()
 
-	return value, err
+	return v, err
 }
 
 // Put saves a key:value into the db.Storage
-func (tx *PebbleStorageTx) Put(k, v []byte) {
-	tx.cache.Put(db.Concat(tx.prefix, k[:]), v)
+func (tx *PebbleStorageTx) Put(k, v []byte) error {
+	return tx.batch.Set(db.Concat(tx.prefix, k[:]), v, nil)
 }
 
 // Add implements the method Add of the interface db.Tx
-func (tx *PebbleStorageTx) Add(atx db.Tx) {
-	ldbtx := atx.(*PebbleStorageTx)
-	for _, v := range ldbtx.cache {
-		tx.cache.Put(v.K, v.V)
-	}
+func (tx *PebbleStorageTx) Add(atx db.Tx) error {
+	patx := atx.(*PebbleStorageTx)
+	return tx.batch.Apply(patx.batch, nil)
 }
 
 // Commit implements the method Commit of the interface db.Tx
 func (tx *PebbleStorageTx) Commit() error {
-	batch := tx.PebbleStorage.pdb.NewBatch()
-	for _, v := range tx.cache {
-		_ = batch.Set(v.K, v.V, nil)
-	}
-
-	tx.cache = nil
-	return batch.Commit(nil)
+	return tx.batch.Commit(nil)
 }
 
 // Close implements the method Close of the interface db.Tx
 func (tx *PebbleStorageTx) Close() {
-	tx.cache = nil
+	_ = tx.batch.Close()
 }
 
 // Close implements the method Close of the interface db.Storage

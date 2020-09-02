@@ -28,7 +28,8 @@ func TestStorageInsertGet(t *testing.T, sto db.Storage) {
 
 	tx, err := sto.NewTx()
 	assert.Nil(t, err)
-	tx.Put(key, value)
+	err = tx.Put(key, value)
+	assert.Nil(t, err)
 	v, err := tx.Get(key)
 	assert.Nil(t, err)
 	assert.Equal(t, value, v)
@@ -53,7 +54,8 @@ func TestStorageWithPrefix(t *testing.T, sto db.Storage) {
 
 	sto1tx, err := sto1.NewTx()
 	assert.Nil(t, err)
-	sto1tx.Put(k, []byte{4, 5, 6})
+	err = sto1tx.Put(k, []byte{4, 5, 6})
+	assert.Nil(t, err)
 	v1, err := sto1tx.Get(k)
 	assert.Nil(t, err)
 	assert.Equal(t, v1, []byte{4, 5, 6})
@@ -61,7 +63,8 @@ func TestStorageWithPrefix(t *testing.T, sto db.Storage) {
 
 	sto2tx, err := sto2.NewTx()
 	assert.Nil(t, err)
-	sto2tx.Put(k, []byte{8, 9})
+	err = sto2tx.Put(k, []byte{8, 9})
+	assert.Nil(t, err)
 	v2, err := sto2tx.Get(k)
 	assert.Nil(t, err)
 	assert.Equal(t, v2, []byte{8, 9})
@@ -93,16 +96,22 @@ func TestIterate(t *testing.T, sto db.Storage) {
 	assert.Equal(t, 0, len(r))
 
 	sto1tx, _ := sto1.NewTx()
-	sto1tx.Put([]byte{1}, []byte{4})
-	sto1tx.Put([]byte{2}, []byte{5})
-	sto1tx.Put([]byte{3}, []byte{6})
+	err = sto1tx.Put([]byte{1}, []byte{4})
+	assert.Nil(t, err)
+	err = sto1tx.Put([]byte{2}, []byte{5})
+	assert.Nil(t, err)
+	err = sto1tx.Put([]byte{3}, []byte{6})
+	assert.Nil(t, err)
 	assert.Nil(t, sto1tx.Commit())
 
 	sto2 := sto.WithPrefix([]byte{2})
 	sto2tx, _ := sto2.NewTx()
-	sto2tx.Put([]byte{1}, []byte{7})
-	sto2tx.Put([]byte{2}, []byte{8})
-	sto2tx.Put([]byte{3}, []byte{9})
+	err = sto2tx.Put([]byte{1}, []byte{7})
+	assert.Nil(t, err)
+	err = sto2tx.Put([]byte{2}, []byte{8})
+	assert.Nil(t, err)
+	err = sto2tx.Put([]byte{3}, []byte{9})
+	assert.Nil(t, err)
 	assert.Nil(t, sto2tx.Commit())
 
 	r = []db.KV{}
@@ -136,14 +145,17 @@ func TestConcatTx(t *testing.T, sto db.Storage) {
 	if err != nil {
 		panic(err)
 	}
-	sto1tx.Put(k, []byte{4, 5, 6})
+	err = sto1tx.Put(k, []byte{4, 5, 6})
+	assert.Nil(t, err)
 	sto2tx, err := sto2.NewTx()
 	if err != nil {
 		panic(err)
 	}
-	sto2tx.Put(k, []byte{8, 9})
+	err = sto2tx.Put(k, []byte{8, 9})
+	assert.Nil(t, err)
 
-	sto1tx.Add(sto2tx)
+	err = sto1tx.Add(sto2tx)
+	assert.Nil(t, err)
 	assert.Nil(t, sto1tx.Commit())
 
 	// check outside tx
@@ -166,16 +178,22 @@ func TestList(t *testing.T, sto db.Storage) {
 	assert.Equal(t, 0, len(r1))
 
 	sto1tx, _ := sto1.NewTx()
-	sto1tx.Put([]byte{1}, []byte{4})
-	sto1tx.Put([]byte{2}, []byte{5})
-	sto1tx.Put([]byte{3}, []byte{6})
+	err = sto1tx.Put([]byte{1}, []byte{4})
+	assert.Nil(t, err)
+	err = sto1tx.Put([]byte{2}, []byte{5})
+	assert.Nil(t, err)
+	err = sto1tx.Put([]byte{3}, []byte{6})
+	assert.Nil(t, err)
 	assert.Nil(t, sto1tx.Commit())
 
 	sto2 := sto.WithPrefix([]byte{2})
 	sto2tx, _ := sto2.NewTx()
-	sto2tx.Put([]byte{1}, []byte{7})
-	sto2tx.Put([]byte{2}, []byte{8})
-	sto2tx.Put([]byte{3}, []byte{9})
+	err = sto2tx.Put([]byte{1}, []byte{7})
+	assert.Nil(t, err)
+	err = sto2tx.Put([]byte{2}, []byte{8})
+	assert.Nil(t, err)
+	err = sto2tx.Put([]byte{3}, []byte{9})
+	assert.Nil(t, err)
 	assert.Nil(t, sto2tx.Commit())
 
 	r, err := sto1.List(100)

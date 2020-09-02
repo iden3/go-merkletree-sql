@@ -130,16 +130,18 @@ func (tx *LevelDbStorageTx) Get(key []byte) ([]byte, error) {
 }
 
 // Put saves a key:value into the db.Storage
-func (tx *LevelDbStorageTx) Put(k, v []byte) {
+func (tx *LevelDbStorageTx) Put(k, v []byte) error {
 	tx.cache.Put(db.Concat(tx.prefix, k[:]), v)
+	return nil
 }
 
 // Add implements the method Add of the interface db.Tx
-func (tx *LevelDbStorageTx) Add(atx db.Tx) {
+func (tx *LevelDbStorageTx) Add(atx db.Tx) error {
 	ldbtx := atx.(*LevelDbStorageTx)
 	for _, v := range ldbtx.cache {
 		tx.cache.Put(v.K, v.V)
 	}
+	return nil
 }
 
 // Commit implements the method Commit of the interface db.Tx

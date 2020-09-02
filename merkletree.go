@@ -141,7 +141,10 @@ func NewMerkleTree(storage db.Storage, maxLevels int) (*MerkleTree, error) {
 			return nil, err
 		}
 		mt.rootKey = &HashZero
-		tx.Put(rootNodeValue, mt.rootKey[:])
+		err = tx.Put(rootNodeValue, mt.rootKey[:])
+		if err != nil {
+			return nil, err
+		}
 		err = tx.Commit()
 		if err != nil {
 			return nil, err
@@ -212,7 +215,10 @@ func (mt *MerkleTree) Add(k, v *big.Int) error {
 		return err
 	}
 	mt.rootKey = newRootKey
-	mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+	err = mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+	if err != nil {
+		return err
+	}
 
 	if err := tx.Commit(); err != nil {
 		return err
@@ -363,8 +369,8 @@ func (mt *MerkleTree) addNode(tx db.Tx, n *Node) (*Hash, error) {
 	if _, err := tx.Get(k[:]); err == nil {
 		return nil, ErrNodeKeyAlreadyExists
 	}
-	tx.Put(k[:], v)
-	return k, nil
+	err = tx.Put(k[:], v)
+	return k, err
 }
 
 // updateNode updates an existing node in the MT.  Empty nodes are not stored
@@ -382,8 +388,8 @@ func (mt *MerkleTree) updateNode(tx db.Tx, n *Node) (*Hash, error) {
 		return nil, err
 	}
 	v := n.Value()
-	tx.Put(k[:], v)
-	return k, nil
+	err = tx.Put(k[:], v)
+	return k, err
 }
 
 // Get returns the value of the leaf for the given key
@@ -487,7 +493,10 @@ func (mt *MerkleTree) Update(k, v *big.Int) (*CircomProcessorProof, error) {
 					return nil, err
 				}
 				mt.rootKey = newRootKey
-				mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+				err = mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+				if err != nil {
+					return nil, err
+				}
 				cp.NewRoot = newRootKey
 				if err := tx.Commit(); err != nil {
 					return nil, err
@@ -580,14 +589,20 @@ func (mt *MerkleTree) Delete(k *big.Int) error {
 func (mt *MerkleTree) rmAndUpload(tx db.Tx, path []bool, kHash *Hash, siblings []*Hash) error {
 	if len(siblings) == 0 {
 		mt.rootKey = &HashZero
-		mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+		err := mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+		if err != nil {
+			return err
+		}
 		return tx.Commit()
 	}
 
 	toUpload := siblings[len(siblings)-1]
 	if len(siblings) < 2 { //nolint:gomnd
 		mt.rootKey = siblings[0]
-		mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+		err := mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+		if err != nil {
+			return err
+		}
 		return tx.Commit()
 	}
 	for i := len(siblings) - 2; i >= 0; i-- { //nolint:gomnd
@@ -608,13 +623,19 @@ func (mt *MerkleTree) rmAndUpload(tx db.Tx, path []bool, kHash *Hash, siblings [
 				return err
 			}
 			mt.rootKey = newRootKey
-			mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+			err = mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+			if err != nil {
+				return err
+			}
 			break
 		}
 		// if i==0 (root position), stop and store the sibling of the deleted leaf as root
 		if i == 0 {
 			mt.rootKey = toUpload
-			mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+			err := mt.dbInsert(tx, rootNodeValue, DBEntryTypeRoot, mt.rootKey[:])
+			if err != nil {
+				return err
+			}
 			break
 		}
 	}
@@ -650,9 +671,9 @@ func (mt *MerkleTree) recalculatePathUntilRoot(tx db.Tx, path []bool, node *Node
 
 // dbInsert is a helper function to insert a node into a key in an open db
 // transaction.
-func (mt *MerkleTree) dbInsert(tx db.Tx, k []byte, t NodeType, data []byte) {
+func (mt *MerkleTree) dbInsert(tx db.Tx, k []byte, t NodeType, data []byte) error {
 	v := append([]byte{byte(t)}, data...)
-	tx.Put(k, v)
+	return tx.Put(k, v)
 }
 
 // GetNode gets a node by key from the MT.  Empty nodes are not stored in the
