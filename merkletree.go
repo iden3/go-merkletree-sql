@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"strings"
 	"sync"
 
 	"github.com/iden3/go-iden3-core/common"
@@ -118,6 +119,16 @@ func NewHashFromBytes(b []byte) (*Hash, error) {
 	var h Hash
 	copy(h[:], common.SwapEndianness(b))
 	return &h, nil
+}
+
+// NewHashFromHex returns a *Hash representation of the given hex string
+func NewHashFromHex(h string) (*Hash, error) {
+	h = strings.TrimPrefix(h, "0x")
+	b, err := hex.DecodeString(h)
+	if err != nil {
+		return nil, err
+	}
+	return NewHashFromBytes(b)
 }
 
 // MerkleTree is the struct with the main elements of the MerkleTree

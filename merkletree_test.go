@@ -55,6 +55,12 @@ func TestHashParsers(t *testing.T) {
 	b2, err := NewHashFromBytes(b.Bytes())
 	assert.Nil(t, err)
 	assert.Equal(t, b.String(), b2.BigInt().String())
+
+	h2, err := NewHashFromHex(h.Hex())
+	assert.Nil(t, err)
+	assert.Equal(t, h, h2)
+	_, err = NewHashFromHex("0x12")
+	assert.NotNil(t, err)
 }
 
 func TestNewTree(t *testing.T) {
