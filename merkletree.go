@@ -451,7 +451,7 @@ func (mt *MerkleTree) Get(k *big.Int) (*big.Int, *big.Int, []*Hash, error) {
 		}
 	}
 
-	return nil, nil, nil, ErrKeyNotFound
+	return nil, nil, nil, ErrReachedMaxLevel
 }
 
 // Update updates the value of a specified key in the MerkleTree, and updates

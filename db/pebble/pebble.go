@@ -1,7 +1,6 @@
 package pebble
 
 import (
-	"bytes"
 	"encoding/json"
 
 	"github.com/cockroachdb/pebble"
@@ -83,6 +82,25 @@ func (p *PebbleStorage) Get(key []byte) ([]byte, error) {
 	return v, err
 }
 
+// https://github.com/cockroachdb/pebble/pull/923/files#diff-c2ade2f386c41794d5ebc57ee49b57a5fca8082e03255e5bff13977cbc061287R39
+func keyUpperBound(b []byte) []byte {
+	end := make([]byte, len(b))
+	copy(end, b)
+	for i := len(end) - 1; i >= 0; i-- {
+		end[i] = end[i] + 1
+		if end[i] != 0 {
+			return end[:i+1]
+		}
+	}
+	return nil // no upper-bound
+}
+func prefixIterOptions(prefix []byte) *pebble.IterOptions {
+	return &pebble.IterOptions{
+		LowerBound: prefix,
+		UpperBound: keyUpperBound(prefix),
+	}
+}
+
 // Iterate implements the method Iterate of the interface db.Storage
 func (p *PebbleStorage) Iterate(f func([]byte, []byte) (bool, error)) error {
 	// NewIter already provides a point-in-time view of the current DB
@@ -91,21 +109,10 @@ func (p *PebbleStorage) Iterate(f func([]byte, []byte) (bool, error)) error {
 	// snapshot := p.pdb.NewSnapshot()
 	// defer snapshot.Close()
 	// iter := snapshot.NewIter(nil)
-	iter := p.pdb.NewIter(nil)
+	iter := p.pdb.NewIter(prefixIterOptions(p.prefix))
 	defer iter.Close()
 
-	iter.First() // move the iterator to the first key/value pair
-	if len(iter.Key()) < len(p.prefix) || !bytes.Equal(iter.Key()[:len(p.prefix)], p.prefix) {
-	} else {
-		localKey := iter.Key()[len(p.prefix):]
-		if _, err := f(localKey, iter.Value()); err != nil {
-			return err
-		}
-	}
-	for iter.Next() {
-		if len(iter.Key()) < len(p.prefix) || !bytes.Equal(iter.Key()[:len(p.prefix)], p.prefix) {
-			continue
-		}
+	for iter.First(); iter.Valid(); iter.Next() {
 		localKey := iter.Key()[len(p.prefix):]
 		if cont, err := f(localKey, iter.Value()); err != nil {
 			return err
