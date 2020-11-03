@@ -3,6 +3,7 @@ package merkletree
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"testing"
@@ -623,7 +624,7 @@ func TestAddAndGetCircomProof(t *testing.T) {
 	assert.Equal(t, "1", cpp.NewKey.String())
 	assert.Equal(t, "2", cpp.NewValue.String())
 	assert.Equal(t, true, cpp.IsOld0)
-	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 
 	cpp, err = mt.AddAndGetCircomProof(big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
@@ -634,7 +635,7 @@ func TestAddAndGetCircomProof(t *testing.T) {
 	assert.Equal(t, "33", cpp.NewKey.String())
 	assert.Equal(t, "44", cpp.NewValue.String())
 	assert.Equal(t, false, cpp.IsOld0)
-	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 
 	cpp, err = mt.AddAndGetCircomProof(big.NewInt(55), big.NewInt(66))
 	assert.Nil(t, err)
@@ -645,7 +646,7 @@ func TestAddAndGetCircomProof(t *testing.T) {
 	assert.Equal(t, "55", cpp.NewKey.String())
 	assert.Equal(t, "66", cpp.NewValue.String())
 	assert.Equal(t, true, cpp.IsOld0)
-	assert.Equal(t, "[0 42948778... 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, "[0 42948778... 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 	// fmt.Println(cpp)
 }
 
@@ -674,5 +675,42 @@ func TestUpdateCircomProcessorProof(t *testing.T) {
 	assert.Equal(t, "10", cpp.NewKey.String())
 	assert.Equal(t, "1024", cpp.NewValue.String())
 	assert.Equal(t, false, cpp.IsOld0)
-	assert.Equal(t, "[19625419... 46910949... 18399594... 20473908... 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, "[19625419... 46910949... 18399594... 20473908... 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+}
+
+func TestTypesMarshalers(t *testing.T) {
+	// test Hash marshalers
+	h, err := NewHashFromString("42")
+	assert.Nil(t, err)
+	s, err := json.Marshal(h)
+	assert.Nil(t, err)
+	var h2 *Hash
+	err = json.Unmarshal(s, &h2)
+	assert.Nil(t, err)
+	assert.Equal(t, h, h2)
+
+	// create CircomProcessorProof
+	mt := newTestingMerkle(t, 10)
+	defer mt.db.Close()
+	for i := 0; i < 16; i++ {
+		k := big.NewInt(int64(i))
+		v := big.NewInt(int64(i * 2))
+		if err := mt.Add(k, v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, v, _, err := mt.Get(big.NewInt(10))
+	assert.Nil(t, err)
+	assert.Equal(t, big.NewInt(20), v)
+	cpp, err := mt.Update(big.NewInt(10), big.NewInt(1024))
+	assert.Nil(t, err)
+
+	// test CircomProcessorProof marshalers
+	b, err := json.Marshal(&cpp)
+	assert.Nil(t, err)
+
+	var cpp2 *CircomProcessorProof
+	err = json.Unmarshal(b, &cpp2)
+	assert.Nil(t, err)
+	assert.Equal(t, cpp, cpp2)
 }
