@@ -60,6 +60,18 @@ var (
 // Hash is the generic type stored in the MerkleTree
 type Hash [32]byte
 
+// MarshalText implements the marshaler for the Hash type
+func (h Hash) MarshalText() ([]byte, error) {
+	return []byte(h.BigInt().String()), nil
+}
+
+// UnmarshalText implements the unmarshaler for the Hash type
+func (h *Hash) UnmarshalText(b []byte) error {
+	ha, err := NewHashFromString(string(b))
+	copy(h[:], ha[:])
+	return err
+}
+
 // String returns decimal representation in string format of the Hash
 func (h Hash) String() string {
 	s := h.BigInt().String()
@@ -138,6 +150,15 @@ func NewHashFromHex(h string) (*Hash, error) {
 		return nil, err
 	}
 	return NewHashFromBytes(common.SwapEndianness(b[:]))
+}
+
+// NewHashFromString returns a *Hash representation of the given decimal string
+func NewHashFromString(s string) (*Hash, error) {
+	bi, ok := new(big.Int).SetString(s, 10)
+	if !ok {
+		return nil, fmt.Errorf("Can not parse string to Hash")
+	}
+	return NewHashFromBigInt(bi), nil
 }
 
 // MerkleTree is the struct with the main elements of the MerkleTree
@@ -825,38 +846,21 @@ func CircomSiblingsFromSiblings(siblings []*Hash, levels int) []*Hash {
 	for i := len(siblings); i < levels; i++ {
 		siblings = append(siblings, &HashZero)
 	}
-	siblings = append(siblings, &HashZero) // add extra level for circom compatibility
 	return siblings
-}
-
-// AllSiblingsCircom returns all the siblings of the proof. This function is
-// used to generate the siblings input for the circom circuits.
-func (p *Proof) AllSiblingsCircom(levels int) []*big.Int {
-	siblings := p.AllSiblings()
-	// Add the rest of empty levels to the siblings
-	for i := len(siblings); i < levels; i++ {
-		siblings = append(siblings, &HashZero)
-	}
-	siblings = append(siblings, &HashZero) // add extra level for circom compatibility
-	siblingsBigInt := make([]*big.Int, len(siblings))
-	for i, sibling := range siblings {
-		siblingsBigInt[i] = sibling.BigInt()
-	}
-	return siblingsBigInt
 }
 
 // CircomProcessorProof defines the ProcessorProof compatible with circom. Is
 // the data of the proof between the transition from one state to another.
 type CircomProcessorProof struct {
-	OldRoot  *Hash
-	NewRoot  *Hash
-	Siblings []*Hash
-	OldKey   *Hash
-	OldValue *Hash
-	NewKey   *Hash
-	NewValue *Hash
-	IsOld0   bool
-	Fnc      int // 0: NOP, 1: Update, 2: Insert, 3: Delete
+	OldRoot  *Hash   `json:"oldRoot"`
+	NewRoot  *Hash   `json:"newRoot"`
+	Siblings []*Hash `json:"siblings"`
+	OldKey   *Hash   `json:"oldKey"`
+	OldValue *Hash   `json:"oldValue"`
+	NewKey   *Hash   `json:"newKey"`
+	NewValue *Hash   `json:"newValue"`
+	IsOld0   bool    `json:"isOld0"`
+	Fnc      int     `json:"fnc"` // 0: NOP, 1: Update, 2: Insert, 3: Delete
 }
 
 // String returns a human readable string representation of the
@@ -883,27 +887,30 @@ func (p CircomProcessorProof) String() string {
 // CircomVerifierProof defines the VerifierProof compatible with circom. Is the
 // data of the proof that a certain leaf exists in the MerkleTree.
 type CircomVerifierProof struct {
-	Root     *Hash
-	Siblings []*big.Int
-	OldKey   *Hash
-	OldValue *Hash
-	IsOld0   bool
-	Key      *Hash
-	Value    *Hash
-	Fnc      int // 0: inclusion, 1: non inclusion
+	Root     *Hash   `json:"root"`
+	Siblings []*Hash `json:"siblings"`
+	OldKey   *Hash   `json:"oldKey"`
+	OldValue *Hash   `json:"oldValue"`
+	IsOld0   bool    `json:"isOld0"`
+	Key      *Hash   `json:"key"`
+	Value    *Hash   `json:"value"`
+	Fnc      int     `json:"fnc"` // 0: inclusion, 1: non inclusion
 }
 
 // GenerateCircomVerifierProof returns the CircomVerifierProof for a certain
 // key in the MerkleTree.  If the rootKey is nil, the current merkletree root
 // is used.
 func (mt *MerkleTree) GenerateCircomVerifierProof(k *big.Int, rootKey *Hash) (*CircomVerifierProof, error) {
+	if rootKey == nil {
+		rootKey = mt.Root()
+	}
 	p, v, err := mt.GenerateProof(k, rootKey)
 	if err != nil && err != ErrKeyNotFound {
 		return nil, err
 	}
 	var cp CircomVerifierProof
-	cp.Root = mt.rootKey
-	cp.Siblings = p.AllSiblingsCircom(mt.maxLevels)
+	cp.Root = rootKey
+	cp.Siblings = CircomSiblingsFromSiblings(p.AllSiblings(), mt.maxLevels)
 	cp.OldKey = &HashZero
 	cp.OldValue = &HashZero
 	cp.Key = NewHashFromBigInt(k)
