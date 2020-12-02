@@ -843,7 +843,7 @@ func (p *Proof) AllSiblings() []*Hash {
 // CircomSiblingsFromSiblings returns the full siblings compatible with circom
 func CircomSiblingsFromSiblings(siblings []*Hash, levels int) []*Hash {
 	// Add the rest of empty levels to the siblings
-	for i := len(siblings); i < levels; i++ {
+	for i := len(siblings); i < levels+1; i++ {
 		siblings = append(siblings, &HashZero)
 	}
 	return siblings

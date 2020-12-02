@@ -624,7 +624,8 @@ func TestAddAndGetCircomProof(t *testing.T) {
 	assert.Equal(t, "1", cpp.NewKey.String())
 	assert.Equal(t, "2", cpp.NewValue.String())
 	assert.Equal(t, true, cpp.IsOld0)
-	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, mt.maxLevels+1, len(cpp.Siblings))
 
 	cpp, err = mt.AddAndGetCircomProof(big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
@@ -635,7 +636,8 @@ func TestAddAndGetCircomProof(t *testing.T) {
 	assert.Equal(t, "33", cpp.NewKey.String())
 	assert.Equal(t, "44", cpp.NewValue.String())
 	assert.Equal(t, false, cpp.IsOld0)
-	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, mt.maxLevels+1, len(cpp.Siblings))
 
 	cpp, err = mt.AddAndGetCircomProof(big.NewInt(55), big.NewInt(66))
 	assert.Nil(t, err)
@@ -646,8 +648,8 @@ func TestAddAndGetCircomProof(t *testing.T) {
 	assert.Equal(t, "55", cpp.NewKey.String())
 	assert.Equal(t, "66", cpp.NewValue.String())
 	assert.Equal(t, true, cpp.IsOld0)
-	assert.Equal(t, "[0 42948778... 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
-	// fmt.Println(cpp)
+	assert.Equal(t, "[0 42948778... 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, mt.maxLevels+1, len(cpp.Siblings))
 }
 
 func TestUpdateCircomProcessorProof(t *testing.T) {
@@ -675,7 +677,7 @@ func TestUpdateCircomProcessorProof(t *testing.T) {
 	assert.Equal(t, "10", cpp.NewKey.String())
 	assert.Equal(t, "1024", cpp.NewValue.String())
 	assert.Equal(t, false, cpp.IsOld0)
-	assert.Equal(t, "[19625419... 46910949... 18399594... 20473908... 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, "[19625419... 46910949... 18399594... 20473908... 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 }
 
 func TestTypesMarshalers(t *testing.T) {
