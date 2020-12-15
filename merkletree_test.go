@@ -43,10 +43,10 @@ func TestHashParsers(t *testing.T) {
 	h8l := NewHashFromBigInt(big.NewInt(12345678))
 	assert.Equal(t, "12345678...", h8l.String())
 
-	b, ok := new(big.Int).SetString("4932297968297298434239270129193057052722409868268166443802652458940273154854", 10)
+	b, ok := new(big.Int).SetString("4932297968297298434239270129193057052722409868268166443802652458940273154854", 10) //nolint:lll
 	assert.True(t, ok)
 	h := NewHashFromBigInt(b)
-	assert.Equal(t, "4932297968297298434239270129193057052722409868268166443802652458940273154854", h.BigInt().String())
+	assert.Equal(t, "4932297968297298434239270129193057052722409868268166443802652458940273154854", h.BigInt().String()) //nolint:lll
 	assert.Equal(t, "49322979...", h.String())
 	assert.Equal(t, "265baaf161e875c372d08e50f52abddc01d32efc93e90290bb8b3d9ceb94e70a", h.Hex())
 
@@ -98,15 +98,15 @@ func TestNewTree(t *testing.T) {
 	// test vectors generated using https://github.com/iden3/circomlib smt.js
 	err = mt.Add(big.NewInt(1), big.NewInt(2))
 	assert.Nil(t, err)
-	assert.Equal(t, "6449712043256457369579901840927028403950625973089336675272087704159094984964", mt.Root().BigInt().String())
+	assert.Equal(t, "6449712043256457369579901840927028403950625973089336675272087704159094984964", mt.Root().BigInt().String()) //nolint:lll
 
 	err = mt.Add(big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
-	assert.Equal(t, "11404118908468506234838877883514126008995570353394659302846433035311596046064", mt.Root().BigInt().String())
+	assert.Equal(t, "11404118908468506234838877883514126008995570353394659302846433035311596046064", mt.Root().BigInt().String()) //nolint:lll
 
 	err = mt.Add(big.NewInt(1234), big.NewInt(9876))
 	assert.Nil(t, err)
-	assert.Equal(t, "12841932325181810040554102151615400973767747666110051836366805309524360490677", mt.Root().BigInt().String())
+	assert.Equal(t, "12841932325181810040554102151615400973767747666110051836366805309524360490677", mt.Root().BigInt().String()) //nolint:lll
 
 	dbRoot, err := mt.dbGetRoot()
 	require.Nil(t, err)
@@ -142,7 +142,7 @@ func TestAddDifferentOrder(t *testing.T) {
 	}
 
 	assert.Equal(t, mt1.Root().Hex(), mt2.Root().Hex())
-	assert.Equal(t, "268e25964aa9d6ba42d66ae9eb44b5528540acb19a3644d1367d8c6f7cb23006", mt1.Root().Hex())
+	assert.Equal(t, "268e25964aa9d6ba42d66ae9eb44b5528540acb19a3644d1367d8c6f7cb23006", mt1.Root().Hex()) //nolint:lll
 }
 
 func TestAddRepeatedIndex(t *testing.T) {
@@ -299,12 +299,24 @@ func TestSiblingsFromProof(t *testing.T) {
 
 	siblings := SiblingsFromProof(proof)
 	assert.Equal(t, 6, len(siblings))
-	assert.Equal(t, "5b478bdd58595ead03ebf494a74014cbb576ba0d9456aa0916885b9eefae592f", siblings[0].Hex())
-	assert.Equal(t, "c1e8ab120a4e475ea1bf00633228bfb9d248f7ddec2aa6367f98d0defb9fb22e", siblings[1].Hex())
-	assert.Equal(t, "f4dafd8ac2b9165adc3f6d125af67d5a4d8a7a263dcc90a373d0338929e16e0c", siblings[2].Hex())
-	assert.Equal(t, "a94aa346bd85f96aba2e85b67920e44fe6ed767b0e13bea602784e0b8b897515", siblings[3].Hex())
-	assert.Equal(t, "54791d7514030ded79301dbf221f5bf186facbc5800912411852fdc101b7151d", siblings[4].Hex())
-	assert.Equal(t, "435d28bc0511f8feb93b5f1649a049b460947702ce0baaefcf596175370fe01e", siblings[5].Hex())
+	assert.Equal(t,
+		"5b478bdd58595ead03ebf494a74014cbb576ba0d9456aa0916885b9eefae592f",
+		siblings[0].Hex())
+	assert.Equal(t,
+		"c1e8ab120a4e475ea1bf00633228bfb9d248f7ddec2aa6367f98d0defb9fb22e",
+		siblings[1].Hex())
+	assert.Equal(t,
+		"f4dafd8ac2b9165adc3f6d125af67d5a4d8a7a263dcc90a373d0338929e16e0c",
+		siblings[2].Hex())
+	assert.Equal(t,
+		"a94aa346bd85f96aba2e85b67920e44fe6ed767b0e13bea602784e0b8b897515",
+		siblings[3].Hex())
+	assert.Equal(t,
+		"54791d7514030ded79301dbf221f5bf186facbc5800912411852fdc101b7151d",
+		siblings[4].Hex())
+	assert.Equal(t,
+		"435d28bc0511f8feb93b5f1649a049b460947702ce0baaefcf596175370fe01e",
+		siblings[5].Hex())
 }
 
 func TestVerifyProofCases(t *testing.T) {
@@ -318,14 +330,13 @@ func TestVerifyProofCases(t *testing.T) {
 	}
 
 	// Existence proof
-
 	proof, _, err := mt.GenerateProof(big.NewInt(4), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, proof.Existence, true)
 	assert.True(t, VerifyProof(mt.Root(), proof, big.NewInt(4), big.NewInt(0)))
-	assert.Equal(t, "0003000000000000000000000000000000000000000000000000000000000007a6d6b46fefe213a6b579844a1bb7ab5c2db4a13f8662d9c5e729c36728f42730211ddfcc8d30ebd157d1d6912769b8e4abdca41e5dc2b57b026a361c091a8c14c748530e61bf8ea80c987657c3d24b134ece1ef8e2d4bd3f74437bf4392a6b1e", hex.EncodeToString(proof.Bytes()))
+	assert.Equal(t, "0003000000000000000000000000000000000000000000000000000000000007a6d6b46fefe213a6b579844a1bb7ab5c2db4a13f8662d9c5e729c36728f42730211ddfcc8d30ebd157d1d6912769b8e4abdca41e5dc2b57b026a361c091a8c14c748530e61bf8ea80c987657c3d24b134ece1ef8e2d4bd3f74437bf4392a6b1e", hex.EncodeToString(proof.Bytes())) //nolint:lll
 
 	for i := 8; i < 32; i++ {
 		proof, _, err = mt.GenerateProof(big.NewInt(int64(i)), nil)
@@ -342,7 +353,7 @@ func TestVerifyProofCases(t *testing.T) {
 	assert.Equal(t, proof.Existence, false)
 	// assert.True(t, proof.nodeAux == nil)
 	assert.True(t, VerifyProof(mt.Root(), proof, big.NewInt(12), big.NewInt(0)))
-	assert.Equal(t, "0303000000000000000000000000000000000000000000000000000000000007a6d6b46fefe213a6b579844a1bb7ab5c2db4a13f8662d9c5e729c36728f42730211ddfcc8d30ebd157d1d6912769b8e4abdca41e5dc2b57b026a361c091a8c14c748530e61bf8ea80c987657c3d24b134ece1ef8e2d4bd3f74437bf4392a6b1e04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", hex.EncodeToString(proof.Bytes()))
+	assert.Equal(t, "0303000000000000000000000000000000000000000000000000000000000007a6d6b46fefe213a6b579844a1bb7ab5c2db4a13f8662d9c5e729c36728f42730211ddfcc8d30ebd157d1d6912769b8e4abdca41e5dc2b57b026a361c091a8c14c748530e61bf8ea80c987657c3d24b134ece1ef8e2d4bd3f74437bf4392a6b1e04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", hex.EncodeToString(proof.Bytes())) //nolint:lll
 
 	// Non-existence proof, diff. node aux
 	proof, _, err = mt.GenerateProof(big.NewInt(10), nil)
@@ -352,7 +363,7 @@ func TestVerifyProofCases(t *testing.T) {
 	assert.Equal(t, proof.Existence, false)
 	assert.True(t, proof.NodeAux != nil)
 	assert.True(t, VerifyProof(mt.Root(), proof, big.NewInt(10), big.NewInt(0)))
-	assert.Equal(t, "0303000000000000000000000000000000000000000000000000000000000007a6d6b46fefe213a6b579844a1bb7ab5c2db4a13f8662d9c5e729c36728f42730e667e2ca15909c4a23beff18e3cc74348fbd3c1a4c765a5bbbca126c9607a42b77e008a73926f1280f8531b139dc1cacf8d83fcec31d405f5c51b7cbddfe152902000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", hex.EncodeToString(proof.Bytes()))
+	assert.Equal(t, "0303000000000000000000000000000000000000000000000000000000000007a6d6b46fefe213a6b579844a1bb7ab5c2db4a13f8662d9c5e729c36728f42730e667e2ca15909c4a23beff18e3cc74348fbd3c1a4c765a5bbbca126c9607a42b77e008a73926f1280f8531b139dc1cacf8d83fcec31d405f5c51b7cbddfe152902000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", hex.EncodeToString(proof.Bytes())) //nolint:lll
 }
 
 func TestVerifyProofFalse(t *testing.T) {
@@ -383,7 +394,8 @@ func TestVerifyProofFalse(t *testing.T) {
 	// Now we change the proof from existence to non-existence, and add e's
 	// data as auxiliary node.
 	proof.Existence = false
-	proof.NodeAux = &NodeAux{Key: NewHashFromBigInt(big.NewInt(int64(4))), Value: NewHashFromBigInt(big.NewInt(4))}
+	proof.NodeAux = &NodeAux{Key: NewHashFromBigInt(big.NewInt(int64(4))),
+		Value: NewHashFromBigInt(big.NewInt(4))}
 	assert.True(t, !VerifyProof(mt.Root(), proof, big.NewInt(int64(4)), big.NewInt(0)))
 }
 
@@ -435,22 +447,22 @@ func TestDelete(t *testing.T) {
 	// test vectors generated using https://github.com/iden3/circomlib smt.js
 	err = mt.Add(big.NewInt(1), big.NewInt(2))
 	assert.Nil(t, err)
-	assert.Equal(t, "6449712043256457369579901840927028403950625973089336675272087704159094984964", mt.Root().BigInt().String())
+	assert.Equal(t, "6449712043256457369579901840927028403950625973089336675272087704159094984964", mt.Root().BigInt().String()) //nolint:lll
 
 	err = mt.Add(big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
-	assert.Equal(t, "11404118908468506234838877883514126008995570353394659302846433035311596046064", mt.Root().BigInt().String())
+	assert.Equal(t, "11404118908468506234838877883514126008995570353394659302846433035311596046064", mt.Root().BigInt().String()) //nolint:lll
 
 	err = mt.Add(big.NewInt(1234), big.NewInt(9876))
 	assert.Nil(t, err)
-	assert.Equal(t, "12841932325181810040554102151615400973767747666110051836366805309524360490677", mt.Root().BigInt().String())
+	assert.Equal(t, "12841932325181810040554102151615400973767747666110051836366805309524360490677", mt.Root().BigInt().String()) //nolint:lll
 
 	// mt.PrintGraphViz(nil)
 
 	err = mt.Delete(big.NewInt(33))
 	// mt.PrintGraphViz(nil)
 	assert.Nil(t, err)
-	assert.Equal(t, "16195585003843604118922861401064871511855368913846540536604351220077317790615", mt.Root().BigInt().String())
+	assert.Equal(t, "16195585003843604118922861401064871511855368913846540536604351220077317790615", mt.Root().BigInt().String()) //nolint:lll
 
 	err = mt.Delete(big.NewInt(1234))
 	assert.Nil(t, err)
@@ -507,10 +519,10 @@ func TestDelete3(t *testing.T) {
 	err = mt.Add(big.NewInt(2), big.NewInt(2))
 	assert.Nil(t, err)
 
-	assert.Equal(t, "6701939280963330813043570145125351311131831356446202146710280245621673558344", mt.Root().BigInt().String())
+	assert.Equal(t, "6701939280963330813043570145125351311131831356446202146710280245621673558344", mt.Root().BigInt().String()) //nolint:lll
 	err = mt.Delete(big.NewInt(1))
 	assert.Nil(t, err)
-	assert.Equal(t, "10304354743004778619823249005484018655542356856535590307973732141291410579841", mt.Root().BigInt().String())
+	assert.Equal(t, "10304354743004778619823249005484018655542356856535590307973732141291410579841", mt.Root().BigInt().String()) //nolint:lll
 
 	mt2 := newTestingMerkle(t, 140)
 	defer mt2.db.Close()
@@ -532,10 +544,10 @@ func TestDelete4(t *testing.T) {
 	err = mt.Add(big.NewInt(3), big.NewInt(3))
 	assert.Nil(t, err)
 
-	assert.Equal(t, "6989694633650442615746486460134957295274675622748484439660143938730686550248", mt.Root().BigInt().String())
+	assert.Equal(t, "6989694633650442615746486460134957295274675622748484439660143938730686550248", mt.Root().BigInt().String()) //nolint:lll
 	err = mt.Delete(big.NewInt(1))
 	assert.Nil(t, err)
-	assert.Equal(t, "1192610901536912535888866440319084773171371421781091005185759505381507049136", mt.Root().BigInt().String())
+	assert.Equal(t, "1192610901536912535888866440319084773171371421781091005185759505381507049136", mt.Root().BigInt().String()) //nolint:lll
 
 	mt2 := newTestingMerkle(t, 140)
 	defer mt2.db.Close()
@@ -554,11 +566,11 @@ func TestDelete5(t *testing.T) {
 	assert.Nil(t, err)
 	err = mt.Add(big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
-	assert.Equal(t, "11404118908468506234838877883514126008995570353394659302846433035311596046064", mt.Root().BigInt().String())
+	assert.Equal(t, "11404118908468506234838877883514126008995570353394659302846433035311596046064", mt.Root().BigInt().String()) //nolint:lll
 
 	err = mt.Delete(big.NewInt(1))
 	assert.Nil(t, err)
-	assert.Equal(t, "12802904154263054831102426711825443668153853847661287611768065280921698471037", mt.Root().BigInt().String())
+	assert.Equal(t, "12802904154263054831102426711825443668153853847661287611768065280921698471037", mt.Root().BigInt().String()) //nolint:lll
 
 	mt2 := newTestingMerkle(t, 140)
 	defer mt2.db.Close()
@@ -689,7 +701,9 @@ func TestUpdateCircomProcessorProof(t *testing.T) {
 	assert.Equal(t, "10", cpp.NewKey.String())
 	assert.Equal(t, "1024", cpp.NewValue.String())
 	assert.Equal(t, false, cpp.IsOld0)
-	assert.Equal(t, "[19625419... 46910949... 18399594... 20473908... 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t,
+		"[19625419... 46910949... 18399594... 20473908... 0 0 0 0 0 0 0]",
+		fmt.Sprintf("%v", cpp.Siblings))
 }
 
 func TestTypesMarshalers(t *testing.T) {

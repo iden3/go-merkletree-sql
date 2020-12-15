@@ -8,20 +8,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// PebbleStorage implements the db.Storage interface
-type PebbleStorage struct {
+// Storage implements the db.Storage interface
+type Storage struct {
 	pdb    *pebble.DB
 	prefix []byte
 }
 
-// PebbleStorageTx implements the db.Tx interface
-type PebbleStorageTx struct {
-	*PebbleStorage
+// StorageTx implements the db.Tx interface
+type StorageTx struct {
+	*Storage
 	batch *pebble.Batch
 }
 
-// NewPebbleStorage returns a new PebbleStorage
-func NewPebbleStorage(path string, errorIfMissing bool) (*PebbleStorage, error) {
+// NewPebbleStorage returns a new Storage
+func NewPebbleStorage(path string, errorIfMissing bool) (*Storage, error) {
 	o := &pebble.Options{
 		ErrorIfNotExists: errorIfMissing,
 	}
@@ -29,7 +29,7 @@ func NewPebbleStorage(path string, errorIfMissing bool) (*PebbleStorage, error) 
 	if err != nil {
 		return nil, err
 	}
-	return &PebbleStorage{rdb, []byte{}}, nil
+	return &Storage{rdb, []byte{}}, nil
 }
 
 type storageInfo struct {
@@ -38,7 +38,7 @@ type storageInfo struct {
 }
 
 // Info implements the method Info of the interface db.Storage
-func (p *PebbleStorage) Info() string {
+func (p *Storage) Info() string {
 	keycount := 0
 	claimcount := 0
 	err := p.Iterate(func(key []byte, value []byte) (bool, error) {
@@ -63,25 +63,29 @@ func (p *PebbleStorage) Info() string {
 }
 
 // WithPrefix implements the method WithPrefix of the interface db.Storage
-func (p *PebbleStorage) WithPrefix(prefix []byte) db.Storage {
-	return &PebbleStorage{p.pdb, db.Concat(p.prefix, prefix)}
+func (p *Storage) WithPrefix(prefix []byte) db.Storage {
+	return &Storage{p.pdb, db.Concat(p.prefix, prefix)}
 }
 
 // NewTx implements the method NewTx of the interface db.Storage
-func (p *PebbleStorage) NewTx() (db.Tx, error) {
-	return &PebbleStorageTx{p, p.pdb.NewIndexedBatch()}, nil
+func (p *Storage) NewTx() (db.Tx, error) {
+	return &StorageTx{p, p.pdb.NewIndexedBatch()}, nil
 }
 
 // Get retreives a value from a key in the db.Storage
-func (p *PebbleStorage) Get(key []byte) ([]byte, error) {
+func (p *Storage) Get(key []byte) ([]byte, error) {
 	v, closer, err := p.pdb.Get(db.Concat(p.prefix, key[:]))
 	if err == pebble.ErrNotFound {
 		return nil, db.ErrNotFound
 	}
-	closer.Close()
+	if err != nil {
+		return nil, err
+	}
+	err = closer.Close()
 	return v, err
 }
 
+//nolint:lll
 // https://github.com/cockroachdb/pebble/pull/923/files#diff-c2ade2f386c41794d5ebc57ee49b57a5fca8082e03255e5bff13977cbc061287R39
 func keyUpperBound(b []byte) []byte {
 	end := make([]byte, len(b))
@@ -102,7 +106,7 @@ func prefixIterOptions(prefix []byte) *pebble.IterOptions {
 }
 
 // Iterate implements the method Iterate of the interface db.Storage
-func (p *PebbleStorage) Iterate(f func([]byte, []byte) (bool, error)) error {
+func (p *Storage) Iterate(f func([]byte, []byte) (bool, error)) (err error) {
 	// NewIter already provides a point-in-time view of the current DB
 	// state, but if is used for long term (is not the case), should use an
 	// iterator over an snapshot:
@@ -110,7 +114,13 @@ func (p *PebbleStorage) Iterate(f func([]byte, []byte) (bool, error)) error {
 	// defer snapshot.Close()
 	// iter := snapshot.NewIter(nil)
 	iter := p.pdb.NewIter(prefixIterOptions(p.prefix))
-	defer iter.Close()
+	defer func() {
+		err1 := iter.Close()
+		if err != nil {
+			return
+		}
+		err = err1
+	}()
 
 	for iter.First(); iter.Valid(); iter.Next() {
 		localKey := iter.Key()[len(p.prefix):]
@@ -124,7 +134,7 @@ func (p *PebbleStorage) Iterate(f func([]byte, []byte) (bool, error)) error {
 }
 
 // Get retreives a value from a key in the interface db.Tx
-func (tx *PebbleStorageTx) Get(key []byte) ([]byte, error) {
+func (tx *StorageTx) Get(key []byte) ([]byte, error) {
 	var err error
 
 	fullkey := db.Concat(tx.prefix, key)
@@ -133,34 +143,36 @@ func (tx *PebbleStorageTx) Get(key []byte) ([]byte, error) {
 	if err == pebble.ErrNotFound {
 		return nil, db.ErrNotFound
 	}
-	closer.Close()
-
+	if err != nil {
+		return nil, err
+	}
+	err = closer.Close()
 	return v, err
 }
 
 // Put saves a key:value into the db.Storage
-func (tx *PebbleStorageTx) Put(k, v []byte) error {
+func (tx *StorageTx) Put(k, v []byte) error {
 	return tx.batch.Set(db.Concat(tx.prefix, k[:]), v, nil)
 }
 
 // Add implements the method Add of the interface db.Tx
-func (tx *PebbleStorageTx) Add(atx db.Tx) error {
-	patx := atx.(*PebbleStorageTx)
+func (tx *StorageTx) Add(atx db.Tx) error {
+	patx := atx.(*StorageTx)
 	return tx.batch.Apply(patx.batch, nil)
 }
 
 // Commit implements the method Commit of the interface db.Tx
-func (tx *PebbleStorageTx) Commit() error {
+func (tx *StorageTx) Commit() error {
 	return tx.batch.Commit(nil)
 }
 
 // Close implements the method Close of the interface db.Tx
-func (tx *PebbleStorageTx) Close() {
+func (tx *StorageTx) Close() {
 	_ = tx.batch.Close()
 }
 
 // Close implements the method Close of the interface db.Storage
-func (p *PebbleStorage) Close() {
+func (p *Storage) Close() {
 	if err := p.pdb.Close(); err != nil {
 		panic(err)
 	}
@@ -168,12 +180,12 @@ func (p *PebbleStorage) Close() {
 }
 
 // Pebble is an extra method that returns the *pebble.DB
-func (p *PebbleStorage) Pebble() *pebble.DB {
+func (p *Storage) Pebble() *pebble.DB {
 	return p.pdb
 }
 
 // List implements the method List of the interface db.Storage
-func (p *PebbleStorage) List(limit int) ([]db.KV, error) {
+func (p *Storage) List(limit int) ([]db.KV, error) {
 	ret := []db.KV{}
 	err := p.Iterate(func(key []byte, value []byte) (bool, error) {
 		ret = append(ret, db.KV{K: db.Clone(key), V: db.Clone(value)})

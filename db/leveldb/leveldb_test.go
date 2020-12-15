@@ -51,7 +51,7 @@ func TestLevelDbInterface(t *testing.T) {
 func TestMain(m *testing.M) {
 	result := m.Run()
 	for _, dir := range rmDirs {
-		os.RemoveAll(dir)
+		os.RemoveAll(dir) //nolint:errcheck,gosec
 	}
 	os.Exit(result)
 }
