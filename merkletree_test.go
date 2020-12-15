@@ -108,6 +108,10 @@ func TestNewTree(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "12841932325181810040554102151615400973767747666110051836366805309524360490677", mt.Root().BigInt().String())
 
+	dbRoot, err := mt.dbGetRoot()
+	require.Nil(t, err)
+	assert.Equal(t, mt.Root(), dbRoot)
+
 	proof, v, err := mt.GenerateProof(big.NewInt(33), nil)
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(44), v)
@@ -205,6 +209,10 @@ func TestUpdate(t *testing.T) {
 
 	_, err = mt.Update(big.NewInt(1000), big.NewInt(1024))
 	assert.Equal(t, ErrKeyNotFound, err)
+
+	dbRoot, err := mt.dbGetRoot()
+	require.Nil(t, err)
+	assert.Equal(t, mt.Root(), dbRoot)
 }
 
 func TestUpdate2(t *testing.T) {
@@ -449,6 +457,10 @@ func TestDelete(t *testing.T) {
 	err = mt.Delete(big.NewInt(1))
 	assert.Nil(t, err)
 	assert.Equal(t, "0", mt.Root().String())
+
+	dbRoot, err := mt.dbGetRoot()
+	require.Nil(t, err)
+	assert.Equal(t, mt.Root(), dbRoot)
 }
 
 func TestDelete2(t *testing.T) {
