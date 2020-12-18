@@ -1,4 +1,4 @@
-//nolint:gomnd
+//nolint:gomnd,golint
 package test
 
 import (
