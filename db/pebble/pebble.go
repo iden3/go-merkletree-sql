@@ -1,8 +1,6 @@
 package pebble
 
 import (
-	"encoding/json"
-
 	"github.com/cockroachdb/pebble"
 	"github.com/iden3/go-merkletree/db"
 	log "github.com/sirupsen/logrus"
@@ -30,36 +28,6 @@ func NewPebbleStorage(path string, errorIfMissing bool) (*Storage, error) {
 		return nil, err
 	}
 	return &Storage{rdb, []byte{}}, nil
-}
-
-type storageInfo struct {
-	KeyCount   int
-	ClaimCount int
-}
-
-// Info implements the method Info of the interface db.Storage
-func (p *Storage) Info() string {
-	keycount := 0
-	claimcount := 0
-	err := p.Iterate(func(key []byte, value []byte) (bool, error) {
-		if value[0] == byte(1) {
-			claimcount++
-		}
-
-		keycount++
-		return true, nil
-	})
-	if err != nil {
-		return err.Error()
-	}
-	json, _ := json.MarshalIndent(
-		storageInfo{
-			KeyCount:   keycount,
-			ClaimCount: claimcount,
-		},
-		"", "  ",
-	)
-	return string(json)
 }
 
 // WithPrefix implements the method WithPrefix of the interface db.Storage

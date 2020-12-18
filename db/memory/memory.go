@@ -25,11 +25,6 @@ func NewMemoryStorage() *Storage {
 	return &Storage{[]byte{}, kvmap}
 }
 
-// Info implements the method Info of the interface db.Storage
-func (m *Storage) Info() string {
-	return "in-memory"
-}
-
 // WithPrefix implements the method WithPrefix of the interface db.Storage
 func (m *Storage) WithPrefix(prefix []byte) db.Storage {
 	return &Storage{db.Concat(m.prefix, prefix), m.kv}

@@ -19,7 +19,6 @@ type Storage interface {
 	Get([]byte) ([]byte, error)
 	List(int) ([]KV, error)
 	Close()
-	Info() string
 	Iterate(func([]byte, []byte) (bool, error)) error
 }
 

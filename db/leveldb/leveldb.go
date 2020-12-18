@@ -1,8 +1,6 @@
 package leveldb
 
 import (
-	"encoding/json"
-
 	"github.com/iden3/go-merkletree/db"
 	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -33,42 +31,6 @@ func NewLevelDbStorage(path string, errorIfMissing bool) (*Storage, error) {
 		return nil, err
 	}
 	return &Storage{ldb, []byte{}}, nil
-}
-
-type storageInfo struct {
-	KeyCount   int
-	ClaimCount int
-}
-
-// Info implements the method Info of the interface db.Storage
-func (l *Storage) Info() string {
-	snapshot, err := l.ldb.GetSnapshot()
-	if err != nil {
-		return err.Error()
-	}
-
-	keycount := 0
-	claimcount := 0
-	iter := snapshot.NewIterator(nil, nil)
-	for iter.Next() {
-		if iter.Value()[0] == byte(1) {
-			claimcount++
-		}
-
-		keycount++
-	}
-	iter.Release()
-	if err := iter.Error(); err != nil {
-		return err.Error()
-	}
-	json, _ := json.MarshalIndent(
-		storageInfo{
-			KeyCount:   keycount,
-			ClaimCount: claimcount,
-		},
-		"", "  ",
-	)
-	return string(json)
 }
 
 // WithPrefix implements the method WithPrefix of the interface db.Storage
