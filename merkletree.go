@@ -922,6 +922,20 @@ type CircomVerifierProof struct {
 // is used.
 func (mt *MerkleTree) GenerateCircomVerifierProof(k *big.Int,
 	rootKey *Hash) (*CircomVerifierProof, error) {
+	cp, err := mt.GenerateSCVerifierProof(k, rootKey)
+	if err != nil {
+		return nil, err
+	}
+	cp.Siblings = CircomSiblingsFromSiblings(cp.Siblings, mt.maxLevels)
+	return cp, nil
+}
+
+// GenerateSCVerifierProof returns the CircomVerifierProof for a certain key in
+// the MerkleTree with the Siblings without the extra 0 needed at the circom
+// circuits, which makes it straight forward to verifiy inside a Smart
+// Contract.  If the rootKey is nil, the current merkletree root is used.
+func (mt *MerkleTree) GenerateSCVerifierProof(k *big.Int,
+	rootKey *Hash) (*CircomVerifierProof, error) {
 	if rootKey == nil {
 		rootKey = mt.Root()
 	}
@@ -931,7 +945,7 @@ func (mt *MerkleTree) GenerateCircomVerifierProof(k *big.Int,
 	}
 	var cp CircomVerifierProof
 	cp.Root = rootKey
-	cp.Siblings = CircomSiblingsFromSiblings(p.AllSiblings(), mt.maxLevels)
+	cp.Siblings = p.AllSiblings()
 	cp.OldKey = &HashZero
 	cp.OldValue = &HashZero
 	cp.Key = NewHashFromBigInt(k)

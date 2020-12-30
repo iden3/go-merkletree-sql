@@ -706,6 +706,41 @@ func TestUpdateCircomProcessorProof(t *testing.T) {
 		fmt.Sprintf("%v", cpp.Siblings))
 }
 
+func TestSmtVerifier(t *testing.T) {
+	mt, err := NewMerkleTree(memory.NewMemoryStorage(), 4)
+	assert.Nil(t, err)
+
+	err = mt.Add(big.NewInt(1), big.NewInt(11))
+	assert.Nil(t, err)
+	err = mt.Add(big.NewInt(2), big.NewInt(22))
+	assert.Nil(t, err)
+	err = mt.Add(big.NewInt(3), big.NewInt(33))
+	assert.Nil(t, err)
+	err = mt.Add(big.NewInt(4), big.NewInt(44))
+	assert.Nil(t, err)
+
+	cvp, err := mt.GenerateCircomVerifierProof(big.NewInt(2), nil)
+	assert.Nil(t, err)
+
+	jCvp, err := json.Marshal(cvp)
+	assert.Nil(t, err)
+	// Test vectors generated using https://github.com/iden3/circomlib smt.js
+	// Expect siblings with the extra 0 that the circom circuits need
+	expected := `{"root":"10171140035965439966839815283432442651152991056297946102647688349369299124493","siblings":["12422661758472400223401299094238820777063458096110016599986781158438915645129","4330149052063565277182642012557086942088176847773467265587998154672740895682","0","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
+	assert.Equal(t, expected, string(jCvp))
+
+	cvp, err = mt.GenerateSCVerifierProof(big.NewInt(2), nil)
+	assert.Nil(t, err)
+
+	jCvp, err = json.Marshal(cvp)
+	assert.Nil(t, err)
+	// Test vectors generated using https://github.com/iden3/circomlib smt.js
+	// Without the extra 0 that the circom circuits need, but that are not
+	// needed at a smart contract verification
+	expected = `{"root":"10171140035965439966839815283432442651152991056297946102647688349369299124493","siblings":["12422661758472400223401299094238820777063458096110016599986781158438915645129","4330149052063565277182642012557086942088176847773467265587998154672740895682"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
+	assert.Equal(t, expected, string(jCvp))
+}
+
 func TestTypesMarshalers(t *testing.T) {
 	// test Hash marshalers
 	h, err := NewHashFromString("42")
