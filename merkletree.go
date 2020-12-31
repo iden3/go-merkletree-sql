@@ -459,7 +459,7 @@ func (mt *MerkleTree) Get(k *big.Int) (*big.Int, *big.Int, []*Hash, error) {
 	path := getPath(mt.maxLevels, kHash[:])
 
 	nextKey := mt.rootKey
-	var siblings []*Hash
+	siblings := []*Hash{}
 	for i := 0; i < mt.maxLevels; i++ {
 		n, err := mt.GetNode(nextKey)
 		if err != nil {
@@ -524,7 +524,7 @@ func (mt *MerkleTree) Update(k, v *big.Int) (*CircomProcessorProof, error) {
 	cp.NewValue = vHash
 
 	nextKey := mt.rootKey
-	var siblings []*Hash
+	siblings := []*Hash{}
 	for i := 0; i < mt.maxLevels; i++ {
 		n, err := mt.GetNode(nextKey)
 		if err != nil {
@@ -607,7 +607,7 @@ func (mt *MerkleTree) Delete(k *big.Int) error {
 	path := getPath(mt.maxLevels, kHash[:])
 
 	nextKey := mt.rootKey
-	var siblings []*Hash
+	siblings := []*Hash{}
 	for i := 0; i < mt.maxLevels; i++ {
 		n, err := mt.GetNode(nextKey)
 		if err != nil {
@@ -842,7 +842,7 @@ func (p *Proof) Bytes() []byte {
 // SiblingsFromProof returns all the siblings of the proof.
 func SiblingsFromProof(proof *Proof) []*Hash {
 	sibIdx := 0
-	var siblings []*Hash
+	siblings := []*Hash{}
 	for lvl := 0; lvl < int(proof.depth); lvl++ {
 		if TestBitBigEndian(proof.notempties[:], uint(lvl)) {
 			siblings = append(siblings, proof.Siblings[sibIdx])
