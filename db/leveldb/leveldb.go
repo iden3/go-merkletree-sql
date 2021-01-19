@@ -2,7 +2,6 @@ package leveldb
 
 import (
 	"github.com/iden3/go-merkletree/db"
-	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -127,7 +126,6 @@ func (l *Storage) Close() {
 	if err := l.ldb.Close(); err != nil {
 		panic(err)
 	}
-	log.Info("Database closed")
 }
 
 // LevelDB is an extra method that returns the *leveldb.DB

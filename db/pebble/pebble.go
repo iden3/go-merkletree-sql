@@ -3,7 +3,6 @@ package pebble
 import (
 	"github.com/cockroachdb/pebble"
 	"github.com/iden3/go-merkletree/db"
-	log "github.com/sirupsen/logrus"
 )
 
 // Storage implements the db.Storage interface
@@ -144,7 +143,6 @@ func (p *Storage) Close() {
 	if err := p.pdb.Close(); err != nil {
 		panic(err)
 	}
-	log.Info("Database closed")
 }
 
 // Pebble is an extra method that returns the *pebble.DB
