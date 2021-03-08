@@ -946,8 +946,13 @@ func (mt *MerkleTree) GenerateSCVerifierProof(k *big.Int,
 	var cp CircomVerifierProof
 	cp.Root = rootKey
 	cp.Siblings = p.AllSiblings()
-	cp.OldKey = &HashZero
-	cp.OldValue = &HashZero
+	if p.NodeAux != nil {
+		cp.OldKey = p.NodeAux.Key
+		cp.OldValue = p.NodeAux.Value
+	} else {
+		cp.OldKey = &HashZero
+		cp.OldValue = &HashZero
+	}
 	cp.Key = NewHashFromBigInt(k)
 	cp.Value = NewHashFromBigInt(v)
 	if p.Existence {
