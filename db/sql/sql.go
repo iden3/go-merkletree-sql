@@ -64,7 +64,7 @@ func NewSqlStorage(db *sqlx.DB, errorIfMissing bool) (*Storage, error) {
 func (s *Storage) WithPrefix(prefix []byte) merkletree.Storage {
 	//return &Storage{db: s.db, prefix: merkletree.Concat(s.prefix, prefix)}
 	// TODO: remove WithPrefix method
-	mtId := s.mtId<<4 | binary.LittleEndian.Uint64(prefix)
+	mtId, _ := binary.Uvarint(prefix)
 	return &Storage{db: s.db, mtId: mtId}
 }
 
@@ -252,6 +252,9 @@ func (tx *StorageTx) Commit() error {
 		}
 	}
 
+	if tx.currentRoot == nil {
+		tx.currentRoot = &merkletree.Hash{}
+	}
 	_, err := tx.tx.Exec(updateRootStmt, tx.mtId, tx.currentRoot[:])
 	if err != nil {
 		return err
