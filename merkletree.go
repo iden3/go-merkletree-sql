@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
-	"github.com/iden3/go-merkletree/db"
 )
 
 const (
@@ -164,25 +163,25 @@ func NewHashFromString(s string) (*Hash, error) {
 // MerkleTree is the struct with the main elements of the MerkleTree
 type MerkleTree struct {
 	sync.RWMutex
-	db        db.Storage
+	db        Storage
 	rootKey   *Hash
 	writable  bool
 	maxLevels int
 }
 
-// NewMerkleTree loads a new Merkletree. If in the sotrage already exists one
+// NewMerkleTree loads a new MerkleTree. If in the storage already exists one
 // will open that one, if not, will create a new one.
-func NewMerkleTree(storage db.Storage, maxLevels int) (*MerkleTree, error) {
+func NewMerkleTree(storage Storage, maxLevels int) (*MerkleTree, error) {
 	mt := MerkleTree{db: storage, maxLevels: maxLevels, writable: true}
 
 	root, err := mt.dbGetRoot()
-	if err == db.ErrNotFound {
+	if err == ErrNotFound {
 		tx, err := mt.db.NewTx()
 		if err != nil {
 			return nil, err
 		}
 		mt.rootKey = &HashZero
-		err = tx.Put(dbKeyRootNode, mt.rootKey[:])
+		err = tx.SetRoot(mt.rootKey)
 		if err != nil {
 			return nil, err
 		}
@@ -199,18 +198,15 @@ func NewMerkleTree(storage db.Storage, maxLevels int) (*MerkleTree, error) {
 }
 
 func (mt *MerkleTree) dbGetRoot() (*Hash, error) {
-	v, err := mt.db.Get(dbKeyRootNode)
+	hash, err := mt.db.GetRoot()
 	if err != nil {
 		return nil, err
 	}
-	var root Hash
-	// Skip first byte which contains the NodeType
-	copy(root[:], v[1:])
-	return &root, nil
+	return hash, nil
 }
 
 // DB returns the MerkleTree.DB()
-func (mt *MerkleTree) DB() db.Storage {
+func (mt *MerkleTree) DB() Storage {
 	return mt.db
 }
 
@@ -243,7 +239,7 @@ func (mt *MerkleTree) Add(k, v *big.Int) error {
 		return ErrNotWritable
 	}
 
-	// verfy that k & v are valid and fit inside the Finite Field.
+	// verify that k & v are valid and fit inside the Finite Field.
 	if !cryptoUtils.CheckBigIntInField(k) {
 		return errors.New("Key not inside the Finite Field")
 	}
@@ -268,7 +264,7 @@ func (mt *MerkleTree) Add(k, v *big.Int) error {
 		return err
 	}
 	mt.rootKey = newRootKey
-	err = mt.dbInsert(tx, dbKeyRootNode, DBEntryTypeRoot, mt.rootKey[:])
+	err = mt.setCurrentRoot(tx, mt.rootKey)
 	if err != nil {
 		return err
 	}
@@ -286,12 +282,12 @@ func (mt *MerkleTree) AddAndGetCircomProof(k,
 	var cp CircomProcessorProof
 	cp.Fnc = 2
 	cp.OldRoot = mt.rootKey
-	gettedK, gettedV, _, err := mt.Get(k)
+	gotK, gotV, _, err := mt.Get(k)
 	if err != nil && err != ErrKeyNotFound {
 		return nil, err
 	}
-	cp.OldKey = NewHashFromBigInt(gettedK)
-	cp.OldValue = NewHashFromBigInt(gettedV)
+	cp.OldKey = NewHashFromBigInt(gotK)
+	cp.OldValue = NewHashFromBigInt(gotV)
 	if bytes.Equal(cp.OldKey[:], HashZero[:]) {
 		cp.IsOld0 = true
 	}
@@ -316,7 +312,7 @@ func (mt *MerkleTree) AddAndGetCircomProof(k,
 // pushLeaf recursively pushes an existing oldLeaf down until its path diverges
 // from newLeaf, at which point both leafs are stored, all while updating the
 // path.
-func (mt *MerkleTree) pushLeaf(tx db.Tx, newLeaf *Node, oldLeaf *Node, lvl int,
+func (mt *MerkleTree) pushLeaf(tx Tx, newLeaf *Node, oldLeaf *Node, lvl int,
 	pathNewLeaf []bool, pathOldLeaf []bool) (*Hash, error) {
 	if lvl > mt.maxLevels-2 {
 		return nil, ErrReachedMaxLevel
@@ -358,7 +354,7 @@ func (mt *MerkleTree) pushLeaf(tx db.Tx, newLeaf *Node, oldLeaf *Node, lvl int,
 }
 
 // addLeaf recursively adds a newLeaf in the MT while updating the path.
-func (mt *MerkleTree) addLeaf(tx db.Tx, newLeaf *Node, key *Hash,
+func (mt *MerkleTree) addLeaf(tx Tx, newLeaf *Node, key *Hash,
 	lvl int, path []bool) (*Hash, error) {
 	var err error
 	var nextKey *Hash
@@ -408,7 +404,7 @@ func (mt *MerkleTree) addLeaf(tx db.Tx, newLeaf *Node, key *Hash,
 
 // addNode adds a node into the MT.  Empty nodes are not stored in the tree;
 // they are all the same and assumed to always exist.
-func (mt *MerkleTree) addNode(tx db.Tx, n *Node) (*Hash, error) {
+func (mt *MerkleTree) addNode(tx Tx, n *Node) (*Hash, error) {
 	// verify that the MerkleTree is writable
 	if !mt.writable {
 		return nil, ErrNotWritable
@@ -420,18 +416,18 @@ func (mt *MerkleTree) addNode(tx db.Tx, n *Node) (*Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	v := n.Value()
+	//v := n.Value()
 	// Check that the node key doesn't already exist
 	if _, err := tx.Get(k[:]); err == nil {
 		return nil, ErrNodeKeyAlreadyExists
 	}
-	err = tx.Put(k[:], v)
+	err = tx.Put(k[:], n)
 	return k, err
 }
 
 // updateNode updates an existing node in the MT.  Empty nodes are not stored
 // in the tree; they are all the same and assumed to always exist.
-func (mt *MerkleTree) updateNode(tx db.Tx, n *Node) (*Hash, error) {
+func (mt *MerkleTree) updateNode(tx Tx, n *Node) (*Hash, error) {
 	// verify that the MerkleTree is writable
 	if !mt.writable {
 		return nil, ErrNotWritable
@@ -443,14 +439,14 @@ func (mt *MerkleTree) updateNode(tx db.Tx, n *Node) (*Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	v := n.Value()
-	err = tx.Put(k[:], v)
+	//v := n.Value()
+	err = tx.Put(k[:], n)
 	return k, err
 }
 
 // Get returns the value of the leaf for the given key
 func (mt *MerkleTree) Get(k *big.Int) (*big.Int, *big.Int, []*Hash, error) {
-	// verfy that k is valid and fit inside the Finite Field.
+	// verify that k is valid and fits inside the Finite Field.
 	if !cryptoUtils.CheckBigIntInField(k) {
 		return nil, nil, nil, errors.New("Key not inside the Finite Field")
 	}
@@ -498,7 +494,7 @@ func (mt *MerkleTree) Update(k, v *big.Int) (*CircomProcessorProof, error) {
 		return nil, ErrNotWritable
 	}
 
-	// verfy that k & are valid and fit inside the Finite Field.
+	// verify that k & v are valid and fit inside the Finite Field.
 	if !cryptoUtils.CheckBigIntInField(k) {
 		return nil, errors.New("Key not inside the Finite Field")
 	}
@@ -549,7 +545,7 @@ func (mt *MerkleTree) Update(k, v *big.Int) (*CircomProcessorProof, error) {
 					return nil, err
 				}
 				mt.rootKey = newRootKey
-				err = mt.dbInsert(tx, dbKeyRootNode, DBEntryTypeRoot, mt.rootKey[:])
+				err = mt.setCurrentRoot(tx, mt.rootKey)
 				if err != nil {
 					return nil, err
 				}
@@ -582,7 +578,7 @@ func (mt *MerkleTree) Update(k, v *big.Int) (*CircomProcessorProof, error) {
 // key-value database; this means that if the tree is accessed by an old Root
 // where the key was not deleted yet, the key will still exist. If is desired
 // to remove the key-values from the database that are not under the current
-// Root, an option could be to dump all the leafs (using mt.DumpLeafs) and
+// Root, an option could be to dump all the leaves (using mt.DumpLeafs) and
 // import them in a new MerkleTree in a new database (using
 // mt.ImportDumpedLeafs), but this will loose all the Root history of the
 // MerkleTree
@@ -592,7 +588,7 @@ func (mt *MerkleTree) Delete(k *big.Int) error {
 		return ErrNotWritable
 	}
 
-	// verfy that k is valid and fit inside the Finite Field.
+	// verify that k is valid and fits inside the Finite Field.
 	if !cryptoUtils.CheckBigIntInField(k) {
 		return errors.New("Key not inside the Finite Field")
 	}
@@ -641,10 +637,10 @@ func (mt *MerkleTree) Delete(k *big.Int) error {
 
 // rmAndUpload removes the key, and goes up until the root updating all the
 // nodes with the new values.
-func (mt *MerkleTree) rmAndUpload(tx db.Tx, path []bool, kHash *Hash, siblings []*Hash) error {
+func (mt *MerkleTree) rmAndUpload(tx Tx, path []bool, kHash *Hash, siblings []*Hash) error {
 	if len(siblings) == 0 {
 		mt.rootKey = &HashZero
-		err := mt.dbInsert(tx, dbKeyRootNode, DBEntryTypeRoot, mt.rootKey[:])
+		err := mt.setCurrentRoot(tx, mt.rootKey)
 		if err != nil {
 			return err
 		}
@@ -654,7 +650,7 @@ func (mt *MerkleTree) rmAndUpload(tx db.Tx, path []bool, kHash *Hash, siblings [
 	toUpload := siblings[len(siblings)-1]
 	if len(siblings) < 2 { //nolint:gomnd
 		mt.rootKey = siblings[0]
-		err := mt.dbInsert(tx, dbKeyRootNode, DBEntryTypeRoot, mt.rootKey[:])
+		err := mt.setCurrentRoot(tx, mt.rootKey)
 		if err != nil {
 			return err
 		}
@@ -679,7 +675,7 @@ func (mt *MerkleTree) rmAndUpload(tx db.Tx, path []bool, kHash *Hash, siblings [
 				return err
 			}
 			mt.rootKey = newRootKey
-			err = mt.dbInsert(tx, dbKeyRootNode, DBEntryTypeRoot, mt.rootKey[:])
+			err = mt.setCurrentRoot(tx, mt.rootKey)
 			if err != nil {
 				return err
 			}
@@ -689,7 +685,7 @@ func (mt *MerkleTree) rmAndUpload(tx db.Tx, path []bool, kHash *Hash, siblings [
 		// deleted leaf as root
 		if i == 0 {
 			mt.rootKey = toUpload
-			err := mt.dbInsert(tx, dbKeyRootNode, DBEntryTypeRoot, mt.rootKey[:])
+			err := mt.setCurrentRoot(tx, mt.rootKey)
 			if err != nil {
 				return err
 			}
@@ -704,7 +700,7 @@ func (mt *MerkleTree) rmAndUpload(tx db.Tx, path []bool, kHash *Hash, siblings [
 }
 
 // recalculatePathUntilRoot recalculates the nodes until the Root
-func (mt *MerkleTree) recalculatePathUntilRoot(tx db.Tx, path []bool, node *Node,
+func (mt *MerkleTree) recalculatePathUntilRoot(tx Tx, path []bool, node *Node,
 	siblings []*Hash) (*Hash, error) {
 	for i := len(siblings) - 1; i >= 0; i-- {
 		nodeKey, err := node.Key()
@@ -727,11 +723,10 @@ func (mt *MerkleTree) recalculatePathUntilRoot(tx db.Tx, path []bool, node *Node
 	return nodeKey, err
 }
 
-// dbInsert is a helper function to insert a node into a key in an open db
+// setCurrentRoot is a helper function to update current root in an open db
 // transaction.
-func (mt *MerkleTree) dbInsert(tx db.Tx, k []byte, t NodeType, data []byte) error {
-	v := append([]byte{byte(t)}, data...)
-	return tx.Put(k, v)
+func (mt *MerkleTree) setCurrentRoot(tx Tx, hash *Hash) error {
+	return tx.SetRoot(hash)
 }
 
 // GetNode gets a node by key from the MT.  Empty nodes are not stored in the
@@ -740,11 +735,11 @@ func (mt *MerkleTree) GetNode(key *Hash) (*Node, error) {
 	if bytes.Equal(key[:], HashZero[:]) {
 		return NewNodeEmpty(), nil
 	}
-	nBytes, err := mt.db.Get(key[:])
+	n, err := mt.db.Get(key[:])
 	if err != nil {
 		return nil, err
 	}
-	return NewNodeFromBytes(nBytes)
+	return n, nil
 }
 
 // getPath returns the binary path, from the root to the leaf.

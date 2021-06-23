@@ -1,18 +1,18 @@
 package leveldb
 
 import (
+	"github.com/iden3/go-merkletree"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/iden3/go-merkletree/db"
 	"github.com/iden3/go-merkletree/db/test"
 	"github.com/stretchr/testify/require"
 )
 
 var rmDirs []string
 
-func levelDbStorage(t *testing.T) db.Storage {
+func levelDbStorage(t *testing.T) merkletree.Storage {
 	dir, err := ioutil.TempDir("", "db")
 	rmDirs = append(rmDirs, dir)
 	if err != nil {
@@ -37,7 +37,7 @@ func TestLevelDb(t *testing.T) {
 }
 
 func TestLevelDbInterface(t *testing.T) {
-	var db db.Storage //nolint:gosimple
+	var db merkletree.Storage //nolint:gosimple
 
 	dir, err := ioutil.TempDir("", "db")
 	require.Nil(t, err)

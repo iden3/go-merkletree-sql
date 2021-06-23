@@ -2,7 +2,7 @@ package pebble
 
 import (
 	"github.com/cockroachdb/pebble"
-	"github.com/iden3/go-merkletree/db"
+	"github.com/iden3/go-merkletree"
 )
 
 // Storage implements the db.Storage interface
@@ -30,20 +30,20 @@ func NewPebbleStorage(path string, errorIfMissing bool) (*Storage, error) {
 }
 
 // WithPrefix implements the method WithPrefix of the interface db.Storage
-func (p *Storage) WithPrefix(prefix []byte) db.Storage {
-	return &Storage{p.pdb, db.Concat(p.prefix, prefix)}
+func (p *Storage) WithPrefix(prefix []byte) merkletree.Storage {
+	return &Storage{p.pdb, merkletree.Concat(p.prefix, prefix)}
 }
 
 // NewTx implements the method NewTx of the interface db.Storage
-func (p *Storage) NewTx() (db.Tx, error) {
+func (p *Storage) NewTx() (merkletree.Tx, error) {
 	return &StorageTx{p, p.pdb.NewIndexedBatch()}, nil
 }
 
 // Get retreives a value from a key in the db.Storage
 func (p *Storage) Get(key []byte) ([]byte, error) {
-	v, closer, err := p.pdb.Get(db.Concat(p.prefix, key[:]))
+	v, closer, err := p.pdb.Get(merkletree.Concat(p.prefix, key[:]))
 	if err == pebble.ErrNotFound {
-		return nil, db.ErrNotFound
+		return nil, merkletree.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -104,11 +104,11 @@ func (p *Storage) Iterate(f func([]byte, []byte) (bool, error)) (err error) {
 func (tx *StorageTx) Get(key []byte) ([]byte, error) {
 	var err error
 
-	fullkey := db.Concat(tx.prefix, key)
+	fullkey := merkletree.Concat(tx.prefix, key)
 
 	v, closer, err := tx.batch.Get(fullkey)
 	if err == pebble.ErrNotFound {
-		return nil, db.ErrNotFound
+		return nil, merkletree.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -119,11 +119,11 @@ func (tx *StorageTx) Get(key []byte) ([]byte, error) {
 
 // Put saves a key:value into the db.Storage
 func (tx *StorageTx) Put(k, v []byte) error {
-	return tx.batch.Set(db.Concat(tx.prefix, k[:]), v, nil)
+	return tx.batch.Set(merkletree.Concat(tx.prefix, k[:]), v, nil)
 }
 
 // Add implements the method Add of the interface db.Tx
-func (tx *StorageTx) Add(atx db.Tx) error {
+func (tx *StorageTx) Add(atx merkletree.Tx) error {
 	patx := atx.(*StorageTx)
 	return tx.batch.Apply(patx.batch, nil)
 }
@@ -151,10 +151,10 @@ func (p *Storage) Pebble() *pebble.DB {
 }
 
 // List implements the method List of the interface db.Storage
-func (p *Storage) List(limit int) ([]db.KV, error) {
-	ret := []db.KV{}
+func (p *Storage) List(limit int) ([]merkletree.KV, error) {
+	ret := []merkletree.KV{}
 	err := p.Iterate(func(key []byte, value []byte) (bool, error) {
-		ret = append(ret, db.KV{K: db.Clone(key), V: db.Clone(value)})
+		ret = append(ret, merkletree.KV{K: merkletree.Clone(key), V: merkletree.Clone(value)})
 		if len(ret) == limit {
 			return false, nil
 		}

@@ -89,7 +89,7 @@ func LeafKey(k, v *Hash) (*Hash, error) {
 }
 
 // Key computes the key of the node by hashing the content in a specific way
-// for each type of node.  This key is used as the hash of the merklee tree for
+// for each type of node.  This key is used as the hash of the merkle tree for
 // each node.
 func (n *Node) Key() (*Hash, error) {
 	if n.key == nil { // Cache the key to avoid repeated hash computations.

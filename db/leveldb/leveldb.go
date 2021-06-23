@@ -1,7 +1,7 @@
 package leveldb
 
 import (
-	"github.com/iden3/go-merkletree/db"
+	"github.com/iden3/go-merkletree"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -17,7 +17,7 @@ type Storage struct {
 // StorageTx implements the db.Tx interface
 type StorageTx struct {
 	*Storage
-	cache db.KvMap
+	cache merkletree.KvMap
 }
 
 // NewLevelDbStorage returns a new Storage
@@ -33,20 +33,20 @@ func NewLevelDbStorage(path string, errorIfMissing bool) (*Storage, error) {
 }
 
 // WithPrefix implements the method WithPrefix of the interface db.Storage
-func (l *Storage) WithPrefix(prefix []byte) db.Storage {
-	return &Storage{l.ldb, db.Concat(l.prefix, prefix)}
+func (l *Storage) WithPrefix(prefix []byte) merkletree.Storage {
+	return &Storage{l.ldb, merkletree.Concat(l.prefix, prefix)}
 }
 
 // NewTx implements the method NewTx of the interface db.Storage
-func (l *Storage) NewTx() (db.Tx, error) {
-	return &StorageTx{l, make(db.KvMap)}, nil
+func (l *Storage) NewTx() (merkletree.Tx, error) {
+	return &StorageTx{l, make(merkletree.KvMap)}, nil
 }
 
-// Get retreives a value from a key in the db.Storage
+// Get retrieves a value from a key in the db.Storage
 func (l *Storage) Get(key []byte) ([]byte, error) {
-	v, err := l.ldb.Get(db.Concat(l.prefix, key[:]), nil)
+	v, err := l.ldb.Get(merkletree.Concat(l.prefix, key[:]), nil)
 	if err == errors.ErrNotFound {
-		return nil, db.ErrNotFound
+		return nil, merkletree.ErrNotFound
 	}
 	return v, err
 }
@@ -76,7 +76,7 @@ func (l *Storage) Iterate(f func([]byte, []byte) (bool, error)) error {
 func (tx *StorageTx) Get(key []byte) ([]byte, error) {
 	var err error
 
-	fullkey := db.Concat(tx.prefix, key)
+	fullkey := merkletree.Concat(tx.prefix, key)
 
 	if value, ok := tx.cache.Get(fullkey); ok {
 		return value, nil
@@ -84,7 +84,7 @@ func (tx *StorageTx) Get(key []byte) ([]byte, error) {
 
 	value, err := tx.ldb.Get(fullkey, nil)
 	if err == errors.ErrNotFound {
-		return nil, db.ErrNotFound
+		return nil, merkletree.ErrNotFound
 	}
 
 	return value, err
@@ -92,12 +92,12 @@ func (tx *StorageTx) Get(key []byte) ([]byte, error) {
 
 // Put saves a key:value into the db.Storage
 func (tx *StorageTx) Put(k, v []byte) error {
-	tx.cache.Put(db.Concat(tx.prefix, k[:]), v)
+	tx.cache.Put(merkletree.Concat(tx.prefix, k[:]), v)
 	return nil
 }
 
 // Add implements the method Add of the interface db.Tx
-func (tx *StorageTx) Add(atx db.Tx) error {
+func (tx *StorageTx) Add(atx merkletree.Tx) error {
 	ldbtx := atx.(*StorageTx)
 	for _, v := range ldbtx.cache {
 		tx.cache.Put(v.K, v.V)
@@ -134,10 +134,10 @@ func (l *Storage) LevelDB() *leveldb.DB {
 }
 
 // List implements the method List of the interface db.Storage
-func (l *Storage) List(limit int) ([]db.KV, error) {
-	ret := []db.KV{}
+func (l *Storage) List(limit int) ([]merkletree.KV, error) {
+	ret := []merkletree.KV{}
 	err := l.Iterate(func(key []byte, value []byte) (bool, error) {
-		ret = append(ret, db.KV{K: db.Clone(key), V: db.Clone(value)})
+		ret = append(ret, merkletree.KV{K: merkletree.Clone(key), V: merkletree.Clone(value)})
 		if len(ret) == limit {
 			return false, nil
 		}

@@ -1,4 +1,4 @@
-package db
+package merkletree
 
 import (
 	"bytes"
@@ -16,22 +16,25 @@ var ErrNotFound = errors.New("key not found")
 type Storage interface {
 	NewTx() (Tx, error)
 	WithPrefix(prefix []byte) Storage
-	Get([]byte) ([]byte, error)
+	Get([]byte) (*Node, error)
+	GetRoot() (*Hash, error)
 	List(int) ([]KV, error)
 	Close()
-	Iterate(func([]byte, []byte) (bool, error)) error
+	Iterate(func([]byte, *Node) (bool, error)) error
 }
 
 // Tx is the interface that defines the methods for the db transaction used in
 // the merkletree storage. Examples of the interface implementation can be
 // found at db/memory and db/leveldb directories.
 type Tx interface {
-	// Get retreives the value for the given key
+	// Get retrieves the value for the given key
 	// looking first in the content of the Tx, and
 	// then into the content of the Storage
-	Get([]byte) ([]byte, error)
+	Get([]byte) (*Node, error)
+	GetRoot() (*Hash, error)
+	SetRoot(*Hash) error
 	// Put sets the key & value into the Tx
-	Put(k, v []byte) error
+	Put(k []byte, v *Node) error
 	// Add adds the given Tx into the Tx
 	Add(Tx) error
 	Commit() error
@@ -41,20 +44,20 @@ type Tx interface {
 // KV contains a key (K) and a value (V)
 type KV struct {
 	K []byte
-	V []byte
+	V Node
 }
 
 // KvMap is a key-value map between a sha256 byte array hash, and a KV struct
 type KvMap map[[sha256.Size]byte]KV
 
-// Get retreives the value respective to a key from the KvMap
-func (m KvMap) Get(k []byte) ([]byte, bool) {
+// Get retrieves the value respective to a key from the KvMap
+func (m KvMap) Get(k []byte) (Node, bool) {
 	v, ok := m[sha256.Sum256(k)]
 	return v.V, ok
 }
 
 // Put stores a key and a value in the KvMap
-func (m KvMap) Put(k, v []byte) {
+func (m KvMap) Put(k []byte, v Node) {
 	m[sha256.Sum256(k)] = KV{k, v}
 }
 
