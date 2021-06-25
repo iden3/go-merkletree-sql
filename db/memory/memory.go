@@ -46,7 +46,9 @@ func (m *Storage) Get(key []byte) (*merkletree.Node, error) {
 
 func (m *Storage) GetRoot() (*merkletree.Hash, error) {
 	if m.currentRoot != nil {
-		return m.currentRoot, nil
+		hash := merkletree.Hash{}
+		copy(hash[:], m.currentRoot[:])
+		return &hash, nil
 	}
 	return nil, merkletree.ErrNotFound
 }
@@ -97,7 +99,7 @@ func (tx *StorageTx) Put(k []byte, v *merkletree.Node) error {
 func (tx *StorageTx) GetRoot() (*merkletree.Hash, error) {
 	if tx.currentRoot != nil {
 		hash := merkletree.Hash{}
-		copy(tx.currentRoot[:], hash[:])
+		copy(hash[:], tx.currentRoot[:])
 		return &hash, nil
 	}
 	return nil, merkletree.ErrNotFound
@@ -105,6 +107,9 @@ func (tx *StorageTx) GetRoot() (*merkletree.Hash, error) {
 
 // SetRoot sets a hash of merkle tree root in the interface db.Tx
 func (tx *StorageTx) SetRoot(hash *merkletree.Hash) error {
+
+	// TODO: do tx.Put('currentroot', hash) here ?
+
 	root := &merkletree.Hash{}
 	copy(root[:], hash[:])
 	tx.currentRoot = root
@@ -116,6 +121,10 @@ func (tx *StorageTx) Commit() error {
 	for _, v := range tx.kv {
 		tx.s.kv.Put(v.K, v.V)
 	}
+	//if tx.currentRoot == nil {
+	//	tx.currentRoot = &merkletree.Hash{}
+	//}
+	tx.s.currentRoot = tx.currentRoot
 	tx.kv = nil
 	return nil
 }

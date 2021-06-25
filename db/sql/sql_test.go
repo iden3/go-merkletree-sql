@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/iden3/go-iden3-crypto/constants"
 	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
 	"github.com/iden3/go-merkletree"
 	"github.com/iden3/go-merkletree/db/memory"
+	"github.com/iden3/go-merkletree/db/test"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +20,11 @@ import (
 	"testing"
 )
 
-func sqlStorage(t *testing.T) merkletree.Storage {
+var maxMTId uint64 = 0
+var cleared = false
+
+func setupDB() (*sqlx.DB, error) {
+	var err error
 	host := os.Getenv("PGHOST")
 	if host == "" {
 		host = "localhost"
@@ -33,7 +39,7 @@ func sqlStorage(t *testing.T) merkletree.Storage {
 	}
 	password := os.Getenv("PGPASSWORD")
 	if password == "" {
-		panic("No PGPASSWORD envvar specified")
+		return nil, errors.New("No PGPASSWORD envvar specified")
 	}
 	dbname := os.Getenv("PGDATABASE")
 	if dbname == "" {
@@ -50,19 +56,34 @@ func sqlStorage(t *testing.T) merkletree.Storage {
 	)
 	dbx, err := sqlx.Connect("postgres", psqlconn)
 	if err != nil {
-		t.Fatal(err)
-		return nil
+		return nil, err
 	}
 
 	// clear MerkleTree table
+	//if !cleared {
 	dbx.Exec("TRUNCATE TABLE mt_roots")
 	dbx.Exec("TRUNCATE TABLE mt_nodes")
+	cleared = true
+	//}
+
+	return dbx, nil
+}
+
+func sqlStorage(t *testing.T) merkletree.Storage {
+
+	dbx, err := setupDB()
+	if err != nil {
+		t.Fatal(err)
+		return nil
+	}
 
 	sto, err := NewSqlStorage(dbx, false)
 	if err != nil {
 		t.Fatal(err)
 		return nil
 	}
+	sto.mtId = maxMTId
+	maxMTId++
 
 	t.Cleanup(func() {
 	})
@@ -70,25 +91,59 @@ func sqlStorage(t *testing.T) merkletree.Storage {
 	return sto
 }
 
+func TestReturnKnownErrIfNotExists(t *testing.T) {
+	test.TestReturnKnownErrIfNotExists(t, sqlStorage(t))
+}
+
+func TestStorageInsertGet(t *testing.T) {
+	test.TestStorageInsertGet(t, sqlStorage(t))
+}
+
+func TestStorageWithPrefix(t *testing.T) {
+	test.TestStorageWithPrefix(t, sqlStorage(t))
+}
+
 func TestSql(t *testing.T) {
 	//sto := sqlStorage(t)
-	//t.Run("TestReturnKnownErrIfNotExists", func(t *testing.T) {
-	//	test.TestReturnKnownErrIfNotExists(t, sqlStorage(t))
-	//})
-	//t.Run("TestStorageInsertGet", func(t *testing.T) {
-	//	test.TestStorageInsertGet(t, sqlStorage(t))
-	//})
-	//test.TestStorageWithPrefix(t, sqlStorage(t))
-	//test.TestConcatTx(t, sqlStorage(t))
-	//test.TestList(t, sqlStorage(t))
-	//test.TestIterate(t, sqlStorage(t))
+	t.Run("TestReturnKnownErrIfNotExists", func(t *testing.T) {
+		test.TestReturnKnownErrIfNotExists(t, sqlStorage(t))
+	})
+	t.Run("TestStorageInsertGet", func(t *testing.T) {
+		test.TestStorageInsertGet(t, sqlStorage(t))
+	})
+	t.Run("TestStorageWithPrefix", func(t *testing.T) {
+		test.TestStorageWithPrefix(t, sqlStorage(t))
+	})
+	test.TestConcatTx(t, sqlStorage(t))
+	test.TestList(t, sqlStorage(t))
+	test.TestIterate(t, sqlStorage(t))
+
+	test.TestNewTree(t, sqlStorage(t))
+	test.TestAddDifferentOrder(t, sqlStorage(t), sqlStorage(t))
+	test.TestAddRepeatedIndex(t, sqlStorage(t))
+	test.TestGet(t, sqlStorage(t))
+	test.TestUpdate(t, sqlStorage(t))
+	test.TestUpdate2(t, sqlStorage(t))
+	test.TestGenerateAndVerifyProof128(t, sqlStorage(t))
+	test.TestTreeLimit(t, sqlStorage(t))
+	test.TestSiblingsFromProof(t, sqlStorage(t))
+	test.TestVerifyProofCases(t, sqlStorage(t))
+	test.TestVerifyProofFalse(t, sqlStorage(t))
+	test.TestGraphViz(t, sqlStorage(t))
+	test.TestDelete(t, sqlStorage(t))
+	test.TestDelete2(t, sqlStorage(t), sqlStorage(t))
+	test.TestDelete3(t, sqlStorage(t), sqlStorage(t))
+	test.TestDelete4(t, sqlStorage(t), sqlStorage(t))
+	test.TestDelete5(t, sqlStorage(t), sqlStorage(t))
+	test.TestDeleteNonExistingKeys(t, sqlStorage(t))
+	test.TestDumpLeafsImportLeafs(t, sqlStorage(t), sqlStorage(t))
+	test.TestAddAndGetCircomProof(t, sqlStorage(t))
+	test.TestUpdateCircomProcessorProof(t, sqlStorage(t))
+	test.TestSmtVerifier(t, sqlStorage(t))
+	test.TestTypesMarshalers(t, sqlStorage(t))
 }
 
 var debug = false
-
-type Fatalable interface {
-	Fatal(args ...interface{})
-}
 
 func newTestingMerkle(f *testing.T, maxLevels int) *merkletree.MerkleTree {
 	sto := sqlStorage(f)

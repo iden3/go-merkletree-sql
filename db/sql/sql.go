@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"encoding/binary"
 	"errors"
@@ -29,7 +30,7 @@ type Storage struct {
 type StorageTx struct {
 	*Storage
 	tx          *sqlx.Tx
-	cache       merkletree.KvMap
+	cache       KvMap
 	currentRoot *merkletree.Hash
 }
 
@@ -74,7 +75,7 @@ func (s *Storage) NewTx() (merkletree.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &StorageTx{s, tx, make(merkletree.KvMap), s.currentRoot}, nil
+	return &StorageTx{s, tx, make(KvMap), s.currentRoot}, nil
 }
 
 // Get retrieves a value from a key in the db.Storage
@@ -167,7 +168,7 @@ func (tx *StorageTx) Get(key []byte) (*merkletree.Node, error) {
 func (tx *StorageTx) Put(k []byte, v *merkletree.Node) error {
 	//fullKey := append(tx.mtId, k...)
 	fullKey := k
-	tx.cache.Put(fullKey, *v)
+	tx.cache.Put(tx.mtId, fullKey, *v)
 	fmt.Printf("tx.Put(%x, %+v)\n", fullKey, v)
 	return nil
 }
@@ -204,17 +205,13 @@ func (tx *StorageTx) SetRoot(hash *merkletree.Hash) error {
 // Add implements the method Add of the interface db.Tx
 func (tx *StorageTx) Add(atx merkletree.Tx) error {
 	dbtx := atx.(*StorageTx)
-	//if !bytes.Equal(tx.prefix, dbtx.prefix) {
-	//	// TODO: change cache to store prefix too!
-	//	return errors.New("adding StorageTx with different prefix is not implemented")
-	//}
 	if tx.mtId != dbtx.mtId {
-		// TODO: change cache to store prefix too!
 		return errors.New("adding StorageTx with different prefix is not implemented")
 	}
 	for _, v := range dbtx.cache {
-		tx.cache.Put(v.K, v.V)
+		tx.cache.Put(v.MTId, v.K, v.V)
 	}
+	//	TODO: change cache to store different currentRoots for different mtIds too!
 	tx.currentRoot = dbtx.currentRoot
 	return nil
 }
@@ -246,7 +243,7 @@ func (tx *StorageTx) Commit() error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.tx.Exec(upsertStmt, tx.mtId, key[:], node.Type, childL, childR, entry)
+		_, err = tx.tx.Exec(upsertStmt, v.MTId, key[:], node.Type, childL, childR, entry)
 		if err != nil {
 			return err
 		}
@@ -266,7 +263,7 @@ func (tx *StorageTx) Commit() error {
 
 // Close implements the method Close of the interface db.Tx
 func (tx *StorageTx) Close() {
-	//tx.tx.Rollback()
+	tx.tx.Rollback()
 	tx.cache = nil
 }
 
@@ -312,4 +309,25 @@ func (item *NodeItem) Node() (*merkletree.Node, error) {
 		copy(node.Entry[1][:], item.Entry[32:64])
 	}
 	return &node, nil
+}
+
+// KV contains a key (K) and a value (V)
+type KV struct {
+	MTId uint64
+	K    []byte
+	V    merkletree.Node
+}
+
+// KvMap is a key-value map between a sha256 byte array hash, and a KV struct
+type KvMap map[[sha256.Size]byte]KV
+
+// Get retrieves the value respective to a key from the KvMap
+func (m KvMap) Get(k []byte) (merkletree.Node, bool) {
+	v, ok := m[sha256.Sum256(k)]
+	return v.V, ok
+}
+
+// Put stores a key and a value in the KvMap
+func (m KvMap) Put(mtId uint64, k []byte, v merkletree.Node) {
+	m[sha256.Sum256(k)] = KV{mtId, k, v}
 }
