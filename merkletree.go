@@ -980,37 +980,3 @@ func (mt *MerkleTree) ImportDumpedLeafs(b []byte) error {
 	}
 	return nil
 }
-
-//// ImportTree imports the tree from the output from the DumpTree function
-//func (mt *MerkleTree) ImportTree(i io.Reader) error {
-//	tx, err := mt.DB().NewTx()
-//	if err != nil {
-//		return err
-//	}
-//	mt.Lock()
-//	defer mt.Unlock()
-//
-//	r := bufio.NewReader(i)
-//	for {
-//		k, v, err := deserializeKV(r)
-//		if err == io.EOF {
-//			break
-//		} else if err != nil {
-//			return err
-//		}
-//		tx.Put(k, v)
-//	}
-//
-//	v, err := tx.GetRoot()
-//	if err != nil {
-//		return err
-//	}
-//
-//	if err := tx.Commit(); err != nil {
-//		return err
-//	}
-//	mt.rootKey = &Hash{}
-//	copy(mt.rootKey[:], v[:])
-//
-//	return nil
-//}

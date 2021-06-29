@@ -12,6 +12,7 @@ import (
 	"github.com/iden3/go-merkletree/db/memory"
 	"github.com/iden3/go-merkletree/db/test"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"math/big"
@@ -77,12 +78,11 @@ func sqlStorage(t *testing.T) merkletree.Storage {
 		return nil
 	}
 
-	sto, err := NewSqlStorage(dbx, false)
+	sto, err := NewSqlStorage(dbx, maxMTId)
 	if err != nil {
 		t.Fatal(err)
 		return nil
 	}
-	sto.mtId = maxMTId
 	maxMTId++
 
 	t.Cleanup(func() {

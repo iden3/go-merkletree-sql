@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/iden3/go-merkletree"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 )
 
 // TODO: upsert or insert?
@@ -57,8 +56,8 @@ type RootItem struct {
 }
 
 // NewSqlStorage returns a new Storage
-func NewSqlStorage(db *sqlx.DB, errorIfMissing bool) (*Storage, error) {
-	return &Storage{db: db}, nil
+func NewSqlStorage(db *sqlx.DB, mtId uint64) (*Storage, error) {
+	return &Storage{db: db, mtId: mtId}, nil
 }
 
 // WithPrefix implements the method WithPrefix of the interface db.Storage
