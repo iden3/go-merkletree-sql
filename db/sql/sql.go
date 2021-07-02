@@ -23,12 +23,14 @@ type Storage struct {
 	mtId           uint64
 	currentVersion uint64
 	currentRoot    *merkletree.Hash
+	externalTx     *sqlx.Tx
 }
 
 // StorageTx implements the db.Tx interface
 type StorageTx struct {
 	*Storage
 	tx          *sqlx.Tx
+	autoCommit  bool
 	cache       KvMap
 	currentRoot *merkletree.Hash
 }
@@ -57,7 +59,12 @@ type RootItem struct {
 
 // NewSqlStorage returns a new Storage
 func NewSqlStorage(db *sqlx.DB, mtId uint64) (*Storage, error) {
-	return &Storage{db: db, mtId: mtId}, nil
+	return &Storage{db: db, mtId: mtId, externalTx: nil}, nil
+}
+
+// NewSqlStorageWithExternalTx returns a new Storage
+func NewSqlStorageWithExternalTx(db *sqlx.DB, mtId uint64, externalTx *sqlx.Tx) (*Storage, error) {
+	return &Storage{db: db, mtId: mtId, externalTx: externalTx}, nil
 }
 
 // WithPrefix implements the method WithPrefix of the interface db.Storage
@@ -65,16 +72,30 @@ func (s *Storage) WithPrefix(prefix []byte) merkletree.Storage {
 	//return &Storage{db: s.db, prefix: merkletree.Concat(s.prefix, prefix)}
 	// TODO: remove WithPrefix method
 	mtId, _ := binary.Uvarint(prefix)
-	return &Storage{db: s.db, mtId: mtId}
+	return &Storage{db: s.db, mtId: mtId, externalTx: s.externalTx}
 }
 
 // NewTx implements the method NewTx of the interface db.Storage
 func (s *Storage) NewTx() (merkletree.Tx, error) {
-	tx, err := s.db.Beginx()
-	if err != nil {
-		return nil, err
+	var tx *sqlx.Tx
+	var err error
+	autoCommit := true
+	if s.externalTx != nil {
+		tx = s.externalTx
+		autoCommit = false
+	} else {
+		tx, err = s.db.Beginx()
+		if err != nil {
+			return nil, err
+		}
 	}
-	return &StorageTx{s, tx, make(KvMap), s.currentRoot}, nil
+	return &StorageTx{
+		Storage:     s,
+		tx:          tx,
+		autoCommit:  autoCommit,
+		cache:       make(KvMap),
+		currentRoot: s.currentRoot,
+	}, nil
 }
 
 // Get retrieves a value from a key in the db.Storage
@@ -257,12 +278,17 @@ func (tx *StorageTx) Commit() error {
 	}
 
 	tx.cache = nil
-	return tx.tx.Commit()
+	if tx.autoCommit {
+		return tx.tx.Commit()
+	}
+	return nil
 }
 
 // Close implements the method Close of the interface db.Tx
 func (tx *StorageTx) Close() {
-	tx.tx.Rollback()
+	if tx.autoCommit {
+		tx.tx.Rollback()
+	}
 	tx.cache = nil
 }
 
