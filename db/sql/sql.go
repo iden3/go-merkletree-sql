@@ -28,7 +28,7 @@ type Storage struct {
 
 // StorageTx implements the db.Tx interface
 type StorageTx struct {
-	*Storage
+	storage     *Storage
 	tx          *sqlx.Tx
 	autoCommit  bool
 	cache       KvMap
@@ -90,7 +90,7 @@ func (s *Storage) NewTx() (merkletree.Tx, error) {
 		}
 	}
 	return &StorageTx{
-		Storage:     s,
+		storage:     s,
 		tx:          tx,
 		autoCommit:  autoCommit,
 		cache:       make(KvMap),
@@ -132,7 +132,8 @@ func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	copy(root[:], item.Key[:])
+	copy(s.currentRoot[:], item.Key[:])
+	copy(root[:], s.currentRoot[:])
 	return &root, nil
 }
 
@@ -170,7 +171,7 @@ func (tx *StorageTx) Get(key []byte) (*merkletree.Node, error) {
 	}
 
 	item := NodeItem{}
-	err := tx.tx.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", tx.mtId, key)
+	err := tx.tx.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", tx.storage.mtId, key)
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
 	}
@@ -188,7 +189,7 @@ func (tx *StorageTx) Get(key []byte) (*merkletree.Node, error) {
 func (tx *StorageTx) Put(k []byte, v *merkletree.Node) error {
 	//fullKey := append(tx.mtId, k...)
 	fullKey := k
-	tx.cache.Put(tx.mtId, fullKey, *v)
+	tx.cache.Put(tx.storage.mtId, fullKey, *v)
 	fmt.Printf("tx.Put(%x, %+v)\n", fullKey, v)
 	return nil
 }
@@ -203,7 +204,7 @@ func (tx *StorageTx) GetRoot() (*merkletree.Hash, error) {
 	}
 
 	item := RootItem{}
-	err := tx.tx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", tx.mtId)
+	err := tx.tx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", tx.storage.mtId)
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
 	}
@@ -225,7 +226,7 @@ func (tx *StorageTx) SetRoot(hash *merkletree.Hash) error {
 // Add implements the method Add of the interface db.Tx
 func (tx *StorageTx) Add(atx merkletree.Tx) error {
 	dbtx := atx.(*StorageTx)
-	if tx.mtId != dbtx.mtId {
+	if tx.storage.mtId != dbtx.storage.mtId {
 		return errors.New("adding StorageTx with different prefix is not implemented")
 	}
 	for _, v := range dbtx.cache {
@@ -272,12 +273,14 @@ func (tx *StorageTx) Commit() error {
 	if tx.currentRoot == nil {
 		tx.currentRoot = &merkletree.Hash{}
 	}
-	_, err := tx.tx.Exec(updateRootStmt, tx.mtId, tx.currentRoot[:])
+	_, err := tx.tx.Exec(updateRootStmt, tx.storage.mtId, tx.currentRoot[:])
 	if err != nil {
 		return err
 	}
 
+	tx.storage.currentRoot = nil
 	tx.cache = nil
+
 	if tx.autoCommit {
 		return tx.tx.Commit()
 	}
