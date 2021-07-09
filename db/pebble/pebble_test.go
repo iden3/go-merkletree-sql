@@ -1,12 +1,12 @@
 package pebble
 
 import (
-	"github.com/iden3/go-merkletree"
+	"github.com/iden3/go-merkletree-sql"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/iden3/go-merkletree/db/test"
+	"github.com/iden3/go-merkletree-sql/db/test"
 	"github.com/stretchr/testify/require"
 )
 

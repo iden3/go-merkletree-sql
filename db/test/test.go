@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/iden3/go-iden3-crypto/constants"
-	"github.com/iden3/go-merkletree"
+	"github.com/iden3/go-merkletree-sql"
 	"github.com/stretchr/testify/require"
 	"math/big"
 	"testing"

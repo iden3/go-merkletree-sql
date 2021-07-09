@@ -2,7 +2,7 @@ package pebble
 
 import (
 	"github.com/cockroachdb/pebble"
-	"github.com/iden3/go-merkletree"
+	"github.com/iden3/go-merkletree-sql"
 )
 
 // Storage implements the db.Storage interface

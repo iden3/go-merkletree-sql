@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/iden3/go-merkletree"
+	"github.com/iden3/go-merkletree-sql"
 	"github.com/jmoiron/sqlx"
 )
 
