@@ -101,7 +101,12 @@ func (s *Storage) NewTx() (merkletree.Tx, error) {
 // Get retrieves a value from a key in the db.Storage
 func (s *Storage) Get(key []byte) (*merkletree.Node, error) {
 	item := NodeItem{}
-	err := s.db.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
+	var err error
+	if s.externalTx != nil {
+		err = s.externalTx.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
+	} else {
+		err = s.db.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
+	}
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
 	}
@@ -118,6 +123,7 @@ func (s *Storage) Get(key []byte) (*merkletree.Node, error) {
 // GetRoot retrieves a merkle tree root hash in the interface db.Tx
 func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 	var root merkletree.Hash
+	var err error
 
 	if s.currentRoot != nil {
 		copy(root[:], s.currentRoot[:])
@@ -125,12 +131,19 @@ func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 	}
 
 	item := RootItem{}
-	err := s.db.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
+	if s.externalTx != nil {
+		err = s.externalTx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
+	} else {
+		err = s.db.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
+	}
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
+	}
+	if s.currentRoot == nil {
+		s.currentRoot = &merkletree.Hash{}
 	}
 	copy(s.currentRoot[:], item.Key[:])
 	copy(root[:], s.currentRoot[:])
@@ -139,9 +152,14 @@ func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 
 // Iterate implements the method Iterate of the interface db.Storage
 func (s *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error {
+	var err error
 	items := []NodeItem{}
 
-	err := s.db.Select(&items, "SELECT * FROM mt_nodes WHERE key WHERE mt_id = $1", s.mtId)
+	if s.externalTx != nil {
+		err = s.externalTx.Select(&items, "SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
+	} else {
+		err = s.db.Select(&items, "SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
+	}
 	if err != nil {
 		return err
 	}

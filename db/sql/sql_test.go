@@ -114,33 +114,84 @@ func TestSql(t *testing.T) {
 	t.Run("TestStorageWithPrefix", func(t *testing.T) {
 		test.TestStorageWithPrefix(t, sqlStorage(t))
 	})
-	test.TestConcatTx(t, sqlStorage(t))
-	test.TestList(t, sqlStorage(t))
-	test.TestIterate(t, sqlStorage(t))
-
-	test.TestNewTree(t, sqlStorage(t))
-	test.TestAddDifferentOrder(t, sqlStorage(t), sqlStorage(t))
-	test.TestAddRepeatedIndex(t, sqlStorage(t))
-	test.TestGet(t, sqlStorage(t))
-	test.TestUpdate(t, sqlStorage(t))
-	test.TestUpdate2(t, sqlStorage(t))
-	test.TestGenerateAndVerifyProof128(t, sqlStorage(t))
-	test.TestTreeLimit(t, sqlStorage(t))
-	test.TestSiblingsFromProof(t, sqlStorage(t))
-	test.TestVerifyProofCases(t, sqlStorage(t))
-	test.TestVerifyProofFalse(t, sqlStorage(t))
-	test.TestGraphViz(t, sqlStorage(t))
-	test.TestDelete(t, sqlStorage(t))
-	test.TestDelete2(t, sqlStorage(t), sqlStorage(t))
-	test.TestDelete3(t, sqlStorage(t), sqlStorage(t))
-	test.TestDelete4(t, sqlStorage(t), sqlStorage(t))
-	test.TestDelete5(t, sqlStorage(t), sqlStorage(t))
-	test.TestDeleteNonExistingKeys(t, sqlStorage(t))
-	test.TestDumpLeafsImportLeafs(t, sqlStorage(t), sqlStorage(t))
-	test.TestAddAndGetCircomProof(t, sqlStorage(t))
-	test.TestUpdateCircomProcessorProof(t, sqlStorage(t))
-	test.TestSmtVerifier(t, sqlStorage(t))
-	test.TestTypesMarshalers(t, sqlStorage(t))
+	t.Run("TestConcatTx", func(t *testing.T) {
+		test.TestConcatTx(t, sqlStorage(t))
+	})
+	t.Run("TestList", func(t *testing.T) {
+		test.TestList(t, sqlStorage(t))
+	})
+	t.Run("TestIterate", func(t *testing.T) {
+		test.TestIterate(t, sqlStorage(t))
+	})
+	t.Run("TestNewTree", func(t *testing.T) {
+		test.TestNewTree(t, sqlStorage(t))
+	})
+	t.Run("TestAddDifferentOrder", func(t *testing.T) {
+		test.TestAddDifferentOrder(t, sqlStorage(t), sqlStorage(t))
+	})
+	t.Run("TestAddRepeatedIndex", func(t *testing.T) {
+		test.TestAddRepeatedIndex(t, sqlStorage(t))
+	})
+	t.Run("TestGet", func(t *testing.T) {
+		test.TestGet(t, sqlStorage(t))
+	})
+	t.Run("TestUpdate", func(t *testing.T) {
+		test.TestUpdate(t, sqlStorage(t))
+	})
+	t.Run("TestUpdate2", func(t *testing.T) {
+		test.TestUpdate2(t, sqlStorage(t))
+	})
+	t.Run("TestGenerateAndVerifyProof128", func(t *testing.T) {
+		test.TestGenerateAndVerifyProof128(t, sqlStorage(t))
+	})
+	t.Run("TestTreeLimit", func(t *testing.T) {
+		test.TestTreeLimit(t, sqlStorage(t))
+	})
+	t.Run("TestSiblingsFromProof", func(t *testing.T) {
+		test.TestSiblingsFromProof(t, sqlStorage(t))
+	})
+	t.Run("TestVerifyProofCases", func(t *testing.T) {
+		test.TestVerifyProofCases(t, sqlStorage(t))
+	})
+	t.Run("TestVerifyProofFalse", func(t *testing.T) {
+		test.TestVerifyProofFalse(t, sqlStorage(t))
+	})
+	t.Run("TestGraphViz", func(t *testing.T) {
+		test.TestGraphViz(t, sqlStorage(t))
+	})
+	t.Run("TestDelete", func(t *testing.T) {
+		test.TestDelete(t, sqlStorage(t))
+	})
+	t.Run("TestDelete2", func(t *testing.T) {
+		test.TestDelete2(t, sqlStorage(t), sqlStorage(t))
+	})
+	t.Run("TestDelete3", func(t *testing.T) {
+		test.TestDelete3(t, sqlStorage(t), sqlStorage(t))
+	})
+	t.Run("TestDelete4", func(t *testing.T) {
+		test.TestDelete4(t, sqlStorage(t), sqlStorage(t))
+	})
+	t.Run("TestDelete5", func(t *testing.T) {
+		test.TestDelete5(t, sqlStorage(t), sqlStorage(t))
+	})
+	t.Run("TestDeleteNonExistingKeys", func(t *testing.T) {
+		test.TestDeleteNonExistingKeys(t, sqlStorage(t))
+	})
+	t.Run("TestDumpLeafsImportLeafs", func(t *testing.T) {
+		test.TestDumpLeafsImportLeafs(t, sqlStorage(t), sqlStorage(t))
+	})
+	t.Run("TestAddAndGetCircomProof", func(t *testing.T) {
+		test.TestAddAndGetCircomProof(t, sqlStorage(t))
+	})
+	t.Run("TestUpdateCircomProcessorProof", func(t *testing.T) {
+		test.TestUpdateCircomProcessorProof(t, sqlStorage(t))
+	})
+	t.Run("TestSmtVerifier", func(t *testing.T) {
+		test.TestSmtVerifier(t, sqlStorage(t))
+	})
+	t.Run("TestTypesMarshalers", func(t *testing.T) {
+		test.TestTypesMarshalers(t, sqlStorage(t))
+	})
 }
 
 var debug = false
