@@ -129,15 +129,6 @@ func (tx *StorageTx) Commit() error {
 	return nil
 }
 
-// Add implements the method Add of the interface db.Tx
-func (tx *StorageTx) Add(atx merkletree.Tx) error {
-	mstx := atx.(*StorageTx)
-	for _, v := range mstx.kv {
-		tx.kv.Put(v.K, v.V)
-	}
-	return nil
-}
-
 // Close implements the method Close of the interface db.Tx
 func (tx *StorageTx) Close() {
 	tx.kv = nil

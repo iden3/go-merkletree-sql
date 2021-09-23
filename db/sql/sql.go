@@ -4,8 +4,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"github.com/iden3/go-merkletree-sql"
 	"github.com/jmoiron/sqlx"
 )
@@ -208,7 +206,7 @@ func (tx *StorageTx) Put(k []byte, v *merkletree.Node) error {
 	//fullKey := append(tx.mtId, k...)
 	fullKey := k
 	tx.cache.Put(tx.storage.mtId, fullKey, *v)
-	fmt.Printf("tx.Put(%x, %+v)\n", fullKey, v)
+	//fmt.Printf("tx.Put(%x, %+v)\n", fullKey, v)
 	return nil
 }
 
@@ -241,26 +239,12 @@ func (tx *StorageTx) SetRoot(hash *merkletree.Hash) error {
 	return nil
 }
 
-// Add implements the method Add of the interface db.Tx
-func (tx *StorageTx) Add(atx merkletree.Tx) error {
-	dbtx := atx.(*StorageTx)
-	if tx.storage.mtId != dbtx.storage.mtId {
-		return errors.New("adding StorageTx with different prefix is not implemented")
-	}
-	for _, v := range dbtx.cache {
-		tx.cache.Put(v.MTId, v.K, v.V)
-	}
-	//	TODO: change cache to store different currentRoots for different mtIds too!
-	tx.currentRoot = dbtx.currentRoot
-	return nil
-}
-
 // Commit implements the method Commit of the interface db.Tx
 func (tx *StorageTx) Commit() error {
 	// execute a query on the server
-	fmt.Printf("Commit\n")
+	//fmt.Printf("Commit\n")
 	for _, v := range tx.cache {
-		fmt.Printf("key %x, value %+v\n", v.K, v.V)
+		//fmt.Printf("key %x, value %+v\n", v.K, v.V)
 		node := v.V
 
 		var childL []byte
@@ -278,11 +262,12 @@ func (tx *StorageTx) Commit() error {
 			entry = append(node.Entry[0][:], node.Entry[1][:]...)
 		}
 
-		key, err := node.Key()
-		if err != nil {
-			return err
-		}
-		_, err = tx.tx.Exec(upsertStmt, v.MTId, key[:], node.Type, childL, childR, entry)
+		//key, err := node.Key()
+		key := v.K
+		//if err != nil {
+		//	return err
+		//}
+		_, err := tx.tx.Exec(upsertStmt, v.MTId, key[:], node.Type, childL, childR, entry)
 		if err != nil {
 			return err
 		}
