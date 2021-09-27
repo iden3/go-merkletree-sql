@@ -3,13 +3,14 @@ package sql
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
+	"testing"
+
 	"github.com/iden3/go-merkletree-sql"
 	"github.com/iden3/go-merkletree-sql/db/test"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"os"
-	"strconv"
-	"testing"
 )
 
 var maxMTId uint64 = 0
