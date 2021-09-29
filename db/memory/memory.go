@@ -2,8 +2,9 @@ package memory
 
 import (
 	"bytes"
-	"github.com/iden3/go-merkletree-sql"
 	"sort"
+
+	"github.com/iden3/go-merkletree-sql"
 )
 
 // Storage implements the db.Storage interface

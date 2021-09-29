@@ -6,12 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"testing"
+
 	"github.com/iden3/go-iden3-crypto/constants"
 	"github.com/iden3/go-merkletree-sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"math/big"
-	"testing"
 )
 
 var debug = false
