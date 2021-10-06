@@ -9,11 +9,13 @@ import (
 )
 
 // TODO: upsert or insert?
-const upsertStmt = `INSERT INTO mt_nodes (mt_id, key, type, child_l, child_r, entry) VALUES ($1, $2, $3, $4, $5, $6) ` +
+const upsertStmt = `INSERT INTO mt_nodes (mt_id, key, type, child_l, child_r, entry, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7) ` +
 	`ON CONFLICT (mt_id, key) DO UPDATE SET type = $3, child_l = $4, child_r = $5, entry = $6`
 
-const updateRootStmt = `INSERT INTO mt_roots (mt_id, key) VALUES ($1, $2) ` +
-	`ON CONFLICT (mt_id) DO UPDATE SET key = $2`
+const updateRootStmt = `INSERT INTO mt_roots (mt_id, key, created_at, deleted_at) VALUES ($1, $2, $3, null) ` +
+	`ON CONFLICT (mt_id, created_at) DO UPDATE SET key = $2, deleted_at = NULL`
+
+const deleteRootStmt = `UPDATE mt_roots SET deleted_at = $2 WHERE mt_id = $1 AND deleted_at IS NULL AND created_at != $2`
 
 // Storage implements the db.Storage interface
 type Storage struct {
@@ -70,6 +72,7 @@ func (s *Storage) WithPrefix(prefix []byte) merkletree.Storage {
 	//return &Storage{db: s.db, prefix: merkletree.Concat(s.prefix, prefix)}
 	// TODO: remove WithPrefix method
 	mtId, _ := binary.Uvarint(prefix)
+	mtId = mtId<<16 + s.mtId<<8
 	return &Storage{db: s.db, mtId: mtId, externalTx: s.externalTx}
 }
 
@@ -130,9 +133,9 @@ func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 
 	item := RootItem{}
 	if s.externalTx != nil {
-		err = s.externalTx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
+		err = s.externalTx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1 AND deleted_at IS NULL", s.mtId)
 	} else {
-		err = s.db.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
+		err = s.db.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1 AND deleted_at IS NULL", s.mtId)
 	}
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
@@ -220,7 +223,7 @@ func (tx *StorageTx) GetRoot() (*merkletree.Hash, error) {
 	}
 
 	item := RootItem{}
-	err := tx.tx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", tx.storage.mtId)
+	err := tx.tx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1 AND deleted_at IS NULL", tx.storage.mtId)
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
 	}
@@ -267,7 +270,7 @@ func (tx *StorageTx) Commit() error {
 		//if err != nil {
 		//	return err
 		//}
-		_, err := tx.tx.Exec(upsertStmt, v.MTId, key[:], node.Type, childL, childR, entry)
+		_, err := tx.tx.Exec(upsertStmt, v.MTId, key[:], node.Type, childL, childR, entry, tx.storage.currentVersion)
 		if err != nil {
 			return err
 		}
@@ -276,7 +279,17 @@ func (tx *StorageTx) Commit() error {
 	if tx.currentRoot == nil {
 		tx.currentRoot = &merkletree.Hash{}
 	}
-	_, err := tx.tx.Exec(updateRootStmt, tx.storage.mtId, tx.currentRoot[:])
+
+	// mark old root as deleted
+	//fmt.Println("deleteRootStmt", tx.storage.mtId, tx.storage.currentVersion)
+	_, err := tx.tx.Exec(deleteRootStmt, tx.storage.mtId, tx.storage.currentVersion)
+	if err != nil {
+		return err
+	}
+
+	// upsert current root
+	//fmt.Print(updateRootStmt, tx.storage.mtId, tx.currentRoot[:], tx.storage.currentVersion)
+	_, err = tx.tx.Exec(updateRootStmt, tx.storage.mtId, tx.currentRoot[:], tx.storage.currentVersion)
 	if err != nil {
 		return err
 	}
@@ -317,6 +330,16 @@ func (s *Storage) List(limit int) ([]merkletree.KV, error) {
 		return true, nil
 	})
 	return ret, err
+}
+
+// SetCurrentVersion retrieves a merkle tree root hash in the interface db.Tx
+func (s *Storage) SetCurrentVersion(version uint64) {
+	s.currentVersion = version
+}
+
+// GetCurrentVersion retrieves a merkle tree root hash in the interface db.Tx
+func (s *Storage) GetCurrentVersion() uint64 {
+	return s.currentVersion
 }
 
 func (item *NodeItem) Node() (*merkletree.Node, error) {

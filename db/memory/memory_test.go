@@ -23,5 +23,5 @@ func (builder *MemoryStorageBuilder) NewStorage(t *testing.T) merkletree.Storage
 
 func TestAll(t *testing.T) {
 	builder := &MemoryStorageBuilder{}
-	test.TestAll(t, builder)
+	test.TestAll(t, builder, true)
 }

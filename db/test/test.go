@@ -29,89 +29,173 @@ type StorageBuilder interface {
 	NewStorage(t *testing.T) merkletree.Storage
 }
 
-func TestAll(t *testing.T, sb StorageBuilder) {
+func TestAll(t *testing.T, sb StorageBuilder, parallel bool) {
 	t.Run("TestReturnKnownErrIfNotExists", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestReturnKnownErrIfNotExists(t, sb.NewStorage(t))
 	})
 	t.Run("TestStorageInsertGet", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestStorageInsertGet(t, sb.NewStorage(t))
 	})
 	t.Run("TestStorageWithPrefix", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestStorageWithPrefix(t, sb.NewStorage(t))
 	})
 	t.Run("TestList", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestList(t, sb.NewStorage(t))
 	})
 	t.Run("TestIterate", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestIterate(t, sb.NewStorage(t))
 	})
 	t.Run("TestNewTree", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestNewTree(t, sb.NewStorage(t))
 	})
 	t.Run("TestAddDifferentOrder", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestAddDifferentOrder(t, sb.NewStorage(t), sb.NewStorage(t))
 	})
 	t.Run("TestAddRepeatedIndex", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestAddRepeatedIndex(t, sb.NewStorage(t))
 	})
 	t.Run("TestGet", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestGet(t, sb.NewStorage(t))
 	})
 	t.Run("TestUpdate", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestUpdate(t, sb.NewStorage(t))
 	})
 	t.Run("TestUpdate2", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestUpdate2(t, sb.NewStorage(t))
 	})
 	t.Run("TestGenerateAndVerifyProof128", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestGenerateAndVerifyProof128(t, sb.NewStorage(t))
 	})
 	t.Run("TestTreeLimit", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestTreeLimit(t, sb.NewStorage(t))
 	})
 	t.Run("TestSiblingsFromProof", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestSiblingsFromProof(t, sb.NewStorage(t))
 	})
 	t.Run("TestVerifyProofCases", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestVerifyProofCases(t, sb.NewStorage(t))
 	})
 	t.Run("TestVerifyProofFalse", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestVerifyProofFalse(t, sb.NewStorage(t))
 	})
 	t.Run("TestGraphViz", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestGraphViz(t, sb.NewStorage(t))
 	})
 	t.Run("TestDelete", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestDelete(t, sb.NewStorage(t))
 	})
 	t.Run("TestDelete2", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestDelete2(t, sb.NewStorage(t), sb.NewStorage(t))
 	})
 	t.Run("TestDelete3", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestDelete3(t, sb.NewStorage(t), sb.NewStorage(t))
 	})
 	t.Run("TestDelete4", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestDelete4(t, sb.NewStorage(t), sb.NewStorage(t))
 	})
 	t.Run("TestDelete5", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestDelete5(t, sb.NewStorage(t), sb.NewStorage(t))
 	})
 	t.Run("TestDeleteNonExistingKeys", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestDeleteNonExistingKeys(t, sb.NewStorage(t))
 	})
 	t.Run("TestDumpLeafsImportLeafs", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestDumpLeafsImportLeafs(t, sb.NewStorage(t), sb.NewStorage(t))
 	})
 	t.Run("TestAddAndGetCircomProof", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestAddAndGetCircomProof(t, sb.NewStorage(t))
 	})
 	t.Run("TestUpdateCircomProcessorProof", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestUpdateCircomProcessorProof(t, sb.NewStorage(t))
 	})
 	t.Run("TestSmtVerifier", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestSmtVerifier(t, sb.NewStorage(t))
 	})
 	t.Run("TestTypesMarshalers", func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
 		TestTypesMarshalers(t, sb.NewStorage(t))
 	})
 }
