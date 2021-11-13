@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 
 	"github.com/iden3/go-merkletree-sql"
-	"github.com/jmoiron/sqlx"
 )
 
 // TODO: upsert or insert?
@@ -16,13 +15,18 @@ const upsertStmt = `INSERT INTO mt_nodes (mt_id, key, type, child_l, child_r, en
 const updateRootStmt = `INSERT INTO mt_roots (mt_id, key) VALUES ($1, $2) ` +
 	`ON CONFLICT (mt_id) DO UPDATE SET key = $2`
 
+type DB interface {
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+}
+
 // Storage implements the db.Storage interface
 type Storage struct {
-	db             *sqlx.DB
+	db             DB
 	mtId           uint64
 	currentVersion uint64
 	currentRoot    *merkletree.Hash
-	externalTx     *sqlx.Tx
 }
 
 type NodeItem struct {
@@ -48,7 +52,7 @@ type RootItem struct {
 }
 
 // NewSqlStorage returns a new Storage
-func NewSqlStorage(db *sqlx.DB, mtId uint64) (*Storage, error) {
+func NewSqlStorage(db DB, mtId uint64) (*Storage, error) {
 	return &Storage{db: db, mtId: mtId}, nil
 }
 
