@@ -91,13 +91,6 @@ func (mt *MerkleTree) dbGetRoot() (*Hash, error) {
 	return hash, nil
 }
 
-// DB returns the MerkleTree.DB()
-// TODO remove this method: it's used in tests only and it is not a good idea
-//      to expose database connection from merkletree to upper libraries.
-func (mt *MerkleTree) DB() Storage {
-	return mt.db
-}
-
 // Root returns the MerkleRoot
 func (mt *MerkleTree) Root() *Hash {
 	return mt.rootKey

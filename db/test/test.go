@@ -151,7 +151,6 @@ func TestStorageInsertGet(t *testing.T, sto merkletree.Storage) {
 // TestStorageWithPrefix checks that the implementation of the db.Storage
 // interface behaves as expected for the WithPrefix method
 func TestStorageWithPrefix(t *testing.T, sto merkletree.Storage) {
-
 	sto1 := sto.WithPrefix([]byte{1})
 	sto2 := sto.WithPrefix([]byte{2})
 
@@ -401,7 +400,7 @@ func TestNewTree(t *testing.T, sto merkletree.Storage) {
 	assert.Nil(t, err)
 	assert.Equal(t, "14204494359367183802864593755198662203838502594566452929175967972147978322084", mt.Root().BigInt().String()) //nolint:lll
 
-	dbRoot, err := mt.DB().GetRoot()
+	dbRoot, err := sto.GetRoot()
 	require.Nil(t, err)
 	assert.Equal(t, mt.Root(), dbRoot)
 
@@ -503,7 +502,7 @@ func TestUpdate(t *testing.T, sto merkletree.Storage) {
 	_, err = mt.Update(ctx, big.NewInt(1000), big.NewInt(1024))
 	assert.Equal(t, merkletree.ErrKeyNotFound, err)
 
-	dbRoot, err := mt.DB().GetRoot()
+	dbRoot, err := sto.GetRoot()
 	require.Nil(t, err)
 	assert.Equal(t, mt.Root(), dbRoot)
 }
@@ -765,7 +764,7 @@ func TestDelete(t *testing.T, sto merkletree.Storage) {
 	assert.Nil(t, err)
 	assert.Equal(t, "0", mt.Root().String())
 
-	dbRoot, err := mt.DB().GetRoot()
+	dbRoot, err := sto.GetRoot()
 	require.Nil(t, err)
 	assert.Equal(t, mt.Root(), dbRoot)
 }
