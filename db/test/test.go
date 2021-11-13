@@ -128,7 +128,6 @@ func TestReturnKnownErrIfNotExists(t *testing.T, sto merkletree.Storage) {
 // TestStorageInsertGet checks that the implementation of the db.Storage
 // interface behaves as expected
 func TestStorageInsertGet(t *testing.T, sto merkletree.Storage) {
-	defer sto.Close()
 	value := merkletree.Hash{1, 1, 1, 1}
 
 	node := merkletree.NewNodeMiddle(&value, &value)
@@ -152,7 +151,6 @@ func TestStorageInsertGet(t *testing.T, sto merkletree.Storage) {
 // TestStorageWithPrefix checks that the implementation of the db.Storage
 // interface behaves as expected for the WithPrefix method
 func TestStorageWithPrefix(t *testing.T, sto merkletree.Storage) {
-	defer sto.Close()
 
 	sto1 := sto.WithPrefix([]byte{1})
 	sto2 := sto.WithPrefix([]byte{2})
@@ -191,7 +189,6 @@ func TestStorageWithPrefix(t *testing.T, sto merkletree.Storage) {
 // TestIterate checks that the implementation of the db.Storage interface
 // behaves as expected for the Iterate method
 func TestIterate(t *testing.T, sto merkletree.Storage) {
-	defer sto.Close()
 	r := []merkletree.KV{}
 	lister := func(k []byte, v *merkletree.Node) (bool, error) {
 		r = append(r, merkletree.KV{K: merkletree.Clone(k), V: *v})
@@ -420,7 +417,6 @@ func TestAddDifferentOrder(t *testing.T, sto merkletree.Storage, sto2 merkletree
 	ctx := context.Background()
 
 	mt1 := newTestingMerkle(t, sto, 140)
-	defer mt1.DB().Close()
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
@@ -430,7 +426,6 @@ func TestAddDifferentOrder(t *testing.T, sto merkletree.Storage, sto2 merkletree
 	}
 
 	mt2 := newTestingMerkle(t, sto2, 140)
-	defer mt2.DB().Close()
 	for i := 16 - 1; i >= 0; i-- {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
@@ -445,7 +440,6 @@ func TestAddDifferentOrder(t *testing.T, sto merkletree.Storage, sto2 merkletree
 
 func TestAddRepeatedIndex(t *testing.T, sto merkletree.Storage) {
 	mt := newTestingMerkle(t, sto, 140)
-	defer mt.DB().Close()
 	k := big.NewInt(int64(3))
 	v := big.NewInt(int64(12))
 	ctx := context.Background()
@@ -459,7 +453,6 @@ func TestAddRepeatedIndex(t *testing.T, sto merkletree.Storage) {
 
 func TestGet(t *testing.T, sto merkletree.Storage) {
 	mt := newTestingMerkle(t, sto, 140)
-	defer mt.DB().Close()
 
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
@@ -487,7 +480,6 @@ func TestGet(t *testing.T, sto merkletree.Storage) {
 
 func TestUpdate(t *testing.T, sto merkletree.Storage) {
 	mt := newTestingMerkle(t, sto, 140)
-	defer mt.DB().Close()
 
 	ctx := context.Background()
 
@@ -518,9 +510,7 @@ func TestUpdate(t *testing.T, sto merkletree.Storage) {
 
 func TestUpdate2(t *testing.T, sto merkletree.Storage) {
 	mt1 := newTestingMerkle(t, sto, 140)
-	defer mt1.DB().Close()
 	mt2 := newTestingMerkle(t, sto, 140)
-	defer mt2.DB().Close()
 
 	ctx := context.Background()
 
@@ -551,7 +541,6 @@ func TestUpdate2(t *testing.T, sto merkletree.Storage) {
 func TestGenerateAndVerifyProof128(t *testing.T, sto merkletree.Storage) {
 	mt, err := merkletree.NewMerkleTree(context.Background(), sto, 140)
 	require.Nil(t, err)
-	defer mt.DB().Close()
 
 	for i := 0; i < 128; i++ {
 		k := big.NewInt(int64(i))
@@ -570,7 +559,6 @@ func TestTreeLimit(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 5)
 	require.Nil(t, err)
-	defer mt.DB().Close()
 
 	for i := 0; i < 16; i++ {
 		err = mt.Add(ctx, big.NewInt(int64(i)), big.NewInt(int64(i)))
@@ -587,7 +575,6 @@ func TestSiblingsFromProof(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.Nil(t, err)
-	defer mt.DB().Close()
 
 	for i := 0; i < 64; i++ {
 		k := big.NewInt(int64(i))
@@ -626,7 +613,6 @@ func TestSiblingsFromProof(t *testing.T, sto merkletree.Storage) {
 
 func TestVerifyProofCases(t *testing.T, sto merkletree.Storage) {
 	mt := newTestingMerkle(t, sto, 140)
-	defer mt.DB().Close()
 
 	ctx := context.Background()
 	for i := 0; i < 8; i++ {
@@ -674,7 +660,6 @@ func TestVerifyProofCases(t *testing.T, sto merkletree.Storage) {
 
 func TestVerifyProofFalse(t *testing.T, sto merkletree.Storage) {
 	mt := newTestingMerkle(t, sto, 140)
-	defer mt.DB().Close()
 
 	ctx := context.Background()
 	for i := 0; i < 8; i++ {
@@ -788,7 +773,6 @@ func TestDelete(t *testing.T, sto merkletree.Storage) {
 func TestDelete2(t *testing.T, sto merkletree.Storage, sto2 merkletree.Storage) {
 	ctx := context.Background()
 	mt := newTestingMerkle(t, sto, 140)
-	defer mt.DB().Close()
 	for i := 0; i < 8; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
@@ -809,7 +793,6 @@ func TestDelete2(t *testing.T, sto merkletree.Storage, sto2 merkletree.Storage) 
 	assert.Equal(t, expectedRoot, mt.Root())
 
 	mt2 := newTestingMerkle(t, sto2, 140)
-	defer mt2.DB().Close()
 	for i := 0; i < 8; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
@@ -822,7 +805,6 @@ func TestDelete2(t *testing.T, sto merkletree.Storage, sto2 merkletree.Storage) 
 
 func TestDelete3(t *testing.T, sto merkletree.Storage, sto2 merkletree.Storage) {
 	mt := newTestingMerkle(t, sto, 140)
-	defer mt.DB().Close()
 
 	ctx := context.Background()
 	err := mt.Add(ctx, big.NewInt(1), big.NewInt(1))
@@ -837,7 +819,6 @@ func TestDelete3(t *testing.T, sto merkletree.Storage, sto2 merkletree.Storage) 
 	assert.Equal(t, "849831128489032619062850458217693666094013083866167024127442191257793527951", mt.Root().BigInt().String()) //nolint:lll
 
 	mt2 := newTestingMerkle(t, sto2, 140)
-	defer mt2.DB().Close()
 	err = mt2.Add(ctx, big.NewInt(2), big.NewInt(2))
 	assert.Nil(t, err)
 	assert.Equal(t, mt2.Root(), mt.Root())
@@ -845,7 +826,6 @@ func TestDelete3(t *testing.T, sto merkletree.Storage, sto2 merkletree.Storage) 
 
 func TestDelete4(t *testing.T, sto merkletree.Storage, sto2 merkletree.Storage) {
 	mt := newTestingMerkle(t, sto, 140)
-	defer mt.DB().Close()
 
 	ctx := context.Background()
 	err := mt.Add(ctx, big.NewInt(1), big.NewInt(1))
@@ -863,7 +843,6 @@ func TestDelete4(t *testing.T, sto merkletree.Storage, sto2 merkletree.Storage) 
 	assert.Equal(t, "159935162486187606489815340465698714590556679404589449576549073038844694972", mt.Root().BigInt().String()) //nolint:lll
 
 	mt2 := newTestingMerkle(t, sto2, 140)
-	defer mt2.DB().Close()
 	err = mt2.Add(ctx, big.NewInt(2), big.NewInt(2))
 	assert.Nil(t, err)
 	err = mt2.Add(ctx, big.NewInt(3), big.NewInt(3))
@@ -887,7 +866,6 @@ func TestDelete5(t *testing.T, sto merkletree.Storage, sto2 merkletree.Storage) 
 	assert.Equal(t, "18869260084287237667925661423624848342947598951870765316380602291081195309822", mt.Root().BigInt().String()) //nolint:lll
 
 	mt2 := newTestingMerkle(t, sto2, 140)
-	defer mt2.DB().Close()
 	err = mt2.Add(ctx, big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
 	assert.Equal(t, mt2.Root(), mt.Root())
@@ -921,7 +899,6 @@ func TestDumpLeafsImportLeafs(t *testing.T, sto merkletree.Storage, sto2 merklet
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.Nil(t, err)
-	defer mt.DB().Close()
 
 	q1 := new(big.Int).Sub(constants.Q, big.NewInt(1))
 	for i := 0; i < 10; i++ {
@@ -942,7 +919,6 @@ func TestDumpLeafsImportLeafs(t *testing.T, sto merkletree.Storage, sto2 merklet
 
 	mt2, err := merkletree.NewMerkleTree(ctx, sto2, 140)
 	require.Nil(t, err)
-	defer mt2.DB().Close()
 	err = mt2.ImportDumpedLeafs(ctx, d)
 	assert.Nil(t, err)
 
@@ -996,7 +972,6 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt := newTestingMerkle(t, sto, 10)
-	defer mt.DB().Close()
 
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
@@ -1084,7 +1059,6 @@ func TestTypesMarshalers(t *testing.T, sto merkletree.Storage) {
 
 	// create CircomProcessorProof
 	mt := newTestingMerkle(t, sto, 10)
-	defer mt.DB().Close()
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(int64(i * 2))

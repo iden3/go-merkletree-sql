@@ -84,10 +84,6 @@ func (m *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error 
 	return nil
 }
 
-// Close implements the method Close of the interface db.Storage
-func (m *Storage) Close() {
-}
-
 // List implements the method List of the interface db.Storage
 func (m *Storage) List(limit int) ([]merkletree.KV, error) {
 	ret := []merkletree.KV{}

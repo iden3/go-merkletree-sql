@@ -21,7 +21,6 @@ type Storage interface {
 	GetRoot() (*Hash, error)
 	SetRoot(context.Context, *Hash) error
 	List(int) ([]KV, error)
-	Close()
 	Iterate(func([]byte, *Node) (bool, error)) error
 }
 
