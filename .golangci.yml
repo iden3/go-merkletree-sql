@@ -7,11 +7,10 @@ linters:
         - gosec
         - gci
         - misspell
-        - gomnd
         - gofmt
         - goimports
         - lll
-        - golint
+#        - revive
 linters-settings:
         lll:
                 line-length: 100

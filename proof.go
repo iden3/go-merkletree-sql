@@ -62,7 +62,7 @@ func NewProofFromBytes(bs []byte) (*Proof, error) {
 func (p *Proof) Bytes() []byte {
 	bsLen := proofFlagsLen + len(p.notempties) + ElemBytesLen*len(p.Siblings)
 	if p.NodeAux != nil {
-		bsLen += 2 * ElemBytesLen //nolint:gomnd
+		bsLen += 2 * ElemBytesLen
 	}
 	bs := make([]byte, bsLen)
 

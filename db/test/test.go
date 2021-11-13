@@ -1,4 +1,4 @@
-//nolint:gomnd,golint
+//nolint:golint
 package test
 
 import (
@@ -161,18 +161,19 @@ func TestStorageWithPrefix(t *testing.T, sto merkletree.Storage) {
 
 	node := merkletree.NewNodeLeaf(&merkletree.Hash{1, 2, 3}, &merkletree.Hash{4, 5, 6})
 	k, err := node.Key()
+	require.NoError(t, err)
 	err = sto1.Put(ctx, k[:], node)
 	assert.NoError(t, err)
 	v1, err := sto1.Get(k[:])
 	assert.NoError(t, err)
 	assert.Equal(t, merkletree.Hash{4, 5, 6}, *v1.Entry[1])
 
-	v2, err := sto2.Get(k[:])
+	_, err = sto2.Get(k[:])
 	assert.Equal(t, merkletree.ErrNotFound, err)
 
 	err = sto2.Put(ctx, k[:], node)
 	assert.NoError(t, err)
-	v2, err = sto2.Get(k[:])
+	v2, err := sto2.Get(k[:])
 	assert.NoError(t, err)
 	assert.Equal(t, merkletree.Hash{4, 5, 6}, *v2.Entry[1])
 
@@ -230,18 +231,48 @@ func TestIterate(t *testing.T, sto merkletree.Storage) {
 	require.Nil(t, err)
 	assert.Equal(t, 3, len(r))
 	sort.Slice(r, func(i, j int) bool { return r[i].K[0] < r[j].K[0] })
-	assert.EqualValues(t, merkletree.KV{K: []byte{1}, V: *merkletree.NewNodeMiddle(&merkletree.Hash{4}, &merkletree.Hash{5})}, r[0])
-	assert.EqualValues(t, merkletree.KV{K: []byte{2}, V: *merkletree.NewNodeMiddle(&merkletree.Hash{5}, &merkletree.Hash{6})}, r[1])
-	assert.EqualValues(t, merkletree.KV{K: []byte{3}, V: *merkletree.NewNodeMiddle(&merkletree.Hash{6}, &merkletree.Hash{7})}, r[2])
+	assert.EqualValues(t,
+		merkletree.KV{
+			K: []byte{1},
+			V: *merkletree.NewNodeMiddle(
+				&merkletree.Hash{4}, &merkletree.Hash{5})},
+		r[0])
+	assert.EqualValues(t,
+		merkletree.KV{
+			K: []byte{2},
+			V: *merkletree.NewNodeMiddle(
+				&merkletree.Hash{5}, &merkletree.Hash{6})},
+		r[1])
+	assert.EqualValues(t,
+		merkletree.KV{
+			K: []byte{3},
+			V: *merkletree.NewNodeMiddle(
+				&merkletree.Hash{6}, &merkletree.Hash{7})},
+		r[2])
 
 	r = []merkletree.KV{}
 	err = sto2.Iterate(lister)
 	require.Nil(t, err)
 	sort.Slice(r, func(i, j int) bool { return r[i].K[0] < r[j].K[0] })
 	assert.Equal(t, 3, len(r))
-	assert.EqualValues(t, merkletree.KV{K: []byte{1}, V: *merkletree.NewNodeMiddle(&merkletree.Hash{7}, &merkletree.Hash{8})}, r[0])
-	assert.EqualValues(t, merkletree.KV{K: []byte{2}, V: *merkletree.NewNodeMiddle(&merkletree.Hash{8}, &merkletree.Hash{9})}, r[1])
-	assert.EqualValues(t, merkletree.KV{K: []byte{3}, V: *merkletree.NewNodeMiddle(&merkletree.Hash{9}, &merkletree.Hash{10})}, r[2])
+	assert.EqualValues(t,
+		merkletree.KV{
+			K: []byte{1},
+			V: *merkletree.NewNodeMiddle(
+				&merkletree.Hash{7}, &merkletree.Hash{8})},
+		r[0])
+	assert.EqualValues(t,
+		merkletree.KV{
+			K: []byte{2},
+			V: *merkletree.NewNodeMiddle(
+				&merkletree.Hash{8}, &merkletree.Hash{9})},
+		r[1])
+	assert.EqualValues(t,
+		merkletree.KV{
+			K: []byte{3},
+			V: *merkletree.NewNodeMiddle(
+				&merkletree.Hash{9}, &merkletree.Hash{10})},
+		r[2])
 }
 
 // TestList checks that the implementation of the db.Storage interface behaves
@@ -659,7 +690,8 @@ func TestVerifyProofFalse(t *testing.T, sto merkletree.Storage) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, proof.Existence, true)
-	assert.True(t, !merkletree.VerifyProof(mt.Root(), proof, big.NewInt(int64(5)), big.NewInt(int64(5))))
+	assert.True(t, !merkletree.VerifyProof(mt.Root(), proof,
+		big.NewInt(int64(5)), big.NewInt(int64(5))))
 
 	// Invalid non-existence proof (Non-existence proof, diff. node aux)
 	proof, _, err = mt.GenerateProof(big.NewInt(int64(4)), nil)

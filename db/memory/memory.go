@@ -34,12 +34,14 @@ func (m *Storage) Get(key []byte) (*merkletree.Node, error) {
 	return nil, merkletree.ErrNotFound
 }
 
+// Put inserts new node into merkletree
 func (m *Storage) Put(_ context.Context, key []byte,
 	node *merkletree.Node) error {
 	m.kv.Put(merkletree.Concat(m.prefix, key), *node)
 	return nil
 }
 
+// GetRoot returns current merkletree root
 func (m *Storage) GetRoot() (*merkletree.Hash, error) {
 	if m.currentRoot != nil {
 		hash := merkletree.Hash{}
@@ -49,6 +51,7 @@ func (m *Storage) GetRoot() (*merkletree.Hash, error) {
 	return nil, merkletree.ErrNotFound
 }
 
+// SetRoot updates current merkletree root
 func (m *Storage) SetRoot(_ context.Context, hash *merkletree.Hash) error {
 	root := &merkletree.Hash{}
 	copy(root[:], hash[:])

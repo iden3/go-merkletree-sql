@@ -2,6 +2,7 @@ package merkletree
 
 import (
 	"encoding/hex"
+
 	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
 )
 

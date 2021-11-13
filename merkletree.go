@@ -315,7 +315,6 @@ func (mt *MerkleTree) addLeaf(ctx context.Context, newLeaf *Node, key *Hash,
 // addNode adds a node into the MT.  Empty nodes are not stored in the tree;
 // they are all the same and assumed to always exist.
 func (mt *MerkleTree) addNode(ctx context.Context, n *Node) (*Hash, error) {
-
 	// verify that the MerkleTree is writable
 	if !mt.writable {
 		return nil, ErrNotWritable
@@ -541,7 +540,6 @@ func (mt *MerkleTree) Delete(ctx context.Context, k *big.Int) error {
 // nodes with the new values.
 func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 	siblings []*Hash) error {
-
 	if len(siblings) == 0 {
 		mt.rootKey = &HashZero
 		err := mt.db.SetRoot(ctx, mt.rootKey)
@@ -549,14 +547,14 @@ func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 	}
 
 	toUpload := siblings[len(siblings)-1]
-	if len(siblings) < 2 { //nolint:gomnd
+	if len(siblings) < 2 {
 		mt.rootKey = siblings[0]
 		err := mt.db.SetRoot(ctx, mt.rootKey)
 		if err != nil {
 			return err
 		}
 	}
-	for i := len(siblings) - 2; i >= 0; i-- { //nolint:gomnd
+	for i := len(siblings) - 2; i >= 0; i-- {
 		if !bytes.Equal(siblings[i][:], HashZero[:]) {
 			var newNode *Node
 			if path[i] {
