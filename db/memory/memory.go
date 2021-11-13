@@ -27,7 +27,7 @@ func (m *Storage) WithPrefix(prefix []byte) merkletree.Storage {
 }
 
 // Get retrieves a value from a key in the db.Storage
-func (m *Storage) Get(key []byte) (*merkletree.Node, error) {
+func (m *Storage) Get(_ context.Context, key []byte) (*merkletree.Node, error) {
 	if v, ok := m.kv.Get(merkletree.Concat(m.prefix, key[:])); ok {
 		return &v, nil
 	}
@@ -42,7 +42,7 @@ func (m *Storage) Put(_ context.Context, key []byte,
 }
 
 // GetRoot returns current merkletree root
-func (m *Storage) GetRoot() (*merkletree.Hash, error) {
+func (m *Storage) GetRoot(_ context.Context) (*merkletree.Hash, error) {
 	if m.currentRoot != nil {
 		hash := merkletree.Hash{}
 		copy(hash[:], m.currentRoot[:])
@@ -60,7 +60,8 @@ func (m *Storage) SetRoot(_ context.Context, hash *merkletree.Hash) error {
 }
 
 // Iterate implements the method Iterate of the interface db.Storage
-func (m *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error {
+func (m *Storage) Iterate(_ context.Context,
+	f func([]byte, *merkletree.Node) (bool, error)) error {
 	kvs := make([]merkletree.KV, 0)
 	for _, v := range m.kv {
 		if len(v.K) < len(m.prefix) ||
@@ -85,14 +86,16 @@ func (m *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error 
 }
 
 // List implements the method List of the interface db.Storage
-func (m *Storage) List(limit int) ([]merkletree.KV, error) {
+func (m *Storage) List(ctx context.Context,
+	limit int) ([]merkletree.KV, error) {
 	ret := []merkletree.KV{}
-	err := m.Iterate(func(key []byte, value *merkletree.Node) (bool, error) {
-		ret = append(ret, merkletree.KV{K: merkletree.Clone(key), V: *value})
-		if len(ret) == limit {
-			return false, nil
-		}
-		return true, nil
-	})
+	err := m.Iterate(ctx,
+		func(key []byte, value *merkletree.Node) (bool, error) {
+			ret = append(ret, merkletree.KV{K: merkletree.Clone(key), V: *value})
+			if len(ret) == limit {
+				return false, nil
+			}
+			return true, nil
+		})
 	return ret, err
 }

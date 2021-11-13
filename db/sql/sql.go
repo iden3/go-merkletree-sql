@@ -61,9 +61,10 @@ func (s *Storage) WithPrefix(prefix []byte) merkletree.Storage {
 }
 
 // Get retrieves a value from a key in the db.Storage
-func (s *Storage) Get(key []byte) (*merkletree.Node, error) {
+func (s *Storage) Get(ctx context.Context,
+	key []byte) (*merkletree.Node, error) {
 	item := NodeItem{}
-	err := s.db.Get(&item,
+	err := s.db.GetContext(ctx, &item,
 		"SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
@@ -102,7 +103,7 @@ func (s *Storage) Put(ctx context.Context, key []byte,
 }
 
 // GetRoot retrieves a merkle tree root hash in the interface db.Tx
-func (s *Storage) GetRoot() (*merkletree.Hash, error) {
+func (s *Storage) GetRoot(ctx context.Context) (*merkletree.Hash, error) {
 	var root merkletree.Hash
 	var err error
 
@@ -112,7 +113,8 @@ func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 	}
 
 	item := RootItem{}
-	err = s.db.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
+	err = s.db.GetContext(ctx, &item,
+		"SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
 	}
@@ -140,10 +142,12 @@ func (s *Storage) SetRoot(ctx context.Context, hash *merkletree.Hash) error {
 }
 
 // Iterate implements the method Iterate of the interface db.Storage
-func (s *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error {
+func (s *Storage) Iterate(ctx context.Context,
+	f func([]byte, *merkletree.Node) (bool, error)) error {
 	items := []NodeItem{}
 
-	err := s.db.Select(&items, "SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
+	err := s.db.SelectContext(ctx, &items,
+		"SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
 	if err != nil {
 		return err
 	}
@@ -165,15 +169,16 @@ func (s *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error 
 }
 
 // List implements the method List of the interface db.Storage
-func (s *Storage) List(limit int) ([]merkletree.KV, error) {
+func (s *Storage) List(ctx context.Context, limit int) ([]merkletree.KV, error) {
 	ret := []merkletree.KV{}
-	err := s.Iterate(func(key []byte, value *merkletree.Node) (bool, error) {
-		ret = append(ret, merkletree.KV{K: merkletree.Clone(key), V: *value})
-		if len(ret) == limit {
-			return false, nil
-		}
-		return true, nil
-	})
+	err := s.Iterate(ctx,
+		func(key []byte, value *merkletree.Node) (bool, error) {
+			ret = append(ret, merkletree.KV{K: merkletree.Clone(key), V: *value})
+			if len(ret) == limit {
+				return false, nil
+			}
+			return true, nil
+		})
 	return ret, err
 }
 

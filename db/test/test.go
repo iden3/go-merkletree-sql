@@ -121,7 +121,7 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 // is not found
 func TestReturnKnownErrIfNotExists(t *testing.T, sto merkletree.Storage) {
 	k := []byte("key")
-	_, err := sto.Get(k)
+	_, err := sto.Get(context.Background(), k)
 	assert.EqualError(t, err, merkletree.ErrNotFound.Error())
 }
 
@@ -136,12 +136,12 @@ func TestStorageInsertGet(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	err = sto.Put(ctx, key[:], node)
 	assert.NoError(t, err)
-	v, err := sto.Get(key[:])
+	v, err := sto.Get(ctx, key[:])
 	assert.NoError(t, err)
 	assert.Equal(t, value, *v.ChildL)
 	assert.Equal(t, value, *v.ChildR)
 
-	v, err = sto.Get(key[:])
+	v, err = sto.Get(ctx, key[:])
 	assert.NoError(t, err)
 	require.NotNil(t, v)
 	assert.Equal(t, value, *v.ChildL)
@@ -161,25 +161,25 @@ func TestStorageWithPrefix(t *testing.T, sto merkletree.Storage) {
 	require.NoError(t, err)
 	err = sto1.Put(ctx, k[:], node)
 	assert.NoError(t, err)
-	v1, err := sto1.Get(k[:])
+	v1, err := sto1.Get(ctx, k[:])
 	assert.NoError(t, err)
 	assert.Equal(t, merkletree.Hash{4, 5, 6}, *v1.Entry[1])
 
-	_, err = sto2.Get(k[:])
+	_, err = sto2.Get(ctx, k[:])
 	assert.Equal(t, merkletree.ErrNotFound, err)
 
 	err = sto2.Put(ctx, k[:], node)
 	assert.NoError(t, err)
-	v2, err := sto2.Get(k[:])
+	v2, err := sto2.Get(ctx, k[:])
 	assert.NoError(t, err)
 	assert.Equal(t, merkletree.Hash{4, 5, 6}, *v2.Entry[1])
 
-	v1, err = sto1.Get(k[:])
+	v1, err = sto1.Get(ctx, k[:])
 	assert.NoError(t, err)
 	require.NotNil(t, v1)
 	assert.Equal(t, merkletree.Hash{4, 5, 6}, *v1.Entry[1])
 
-	v2, err = sto2.Get(k[:])
+	v2, err = sto2.Get(ctx, k[:])
 	assert.NoError(t, err)
 	require.NotNil(t, v2)
 	assert.Equal(t, merkletree.Hash{4, 5, 6}, *v2.Entry[1])
@@ -195,11 +195,10 @@ func TestIterate(t *testing.T, sto merkletree.Storage) {
 	}
 
 	sto1 := sto.WithPrefix([]byte{1})
-	err := sto1.Iterate(lister)
+	ctx := context.Background()
+	err := sto1.Iterate(ctx, lister)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(r))
-
-	ctx := context.Background()
 
 	err = sto1.Put(ctx, []byte{1}, merkletree.NewNodeMiddle(&merkletree.Hash{4},
 		&merkletree.Hash{5}))
@@ -223,7 +222,7 @@ func TestIterate(t *testing.T, sto merkletree.Storage) {
 	assert.Nil(t, err)
 
 	r = []merkletree.KV{}
-	err = sto1.Iterate(lister)
+	err = sto1.Iterate(ctx, lister)
 	require.Nil(t, err)
 	assert.Equal(t, 3, len(r))
 	sort.Slice(r, func(i, j int) bool { return r[i].K[0] < r[j].K[0] })
@@ -247,7 +246,7 @@ func TestIterate(t *testing.T, sto merkletree.Storage) {
 		r[2])
 
 	r = []merkletree.KV{}
-	err = sto2.Iterate(lister)
+	err = sto2.Iterate(ctx, lister)
 	require.Nil(t, err)
 	sort.Slice(r, func(i, j int) bool { return r[i].K[0] < r[j].K[0] })
 	assert.Equal(t, 3, len(r))
@@ -274,8 +273,10 @@ func TestIterate(t *testing.T, sto merkletree.Storage) {
 // TestList checks that the implementation of the db.Storage interface behaves
 // as expected
 func TestList(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+
 	sto1 := sto.WithPrefix([]byte{1})
-	r1, err := sto1.List(100)
+	r1, err := sto1.List(ctx, 100)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(r1))
 
@@ -285,7 +286,6 @@ func TestList(t *testing.T, sto merkletree.Storage) {
 	n1k, _ := n1.Key()
 	n2k, _ := n2.Key()
 	n3k, _ := n3.Key()
-	ctx := context.Background()
 	err = sto1.Put(ctx, n1k[:], n1)
 	assert.Nil(t, err)
 	err = sto1.Put(ctx, n2k[:], n2)
@@ -300,7 +300,7 @@ func TestList(t *testing.T, sto merkletree.Storage) {
 	assert.Nil(t, err)
 
 	// Test that storage with prefix 1 has only 3 records and they are expected ones
-	r, err := sto1.List(100)
+	r, err := sto1.List(ctx, 100)
 	require.Nil(t, err)
 	assert.Equal(t, 3, len(r))
 	nodeMap := make(merkletree.KvMap)
@@ -333,7 +333,7 @@ func TestList(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, n3k, k3)
 
 	// Test that list respects the specified limit
-	r, err = sto1.List(2)
+	r, err = sto1.List(ctx, 2)
 	require.Nil(t, err)
 	assert.Equal(t, 2, len(r))
 	nodeMap2 := make(merkletree.KvMap)
@@ -356,7 +356,7 @@ func TestList(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, 2, okCount)
 
 	// Test that storage with prefix 2 has only 2 records and they are expected ones
-	r, err = sto2.List(100)
+	r, err = sto2.List(ctx, 100)
 	require.Nil(t, err)
 	assert.Equal(t, 2, len(r))
 	nodeMap3 := make(merkletree.KvMap)
@@ -400,11 +400,11 @@ func TestNewTree(t *testing.T, sto merkletree.Storage) {
 	assert.Nil(t, err)
 	assert.Equal(t, "14204494359367183802864593755198662203838502594566452929175967972147978322084", mt.Root().BigInt().String()) //nolint:lll
 
-	dbRoot, err := sto.GetRoot()
+	dbRoot, err := sto.GetRoot(ctx)
 	require.Nil(t, err)
 	assert.Equal(t, mt.Root(), dbRoot)
 
-	proof, v, err := mt.GenerateProof(big.NewInt(33), nil)
+	proof, v, err := mt.GenerateProof(ctx, big.NewInt(33), nil)
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(44), v)
 
@@ -453,24 +453,25 @@ func TestAddRepeatedIndex(t *testing.T, sto merkletree.Storage) {
 func TestGet(t *testing.T, sto merkletree.Storage) {
 	mt := newTestingMerkle(t, sto, 140)
 
+	ctx := context.Background()
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(int64(i * 2))
-		if err := mt.Add(context.Background(), k, v); err != nil {
+		if err := mt.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
-	k, v, _, err := mt.Get(big.NewInt(10))
+	k, v, _, err := mt.Get(ctx, big.NewInt(10))
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(10), k)
 	assert.Equal(t, big.NewInt(20), v)
 
-	k, v, _, err = mt.Get(big.NewInt(15))
+	k, v, _, err = mt.Get(ctx, big.NewInt(15))
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(15), k)
 	assert.Equal(t, big.NewInt(30), v)
 
-	k, v, _, err = mt.Get(big.NewInt(16))
+	k, v, _, err = mt.Get(ctx, big.NewInt(16))
 	assert.NotNil(t, err)
 	assert.Equal(t, merkletree.ErrKeyNotFound, err)
 	assert.Equal(t, "0", k.String())
@@ -485,24 +486,24 @@ func TestUpdate(t *testing.T, sto merkletree.Storage) {
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(int64(i * 2))
-		if err := mt.Add(context.Background(), k, v); err != nil {
+		if err := mt.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
-	_, v, _, err := mt.Get(big.NewInt(10))
+	_, v, _, err := mt.Get(ctx, big.NewInt(10))
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(20), v)
 
 	_, err = mt.Update(ctx, big.NewInt(10), big.NewInt(1024))
 	assert.Nil(t, err)
-	_, v, _, err = mt.Get(big.NewInt(10))
+	_, v, _, err = mt.Get(ctx, big.NewInt(10))
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(1024), v)
 
 	_, err = mt.Update(ctx, big.NewInt(1000), big.NewInt(1024))
 	assert.Equal(t, merkletree.ErrKeyNotFound, err)
 
-	dbRoot, err := sto.GetRoot()
+	dbRoot, err := sto.GetRoot(ctx)
 	require.Nil(t, err)
 	assert.Equal(t, mt.Root(), dbRoot)
 }
@@ -538,20 +539,22 @@ func TestUpdate2(t *testing.T, sto merkletree.Storage) {
 }
 
 func TestGenerateAndVerifyProof128(t *testing.T, sto merkletree.Storage) {
-	mt, err := merkletree.NewMerkleTree(context.Background(), sto, 140)
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.Nil(t, err)
 
 	for i := 0; i < 128; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
-		if err := mt.Add(context.Background(), k, v); err != nil {
+		if err := mt.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
-	proof, v, err := mt.GenerateProof(big.NewInt(42), nil)
+	proof, v, err := mt.GenerateProof(ctx, big.NewInt(42), nil)
 	assert.Nil(t, err)
 	assert.Equal(t, "0", v.String())
-	assert.True(t, merkletree.VerifyProof(mt.Root(), proof, big.NewInt(42), big.NewInt(0)))
+	assert.True(t, merkletree.VerifyProof(
+		mt.Root(), proof, big.NewInt(42), big.NewInt(0)))
 }
 
 func TestTreeLimit(t *testing.T, sto merkletree.Storage) {
@@ -583,7 +586,7 @@ func TestSiblingsFromProof(t *testing.T, sto merkletree.Storage) {
 		}
 	}
 
-	proof, _, err := mt.GenerateProof(big.NewInt(4), nil)
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(4), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -621,7 +624,7 @@ func TestVerifyProofCases(t *testing.T, sto merkletree.Storage) {
 	}
 
 	// Existence proof
-	proof, _, err := mt.GenerateProof(big.NewInt(4), nil)
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(4), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -630,14 +633,14 @@ func TestVerifyProofCases(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "0003000000000000000000000000000000000000000000000000000000000007529cbedbda2bdd25fd6455551e55245fa6dc11a9d0c27dc0cd38fca44c17e40344ad686a18ba78b502c0b6f285c5c8393bde2f7a3e2abe586515e4d84533e3037b062539bde2d80749746986cf8f0001fd2cdbf9a89fcbf981a769daef49df06", hex.EncodeToString(proof.Bytes())) //nolint:lll
 
 	for i := 8; i < 32; i++ {
-		proof, _, err = mt.GenerateProof(big.NewInt(int64(i)), nil)
+		proof, _, err = mt.GenerateProof(ctx, big.NewInt(int64(i)), nil)
 		assert.Nil(t, err)
 		if debug {
 			fmt.Println(i, proof)
 		}
 	}
 	// Non-existence proof, empty aux
-	proof, _, err = mt.GenerateProof(big.NewInt(12), nil)
+	proof, _, err = mt.GenerateProof(ctx, big.NewInt(12), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -647,7 +650,7 @@ func TestVerifyProofCases(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "0303000000000000000000000000000000000000000000000000000000000007529cbedbda2bdd25fd6455551e55245fa6dc11a9d0c27dc0cd38fca44c17e40344ad686a18ba78b502c0b6f285c5c8393bde2f7a3e2abe586515e4d84533e3037b062539bde2d80749746986cf8f0001fd2cdbf9a89fcbf981a769daef49df0604000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", hex.EncodeToString(proof.Bytes())) //nolint:lll
 
 	// Non-existence proof, diff. node aux
-	proof, _, err = mt.GenerateProof(big.NewInt(10), nil)
+	proof, _, err = mt.GenerateProof(ctx, big.NewInt(10), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -669,7 +672,7 @@ func TestVerifyProofFalse(t *testing.T, sto merkletree.Storage) {
 
 	// Invalid existence proof (node used for verification doesn't
 	// correspond to node in the proof)
-	proof, _, err := mt.GenerateProof(big.NewInt(int64(4)), nil)
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(int64(4)), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -678,7 +681,7 @@ func TestVerifyProofFalse(t *testing.T, sto merkletree.Storage) {
 		big.NewInt(int64(5)), big.NewInt(int64(5))))
 
 	// Invalid non-existence proof (Non-existence proof, diff. node aux)
-	proof, _, err = mt.GenerateProof(big.NewInt(int64(4)), nil)
+	proof, _, err = mt.GenerateProof(ctx, big.NewInt(int64(4)), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -692,10 +695,10 @@ func TestVerifyProofFalse(t *testing.T, sto merkletree.Storage) {
 }
 
 func TestGraphViz(t *testing.T, sto merkletree.Storage) {
-	mt, err := merkletree.NewMerkleTree(context.Background(), sto, 10)
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 10)
 	assert.Nil(t, err)
 
-	ctx := context.Background()
 	_ = mt.Add(ctx, big.NewInt(1), big.NewInt(0))
 	_ = mt.Add(ctx, big.NewInt(2), big.NewInt(0))
 	_ = mt.Add(ctx, big.NewInt(3), big.NewInt(0))
@@ -727,7 +730,7 @@ node [fontname=Monospace,fontsize=10,shape=box]
 }
 `
 	w := bytes.NewBufferString("")
-	err = mt.GraphViz(w, nil)
+	err = mt.GraphViz(ctx, w, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, []byte(expected), w.Bytes())
 }
@@ -764,7 +767,7 @@ func TestDelete(t *testing.T, sto merkletree.Storage) {
 	assert.Nil(t, err)
 	assert.Equal(t, "0", mt.Root().String())
 
-	dbRoot, err := sto.GetRoot()
+	dbRoot, err := sto.GetRoot(ctx)
 	require.Nil(t, err)
 	assert.Equal(t, mt.Root(), dbRoot)
 }
@@ -913,7 +916,7 @@ func TestDumpLeafsImportLeafs(t *testing.T, sto merkletree.Storage, sto2 merklet
 		require.Nil(t, err)
 	}
 
-	d, err := mt.DumpLeafs(nil)
+	d, err := mt.DumpLeafs(ctx, nil)
 	assert.Nil(t, err)
 
 	mt2, err := merkletree.NewMerkleTree(ctx, sto2, 140)
@@ -979,7 +982,7 @@ func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {
 			t.Fatal(err)
 		}
 	}
-	_, v, _, err := mt.Get(big.NewInt(10))
+	_, v, _, err := mt.Get(ctx, big.NewInt(10))
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(20), v)
 
@@ -1006,7 +1009,7 @@ func TestSmtVerifier(t *testing.T, sto merkletree.Storage) {
 	err = mt.Add(ctx, big.NewInt(1), big.NewInt(11))
 	assert.Nil(t, err)
 
-	cvp, err := mt.GenerateSCVerifierProof(big.NewInt(1), nil)
+	cvp, err := mt.GenerateSCVerifierProof(ctx, big.NewInt(1), nil)
 	assert.Nil(t, err)
 	jCvp, err := json.Marshal(cvp)
 	assert.Nil(t, err)
@@ -1021,7 +1024,7 @@ func TestSmtVerifier(t *testing.T, sto merkletree.Storage) {
 	err = mt.Add(ctx, big.NewInt(4), big.NewInt(44))
 	assert.Nil(t, err)
 
-	cvp, err = mt.GenerateCircomVerifierProof(big.NewInt(2), nil)
+	cvp, err = mt.GenerateCircomVerifierProof(ctx, big.NewInt(2), nil)
 	assert.Nil(t, err)
 
 	jCvp, err = json.Marshal(cvp)
@@ -1031,7 +1034,7 @@ func TestSmtVerifier(t *testing.T, sto merkletree.Storage) {
 	expected = `{"root":"13558168455220559042747853958949063046226645447188878859760119761585093422436","siblings":["11620130507635441932056895853942898236773847390796721536119314875877874016518","5158240518874928563648144881543092238925265313977134167935552944620041388700","0","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
 	assert.Equal(t, expected, string(jCvp))
 
-	cvp, err = mt.GenerateSCVerifierProof(big.NewInt(2), nil)
+	cvp, err = mt.GenerateSCVerifierProof(ctx, big.NewInt(2), nil)
 	assert.Nil(t, err)
 
 	jCvp, err = json.Marshal(cvp)
@@ -1065,7 +1068,7 @@ func TestTypesMarshalers(t *testing.T, sto merkletree.Storage) {
 			t.Fatal(err)
 		}
 	}
-	_, v, _, err := mt.Get(big.NewInt(10))
+	_, v, _, err := mt.Get(ctx, big.NewInt(10))
 	assert.Nil(t, err)
 	assert.Equal(t, big.NewInt(20), v)
 	cpp, err := mt.Update(ctx, big.NewInt(10), big.NewInt(1024))
