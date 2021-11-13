@@ -51,8 +51,6 @@ var (
 	// ErrNotWritable is used when the MerkleTree is not writable and a
 	// write function is called
 	ErrNotWritable = errors.New("Merkle Tree not writable")
-
-	dbKeyRootNode = []byte("currentroot")
 )
 
 // MerkleTree is the struct with the main elements of the MerkleTree

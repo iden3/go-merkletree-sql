@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
 	"encoding/binary"
 
@@ -24,15 +23,6 @@ type Storage struct {
 	currentVersion uint64
 	currentRoot    *merkletree.Hash
 	externalTx     *sqlx.Tx
-}
-
-// StorageTx implements the db.Tx interface
-type StorageTx struct {
-	storage     *Storage
-	tx          *sqlx.Tx
-	autoCommit  bool
-	cache       KvMap
-	currentRoot *merkletree.Hash
 }
 
 type NodeItem struct {
@@ -73,29 +63,6 @@ func (s *Storage) WithPrefix(prefix []byte) merkletree.Storage {
 	// TODO: remove WithPrefix method
 	mtId, _ := binary.Uvarint(prefix)
 	return &Storage{db: s.db, mtId: mtId, externalTx: s.externalTx}
-}
-
-// NewTx implements the method NewTx of the interface db.Storage
-func (s *Storage) NewTx() (merkletree.Tx, error) {
-	var tx *sqlx.Tx
-	var err error
-	autoCommit := true
-	if s.externalTx != nil {
-		tx = s.externalTx
-		autoCommit = false
-	} else {
-		tx, err = s.db.Beginx()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return &StorageTx{
-		storage:     s,
-		tx:          tx,
-		autoCommit:  autoCommit,
-		cache:       make(KvMap),
-		currentRoot: s.currentRoot,
-	}, nil
 }
 
 // Get retrieves a value from a key in the db.Storage
@@ -215,126 +182,6 @@ func (s *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error 
 	return nil
 }
 
-// Get retrieves a value from a key in the interface db.Tx
-func (tx *StorageTx) Get(key []byte) (*merkletree.Node, error) {
-	//fullKey := append(tx.mtId, key...)
-	fullKey := key
-	if value, ok := tx.cache.Get(fullKey); ok {
-		return &value, nil
-	}
-
-	item := NodeItem{}
-	err := tx.tx.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", tx.storage.mtId, key)
-	if err == sql.ErrNoRows {
-		return nil, merkletree.ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	node, err := item.Node()
-	if err != nil {
-		return nil, err
-	}
-	return node, nil
-}
-
-// Put saves a key:value into the db.Storage
-func (tx *StorageTx) Put(k []byte, v *merkletree.Node) error {
-	//fullKey := append(tx.mtId, k...)
-	fullKey := k
-	tx.cache.Put(tx.storage.mtId, fullKey, *v)
-	//fmt.Printf("tx.Put(%x, %+v)\n", fullKey, v)
-	return nil
-}
-
-// GetRoot retrieves a merkle tree root hash in the interface db.Tx
-func (tx *StorageTx) GetRoot() (*merkletree.Hash, error) {
-	var root merkletree.Hash
-
-	if tx.currentRoot != nil {
-		copy(root[:], tx.currentRoot[:])
-		return &root, nil
-	}
-
-	item := RootItem{}
-	err := tx.tx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", tx.storage.mtId)
-	if err == sql.ErrNoRows {
-		return nil, merkletree.ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	copy(root[:], item.Key[:])
-	return &root, nil
-}
-
-// SetRoot sets a hash of merkle tree root in the interface db.Tx
-func (tx *StorageTx) SetRoot(hash *merkletree.Hash) error {
-	root := &merkletree.Hash{}
-	copy(root[:], hash[:])
-	tx.currentRoot = root
-	return nil
-}
-
-// Commit implements the method Commit of the interface db.Tx
-func (tx *StorageTx) Commit() error {
-	// execute a query on the server
-	//fmt.Printf("Commit\n")
-	for _, v := range tx.cache {
-		//fmt.Printf("key %x, value %+v\n", v.K, v.V)
-		node := v.V
-
-		var childL []byte
-		if node.ChildL != nil {
-			childL = append(childL, node.ChildL[:]...)
-		}
-
-		var childR []byte
-		if node.ChildR != nil {
-			childR = append(childR, node.ChildR[:]...)
-		}
-
-		var entry []byte
-		if node.Entry[0] != nil && node.Entry[1] != nil {
-			entry = append(node.Entry[0][:], node.Entry[1][:]...)
-		}
-
-		//key, err := node.Key()
-		key := v.K
-		//if err != nil {
-		//	return err
-		//}
-		_, err := tx.tx.Exec(upsertStmt, v.MTId, key[:], node.Type, childL, childR, entry)
-		if err != nil {
-			return err
-		}
-	}
-
-	if tx.currentRoot == nil {
-		tx.currentRoot = &merkletree.Hash{}
-	}
-	_, err := tx.tx.Exec(updateRootStmt, tx.storage.mtId, tx.currentRoot[:])
-	if err != nil {
-		return err
-	}
-
-	tx.storage.currentRoot = nil
-	tx.cache = nil
-
-	if tx.autoCommit {
-		return tx.tx.Commit()
-	}
-	return nil
-}
-
-// Close implements the method Close of the interface db.Tx
-func (tx *StorageTx) Close() {
-	if tx.autoCommit {
-		tx.tx.Rollback()
-	}
-	tx.cache = nil
-}
-
 // Close implements the method Close of the interface db.Storage
 func (s *Storage) Close() {
 	err := s.db.Close()
@@ -384,20 +231,6 @@ type KV struct {
 	MTId uint64
 	K    []byte
 	V    merkletree.Node
-}
-
-// KvMap is a key-value map between a sha256 byte array hash, and a KV struct
-type KvMap map[[sha256.Size]byte]KV
-
-// Get retrieves the value respective to a key from the KvMap
-func (m KvMap) Get(k []byte) (merkletree.Node, bool) {
-	v, ok := m[sha256.Sum256(k)]
-	return v.V, ok
-}
-
-// Put stores a key and a value in the KvMap
-func (m KvMap) Put(mtId uint64, k []byte, v merkletree.Node) {
-	m[sha256.Sum256(k)] = KV{mtId, k, v}
 }
 
 type storageError struct {

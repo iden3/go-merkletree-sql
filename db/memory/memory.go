@@ -15,13 +15,6 @@ type Storage struct {
 	currentRoot *merkletree.Hash
 }
 
-// StorageTx implements the db.Tx interface
-type StorageTx struct {
-	s           *Storage
-	kv          merkletree.KvMap
-	currentRoot *merkletree.Hash
-}
-
 // NewMemoryStorage returns a new Storage
 func NewMemoryStorage() *Storage {
 	kvmap := make(merkletree.KvMap)
@@ -31,11 +24,6 @@ func NewMemoryStorage() *Storage {
 // WithPrefix implements the method WithPrefix of the interface db.Storage
 func (m *Storage) WithPrefix(prefix []byte) merkletree.Storage {
 	return &Storage{merkletree.Concat(m.prefix, prefix), m.kv, nil}
-}
-
-// NewTx implements the method NewTx of the interface db.Storage
-func (m *Storage) NewTx() (merkletree.Tx, error) {
-	return &StorageTx{m, make(merkletree.KvMap), nil}, nil
 }
 
 // Get retrieves a value from a key in the db.Storage
@@ -61,7 +49,7 @@ func (m *Storage) GetRoot() (*merkletree.Hash, error) {
 	return nil, merkletree.ErrNotFound
 }
 
-func (m *Storage) SetRoot(_ context.Context, hash *merkletree.Hash) (error) {
+func (m *Storage) SetRoot(_ context.Context, hash *merkletree.Hash) error {
 	root := &merkletree.Hash{}
 	copy(root[:], hash[:])
 	m.currentRoot = root
@@ -91,62 +79,6 @@ func (m *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error 
 		}
 	}
 	return nil
-}
-
-// Get implements the method Get of the interface db.Tx
-func (tx *StorageTx) Get(key []byte) (*merkletree.Node, error) {
-	if v, ok := tx.kv.Get(merkletree.Concat(tx.s.prefix, key)); ok {
-		return &v, nil
-	}
-	if v, ok := tx.s.kv.Get(merkletree.Concat(tx.s.prefix, key)); ok {
-		return &v, nil
-	}
-
-	return nil, merkletree.ErrNotFound
-}
-
-// Put implements the method Put of the interface db.Tx
-func (tx *StorageTx) Put(k []byte, v *merkletree.Node) error {
-	tx.kv.Put(merkletree.Concat(tx.s.prefix, k), *v)
-	return nil
-}
-
-func (tx *StorageTx) GetRoot() (*merkletree.Hash, error) {
-	if tx.currentRoot != nil {
-		hash := merkletree.Hash{}
-		copy(hash[:], tx.currentRoot[:])
-		return &hash, nil
-	}
-	return nil, merkletree.ErrNotFound
-}
-
-// SetRoot sets a hash of merkle tree root in the interface db.Tx
-func (tx *StorageTx) SetRoot(hash *merkletree.Hash) error {
-
-	// TODO: do tx.Put('currentroot', hash) here ?
-
-	root := &merkletree.Hash{}
-	copy(root[:], hash[:])
-	tx.currentRoot = root
-	return nil
-}
-
-// Commit implements the method Commit of the interface db.Tx
-func (tx *StorageTx) Commit() error {
-	for _, v := range tx.kv {
-		tx.s.kv.Put(v.K, v.V)
-	}
-	//if tx.currentRoot == nil {
-	//	tx.currentRoot = &merkletree.Hash{}
-	//}
-	tx.s.currentRoot = tx.currentRoot
-	tx.kv = nil
-	return nil
-}
-
-// Close implements the method Close of the interface db.Tx
-func (tx *StorageTx) Close() {
-	tx.kv = nil
 }
 
 // Close implements the method Close of the interface db.Storage

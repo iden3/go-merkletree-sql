@@ -15,7 +15,6 @@ var ErrNotFound = errors.New("key not found")
 // the merkletree. Examples of the interface implementation can be found at
 // db/memory and db/leveldb directories.
 type Storage interface {
-	NewTx() (Tx, error)
 	WithPrefix(prefix []byte) Storage
 	Get([]byte) (*Node, error)
 	Put(ctx context.Context, k []byte, v *Node) error
@@ -24,22 +23,6 @@ type Storage interface {
 	List(int) ([]KV, error)
 	Close()
 	Iterate(func([]byte, *Node) (bool, error)) error
-}
-
-// Tx is the interface that defines the methods for the db transaction used in
-// the merkletree storage. Examples of the interface implementation can be
-// found at db/memory and db/leveldb directories.
-type Tx interface {
-	// Get retrieves the value for the given key
-	// looking first in the content of the Tx, and
-	// then into the content of the Storage
-	Get([]byte) (*Node, error)
-	GetRoot() (*Hash, error)
-	SetRoot(*Hash) error
-	// Put sets the key & value into the Tx
-	Put(k []byte, v *Node) error
-	Commit() error
-	Close()
 }
 
 // KV contains a key (K) and a value (V)

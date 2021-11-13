@@ -120,14 +120,8 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 // db.Storage interface returns the expected error in the case that the value
 // is not found
 func TestReturnKnownErrIfNotExists(t *testing.T, sto merkletree.Storage) {
-	//defer sto.Close()
 	k := []byte("key")
-
-	tx, err := sto.NewTx()
-	defer tx.Close()
-
-	assert.Nil(t, err)
-	_, err = tx.Get(k)
+	_, err := sto.Get(k)
 	assert.EqualError(t, err, merkletree.ErrNotFound.Error())
 }
 
@@ -137,26 +131,19 @@ func TestStorageInsertGet(t *testing.T, sto merkletree.Storage) {
 	defer sto.Close()
 	value := merkletree.Hash{1, 1, 1, 1}
 
-	tx, err := sto.NewTx()
-	defer tx.Close()
-
-	assert.Nil(t, err)
 	node := merkletree.NewNodeMiddle(&value, &value)
 	key, err := node.Key()
-	assert.Nil(t, err)
-	err = tx.Put(key[:], node)
-	assert.Nil(t, err)
-	v, err := tx.Get(key[:])
-	assert.Nil(t, err)
+	assert.NoError(t, err)
+	ctx := context.Background()
+	err = sto.Put(ctx, key[:], node)
+	assert.NoError(t, err)
+	v, err := sto.Get(key[:])
+	assert.NoError(t, err)
 	assert.Equal(t, value, *v.ChildL)
 	assert.Equal(t, value, *v.ChildR)
-	assert.Nil(t, tx.Commit())
 
-	tx2, err := sto.NewTx()
-	defer tx2.Close()
-	assert.Nil(t, err)
-	v, err = tx2.Get(key[:])
-	assert.Nil(t, err)
+	v, err = sto.Get(key[:])
+	assert.NoError(t, err)
 	require.NotNil(t, v)
 	assert.Equal(t, value, *v.ChildL)
 	assert.Equal(t, value, *v.ChildR)
@@ -170,41 +157,32 @@ func TestStorageWithPrefix(t *testing.T, sto merkletree.Storage) {
 	sto1 := sto.WithPrefix([]byte{1})
 	sto2 := sto.WithPrefix([]byte{2})
 
-	// check within tx
+	ctx := context.Background()
 
-	sto1tx, err := sto1.NewTx()
-	assert.Nil(t, err)
 	node := merkletree.NewNodeLeaf(&merkletree.Hash{1, 2, 3}, &merkletree.Hash{4, 5, 6})
 	k, err := node.Key()
-	err = sto1tx.Put(k[:], node)
-	assert.Nil(t, err)
-	v1, err := sto1tx.Get(k[:])
-	assert.Nil(t, err)
+	err = sto1.Put(ctx, k[:], node)
+	assert.NoError(t, err)
+	v1, err := sto1.Get(k[:])
+	assert.NoError(t, err)
 	assert.Equal(t, merkletree.Hash{4, 5, 6}, *v1.Entry[1])
-	assert.Nil(t, sto1tx.Commit())
 
-	sto2tx, err := sto2.NewTx()
-	assert.Nil(t, err)
-
-	v2, err := sto2tx.Get(k[:])
+	v2, err := sto2.Get(k[:])
 	assert.Equal(t, merkletree.ErrNotFound, err)
 
-	err = sto2tx.Put(k[:], node)
-	assert.Nil(t, err)
-	v2, err = sto2tx.Get(k[:])
-	assert.Nil(t, err)
+	err = sto2.Put(ctx, k[:], node)
+	assert.NoError(t, err)
+	v2, err = sto2.Get(k[:])
+	assert.NoError(t, err)
 	assert.Equal(t, merkletree.Hash{4, 5, 6}, *v2.Entry[1])
-	assert.Nil(t, sto2tx.Commit())
-
-	// check outside tx
 
 	v1, err = sto1.Get(k[:])
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	require.NotNil(t, v1)
 	assert.Equal(t, merkletree.Hash{4, 5, 6}, *v1.Entry[1])
 
 	v2, err = sto2.Get(k[:])
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	require.NotNil(t, v2)
 	assert.Equal(t, merkletree.Hash{4, 5, 6}, *v2.Entry[1])
 }
@@ -274,28 +252,25 @@ func TestList(t *testing.T, sto merkletree.Storage) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(r1))
 
-	sto1tx, _ := sto1.NewTx()
 	n1 := merkletree.NewNodeMiddle(&merkletree.Hash{4}, &merkletree.Hash{5})
 	n2 := merkletree.NewNodeMiddle(&merkletree.Hash{5}, &merkletree.Hash{6})
 	n3 := merkletree.NewNodeMiddle(&merkletree.Hash{6}, &merkletree.Hash{7})
 	n1k, _ := n1.Key()
 	n2k, _ := n2.Key()
 	n3k, _ := n3.Key()
-	err = sto1tx.Put(n1k[:], n1)
+	ctx := context.Background()
+	err = sto1.Put(ctx, n1k[:], n1)
 	assert.Nil(t, err)
-	err = sto1tx.Put(n2k[:], n2)
+	err = sto1.Put(ctx, n2k[:], n2)
 	assert.Nil(t, err)
-	err = sto1tx.Put(n3k[:], n3)
+	err = sto1.Put(ctx, n3k[:], n3)
 	assert.Nil(t, err)
-	assert.Nil(t, sto1tx.Commit())
 
 	sto2 := sto.WithPrefix([]byte{2})
-	sto2tx, _ := sto2.NewTx()
-	err = sto2tx.Put(n1k[:], n1)
+	err = sto2.Put(ctx, n1k[:], n1)
 	assert.Nil(t, err)
-	err = sto2tx.Put(n2k[:], n2)
+	err = sto2.Put(ctx, n2k[:], n2)
 	assert.Nil(t, err)
-	assert.Nil(t, sto2tx.Commit())
 
 	// Test that storage with prefix 1 has only 3 records and they are expected ones
 	r, err := sto1.List(100)
