@@ -2,6 +2,7 @@ package memory
 
 import (
 	"bytes"
+	"context"
 	"sort"
 
 	"github.com/iden3/go-merkletree-sql"
@@ -45,6 +46,12 @@ func (m *Storage) Get(key []byte) (*merkletree.Node, error) {
 	return nil, merkletree.ErrNotFound
 }
 
+func (m *Storage) Put(_ context.Context, key []byte,
+	node *merkletree.Node) error {
+	m.kv.Put(merkletree.Concat(m.prefix, key), *node)
+	return nil
+}
+
 func (m *Storage) GetRoot() (*merkletree.Hash, error) {
 	if m.currentRoot != nil {
 		hash := merkletree.Hash{}
@@ -52,6 +59,13 @@ func (m *Storage) GetRoot() (*merkletree.Hash, error) {
 		return &hash, nil
 	}
 	return nil, merkletree.ErrNotFound
+}
+
+func (m *Storage) SetRoot(_ context.Context, hash *merkletree.Hash) (error) {
+	root := &merkletree.Hash{}
+	copy(root[:], hash[:])
+	m.currentRoot = root
+	return nil
 }
 
 // Iterate implements the method Iterate of the interface db.Storage

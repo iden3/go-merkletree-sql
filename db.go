@@ -2,6 +2,7 @@ package merkletree
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"errors"
 )
@@ -17,7 +18,9 @@ type Storage interface {
 	NewTx() (Tx, error)
 	WithPrefix(prefix []byte) Storage
 	Get([]byte) (*Node, error)
+	Put(ctx context.Context, k []byte, v *Node) error
 	GetRoot() (*Hash, error)
+	SetRoot(context.Context, *Hash) error
 	List(int) ([]KV, error)
 	Close()
 	Iterate(func([]byte, *Node) (bool, error)) error

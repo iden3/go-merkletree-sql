@@ -1,9 +1,11 @@
 package sql
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/binary"
+
 	"github.com/iden3/go-merkletree-sql"
 	"github.com/jmoiron/sqlx"
 )
@@ -118,6 +120,29 @@ func (s *Storage) Get(key []byte) (*merkletree.Node, error) {
 	return node, nil
 }
 
+func (s *Storage) Put(ctx context.Context, key []byte,
+	node *merkletree.Node) error {
+
+	var childL []byte
+	if node.ChildL != nil {
+		childL = append(childL, node.ChildL[:]...)
+	}
+
+	var childR []byte
+	if node.ChildR != nil {
+		childR = append(childR, node.ChildR[:]...)
+	}
+
+	var entry []byte
+	if node.Entry[0] != nil && node.Entry[1] != nil {
+		entry = append(node.Entry[0][:], node.Entry[1][:]...)
+	}
+
+	_, err := s.db.ExecContext(ctx, upsertStmt, s.mtId, key[:], node.Type,
+		childL, childR, entry)
+	return err
+}
+
 // GetRoot retrieves a merkle tree root hash in the interface db.Tx
 func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 	var root merkletree.Hash
@@ -146,6 +171,18 @@ func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 	copy(s.currentRoot[:], item.Key[:])
 	copy(root[:], s.currentRoot[:])
 	return &root, nil
+}
+
+func (s *Storage) SetRoot(ctx context.Context, hash *merkletree.Hash) error {
+	if s.currentRoot == nil {
+		s.currentRoot = &merkletree.Hash{}
+	}
+	copy(s.currentRoot[:], hash[:])
+	_, err := s.db.ExecContext(ctx, updateRootStmt, s.mtId, s.currentRoot[:])
+	if err != nil {
+		err = newErr(err, "failed to update current root hash")
+	}
+	return err
 }
 
 // Iterate implements the method Iterate of the interface db.Storage
@@ -361,4 +398,21 @@ func (m KvMap) Get(k []byte) (merkletree.Node, bool) {
 // Put stores a key and a value in the KvMap
 func (m KvMap) Put(mtId uint64, k []byte, v merkletree.Node) {
 	m[sha256.Sum256(k)] = KV{mtId, k, v}
+}
+
+type storageError struct {
+	err error
+	msg string
+}
+
+func (err storageError) Error() string {
+	return err.msg + ": " + err.err.Error()
+}
+
+func (err storageError) Unwrap() error {
+	return err.err
+}
+
+func newErr(err error, msg string) error {
+	return storageError{err, msg}
 }
