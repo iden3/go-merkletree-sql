@@ -49,12 +49,7 @@ type RootItem struct {
 
 // NewSqlStorage returns a new Storage
 func NewSqlStorage(db *sqlx.DB, mtId uint64) (*Storage, error) {
-	return &Storage{db: db, mtId: mtId, externalTx: nil}, nil
-}
-
-// NewSqlStorageWithExternalTx returns a new Storage
-func NewSqlStorageWithExternalTx(db *sqlx.DB, mtId uint64, externalTx *sqlx.Tx) (*Storage, error) {
-	return &Storage{db: db, mtId: mtId, externalTx: externalTx}, nil
+	return &Storage{db: db, mtId: mtId}, nil
 }
 
 // WithPrefix implements the method WithPrefix of the interface db.Storage
@@ -62,18 +57,14 @@ func (s *Storage) WithPrefix(prefix []byte) merkletree.Storage {
 	//return &Storage{db: s.db, prefix: merkletree.Concat(s.prefix, prefix)}
 	// TODO: remove WithPrefix method
 	mtId, _ := binary.Uvarint(prefix)
-	return &Storage{db: s.db, mtId: mtId, externalTx: s.externalTx}
+	return &Storage{db: s.db, mtId: mtId}
 }
 
 // Get retrieves a value from a key in the db.Storage
 func (s *Storage) Get(key []byte) (*merkletree.Node, error) {
 	item := NodeItem{}
-	var err error
-	if s.externalTx != nil {
-		err = s.externalTx.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
-	} else {
-		err = s.db.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
-	}
+	err := s.db.Get(&item,
+		"SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
 	}
@@ -121,11 +112,7 @@ func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 	}
 
 	item := RootItem{}
-	if s.externalTx != nil {
-		err = s.externalTx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
-	} else {
-		err = s.db.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
-	}
+	err = s.db.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
 	}
@@ -154,14 +141,9 @@ func (s *Storage) SetRoot(ctx context.Context, hash *merkletree.Hash) error {
 
 // Iterate implements the method Iterate of the interface db.Storage
 func (s *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error {
-	var err error
 	items := []NodeItem{}
 
-	if s.externalTx != nil {
-		err = s.externalTx.Select(&items, "SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
-	} else {
-		err = s.db.Select(&items, "SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
-	}
+	err := s.db.Select(&items, "SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
 	if err != nil {
 		return err
 	}
