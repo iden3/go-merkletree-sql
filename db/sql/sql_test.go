@@ -29,10 +29,7 @@ func (builder *SqlStorageBuilder) NewStorage(t *testing.T) merkletree.Storage {
 
 	mtId := atomic.AddUint64(&maxMTId, 1)
 
-	sto, err := NewSqlStorage(dbx, mtId)
-	require.NoError(t, err)
-
-	return sto
+	return NewSqlStorage(dbx, mtId)
 }
 
 func TestSql(t *testing.T) {

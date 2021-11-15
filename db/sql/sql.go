@@ -52,8 +52,8 @@ type RootItem struct {
 }
 
 // NewSqlStorage returns a new Storage
-func NewSqlStorage(db DB, mtId uint64) (*Storage, error) {
-	return &Storage{db: db, mtId: mtId}, nil
+func NewSqlStorage(db DB, mtId uint64) *Storage {
+	return &Storage{db: db, mtId: mtId}
 }
 
 // WithPrefix implements the method WithPrefix of the interface db.Storage
