@@ -1,11 +1,11 @@
 package sql
 
 import (
-	"crypto/sha256"
+	"context"
 	"database/sql"
 	"encoding/binary"
+
 	"github.com/iden3/go-merkletree-sql"
-	"github.com/jmoiron/sqlx"
 )
 
 // TODO: upsert or insert?
@@ -15,22 +15,18 @@ const upsertStmt = `INSERT INTO mt_nodes (mt_id, key, type, child_l, child_r, en
 const updateRootStmt = `INSERT INTO mt_roots (mt_id, key) VALUES ($1, $2) ` +
 	`ON CONFLICT (mt_id) DO UPDATE SET key = $2`
 
+type DB interface {
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+}
+
 // Storage implements the db.Storage interface
 type Storage struct {
-	db             *sqlx.DB
+	db             DB
 	mtId           uint64
 	currentVersion uint64
 	currentRoot    *merkletree.Hash
-	externalTx     *sqlx.Tx
-}
-
-// StorageTx implements the db.Tx interface
-type StorageTx struct {
-	storage     *Storage
-	tx          *sqlx.Tx
-	autoCommit  bool
-	cache       KvMap
-	currentRoot *merkletree.Hash
 }
 
 type NodeItem struct {
@@ -56,13 +52,8 @@ type RootItem struct {
 }
 
 // NewSqlStorage returns a new Storage
-func NewSqlStorage(db *sqlx.DB, mtId uint64) (*Storage, error) {
-	return &Storage{db: db, mtId: mtId, externalTx: nil}, nil
-}
-
-// NewSqlStorageWithExternalTx returns a new Storage
-func NewSqlStorageWithExternalTx(db *sqlx.DB, mtId uint64, externalTx *sqlx.Tx) (*Storage, error) {
-	return &Storage{db: db, mtId: mtId, externalTx: externalTx}, nil
+func NewSqlStorage(db DB, mtId uint64) *Storage {
+	return &Storage{db: db, mtId: mtId}
 }
 
 // WithPrefix implements the method WithPrefix of the interface db.Storage
@@ -70,41 +61,15 @@ func (s *Storage) WithPrefix(prefix []byte) merkletree.Storage {
 	//return &Storage{db: s.db, prefix: merkletree.Concat(s.prefix, prefix)}
 	// TODO: remove WithPrefix method
 	mtId, _ := binary.Uvarint(prefix)
-	return &Storage{db: s.db, mtId: mtId, externalTx: s.externalTx}
-}
-
-// NewTx implements the method NewTx of the interface db.Storage
-func (s *Storage) NewTx() (merkletree.Tx, error) {
-	var tx *sqlx.Tx
-	var err error
-	autoCommit := true
-	if s.externalTx != nil {
-		tx = s.externalTx
-		autoCommit = false
-	} else {
-		tx, err = s.db.Beginx()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return &StorageTx{
-		storage:     s,
-		tx:          tx,
-		autoCommit:  autoCommit,
-		cache:       make(KvMap),
-		currentRoot: s.currentRoot,
-	}, nil
+	return &Storage{db: s.db, mtId: mtId}
 }
 
 // Get retrieves a value from a key in the db.Storage
-func (s *Storage) Get(key []byte) (*merkletree.Node, error) {
+func (s *Storage) Get(ctx context.Context,
+	key []byte) (*merkletree.Node, error) {
 	item := NodeItem{}
-	var err error
-	if s.externalTx != nil {
-		err = s.externalTx.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
-	} else {
-		err = s.db.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
-	}
+	err := s.db.GetContext(ctx, &item,
+		"SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
 	}
@@ -118,8 +83,31 @@ func (s *Storage) Get(key []byte) (*merkletree.Node, error) {
 	return node, nil
 }
 
+func (s *Storage) Put(ctx context.Context, key []byte,
+	node *merkletree.Node) error {
+
+	var childL []byte
+	if node.ChildL != nil {
+		childL = append(childL, node.ChildL[:]...)
+	}
+
+	var childR []byte
+	if node.ChildR != nil {
+		childR = append(childR, node.ChildR[:]...)
+	}
+
+	var entry []byte
+	if node.Entry[0] != nil && node.Entry[1] != nil {
+		entry = append(node.Entry[0][:], node.Entry[1][:]...)
+	}
+
+	_, err := s.db.ExecContext(ctx, upsertStmt, s.mtId, key[:], node.Type,
+		childL, childR, entry)
+	return err
+}
+
 // GetRoot retrieves a merkle tree root hash in the interface db.Tx
-func (s *Storage) GetRoot() (*merkletree.Hash, error) {
+func (s *Storage) GetRoot(ctx context.Context) (*merkletree.Hash, error) {
 	var root merkletree.Hash
 	var err error
 
@@ -129,11 +117,8 @@ func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 	}
 
 	item := RootItem{}
-	if s.externalTx != nil {
-		err = s.externalTx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
-	} else {
-		err = s.db.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
-	}
+	err = s.db.GetContext(ctx, &item,
+		"SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
 	if err == sql.ErrNoRows {
 		return nil, merkletree.ErrNotFound
 	}
@@ -148,16 +133,25 @@ func (s *Storage) GetRoot() (*merkletree.Hash, error) {
 	return &root, nil
 }
 
+func (s *Storage) SetRoot(ctx context.Context, hash *merkletree.Hash) error {
+	if s.currentRoot == nil {
+		s.currentRoot = &merkletree.Hash{}
+	}
+	copy(s.currentRoot[:], hash[:])
+	_, err := s.db.ExecContext(ctx, updateRootStmt, s.mtId, s.currentRoot[:])
+	if err != nil {
+		err = newErr(err, "failed to update current root hash")
+	}
+	return err
+}
+
 // Iterate implements the method Iterate of the interface db.Storage
-func (s *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error {
-	var err error
+func (s *Storage) Iterate(ctx context.Context,
+	f func([]byte, *merkletree.Node) (bool, error)) error {
 	items := []NodeItem{}
 
-	if s.externalTx != nil {
-		err = s.externalTx.Select(&items, "SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
-	} else {
-		err = s.db.Select(&items, "SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
-	}
+	err := s.db.SelectContext(ctx, &items,
+		"SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
 	if err != nil {
 		return err
 	}
@@ -178,144 +172,17 @@ func (s *Storage) Iterate(f func([]byte, *merkletree.Node) (bool, error)) error 
 	return nil
 }
 
-// Get retrieves a value from a key in the interface db.Tx
-func (tx *StorageTx) Get(key []byte) (*merkletree.Node, error) {
-	//fullKey := append(tx.mtId, key...)
-	fullKey := key
-	if value, ok := tx.cache.Get(fullKey); ok {
-		return &value, nil
-	}
-
-	item := NodeItem{}
-	err := tx.tx.Get(&item, "SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", tx.storage.mtId, key)
-	if err == sql.ErrNoRows {
-		return nil, merkletree.ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	node, err := item.Node()
-	if err != nil {
-		return nil, err
-	}
-	return node, nil
-}
-
-// Put saves a key:value into the db.Storage
-func (tx *StorageTx) Put(k []byte, v *merkletree.Node) error {
-	//fullKey := append(tx.mtId, k...)
-	fullKey := k
-	tx.cache.Put(tx.storage.mtId, fullKey, *v)
-	//fmt.Printf("tx.Put(%x, %+v)\n", fullKey, v)
-	return nil
-}
-
-// GetRoot retrieves a merkle tree root hash in the interface db.Tx
-func (tx *StorageTx) GetRoot() (*merkletree.Hash, error) {
-	var root merkletree.Hash
-
-	if tx.currentRoot != nil {
-		copy(root[:], tx.currentRoot[:])
-		return &root, nil
-	}
-
-	item := RootItem{}
-	err := tx.tx.Get(&item, "SELECT * FROM mt_roots WHERE mt_id = $1", tx.storage.mtId)
-	if err == sql.ErrNoRows {
-		return nil, merkletree.ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	copy(root[:], item.Key[:])
-	return &root, nil
-}
-
-// SetRoot sets a hash of merkle tree root in the interface db.Tx
-func (tx *StorageTx) SetRoot(hash *merkletree.Hash) error {
-	root := &merkletree.Hash{}
-	copy(root[:], hash[:])
-	tx.currentRoot = root
-	return nil
-}
-
-// Commit implements the method Commit of the interface db.Tx
-func (tx *StorageTx) Commit() error {
-	// execute a query on the server
-	//fmt.Printf("Commit\n")
-	for _, v := range tx.cache {
-		//fmt.Printf("key %x, value %+v\n", v.K, v.V)
-		node := v.V
-
-		var childL []byte
-		if node.ChildL != nil {
-			childL = append(childL, node.ChildL[:]...)
-		}
-
-		var childR []byte
-		if node.ChildR != nil {
-			childR = append(childR, node.ChildR[:]...)
-		}
-
-		var entry []byte
-		if node.Entry[0] != nil && node.Entry[1] != nil {
-			entry = append(node.Entry[0][:], node.Entry[1][:]...)
-		}
-
-		//key, err := node.Key()
-		key := v.K
-		//if err != nil {
-		//	return err
-		//}
-		_, err := tx.tx.Exec(upsertStmt, v.MTId, key[:], node.Type, childL, childR, entry)
-		if err != nil {
-			return err
-		}
-	}
-
-	if tx.currentRoot == nil {
-		tx.currentRoot = &merkletree.Hash{}
-	}
-	_, err := tx.tx.Exec(updateRootStmt, tx.storage.mtId, tx.currentRoot[:])
-	if err != nil {
-		return err
-	}
-
-	tx.storage.currentRoot = nil
-	tx.cache = nil
-
-	if tx.autoCommit {
-		return tx.tx.Commit()
-	}
-	return nil
-}
-
-// Close implements the method Close of the interface db.Tx
-func (tx *StorageTx) Close() {
-	if tx.autoCommit {
-		tx.tx.Rollback()
-	}
-	tx.cache = nil
-}
-
-// Close implements the method Close of the interface db.Storage
-func (s *Storage) Close() {
-	err := s.db.Close()
-	if err != nil {
-		panic(err)
-	}
-}
-
 // List implements the method List of the interface db.Storage
-func (s *Storage) List(limit int) ([]merkletree.KV, error) {
+func (s *Storage) List(ctx context.Context, limit int) ([]merkletree.KV, error) {
 	ret := []merkletree.KV{}
-	err := s.Iterate(func(key []byte, value *merkletree.Node) (bool, error) {
-		ret = append(ret, merkletree.KV{K: merkletree.Clone(key), V: *value})
-		if len(ret) == limit {
-			return false, nil
-		}
-		return true, nil
-	})
+	err := s.Iterate(ctx,
+		func(key []byte, value *merkletree.Node) (bool, error) {
+			ret = append(ret, merkletree.KV{K: merkletree.Clone(key), V: *value})
+			if len(ret) == limit {
+				return false, nil
+			}
+			return true, nil
+		})
 	return ret, err
 }
 
@@ -349,16 +216,19 @@ type KV struct {
 	V    merkletree.Node
 }
 
-// KvMap is a key-value map between a sha256 byte array hash, and a KV struct
-type KvMap map[[sha256.Size]byte]KV
-
-// Get retrieves the value respective to a key from the KvMap
-func (m KvMap) Get(k []byte) (merkletree.Node, bool) {
-	v, ok := m[sha256.Sum256(k)]
-	return v.V, ok
+type storageError struct {
+	err error
+	msg string
 }
 
-// Put stores a key and a value in the KvMap
-func (m KvMap) Put(mtId uint64, k []byte, v merkletree.Node) {
-	m[sha256.Sum256(k)] = KV{mtId, k, v}
+func (err storageError) Error() string {
+	return err.msg + ": " + err.err.Error()
+}
+
+func (err storageError) Unwrap() error {
+	return err.err
+}
+
+func newErr(err error, msg string) error {
+	return storageError{err, msg}
 }

@@ -17,7 +17,7 @@ const (
 	// NodeTypeEmpty indicates the type of an empty Node.
 	NodeTypeEmpty NodeType = 2
 
-	// DBEntryTypeRoot indicates the type of a DB entry that indicates the
+	// DBEntryTypeRoot indicates a type of DB entry that indicates the
 	// current Root of a MerkleTree
 	DBEntryTypeRoot NodeType = 3
 )

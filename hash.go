@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
 	"math/big"
 	"strings"
+
+	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
 )
 
 var (
