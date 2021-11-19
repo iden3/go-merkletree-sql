@@ -1,4 +1,4 @@
-# go-merkletree [![GoDoc](https://godoc.org/github.com/iden3/go-merkletree-sql?status.svg)](https://godoc.org/github.com/iden3/go-merkletree-sql) [![Go Report Card](https://goreportcard.com/badge/github.com/iden3/go-merkletree-sql)](https://goreportcard.com/report/github.com/iden3/go-merkletree-sql) [![Test](https://github.com/iden3/go-merkletree-sql/workflows/Test/badge.svg)](https://github.com/iden3/go-merkletree-sql/actions?query=workflow%3ATest)
+# go-merkletree-sql [![GoDoc](https://godoc.org/github.com/iden3/go-merkletree-sql?status.svg)](https://godoc.org/github.com/iden3/go-merkletree-sql) [![Go Report Card](https://goreportcard.com/badge/github.com/iden3/go-merkletree-sql)](https://goreportcard.com/report/github.com/iden3/go-merkletree-sql) [![Test](https://github.com/iden3/go-merkletree-sql/workflows/Test/badge.svg)](https://github.com/iden3/go-merkletree-sql/actions?query=workflow%3ATest)
 
 MerkleTree compatible with version from [circomlib](https://github.com/iden3/circomlib).
 
