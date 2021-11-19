@@ -9,7 +9,6 @@ import (
 	"github.com/iden3/go-merkletree-sql"
 	"github.com/iden3/go-merkletree-sql/db/test"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	go_test_pg "github.com/olomix/go-test-pg"
 	"github.com/stretchr/testify/require"
 )
@@ -24,6 +23,8 @@ var dbPool = go_test_pg.Pgpool{
 type SqlStorageBuilder struct{}
 
 func (builder *SqlStorageBuilder) NewStorage(t *testing.T) merkletree.Storage {
+	// Note: Use ENV vars to set database configuration.
+	// See https://www.postgresql.org/docs/11/libpq-envars.html for details.
 	db := dbPool.WithStdEmpty(t)
 	dbx := sqlx.NewDb(db, "pgx")
 
