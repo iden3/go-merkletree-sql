@@ -633,8 +633,8 @@ func getPath(numLevels int, k []byte) []bool {
 
 // NodeAux contains the auxiliary node used in a non-existence proof.
 type NodeAux struct {
-	Key   *Hash
-	Value *Hash
+	Key   *Hash `json:"h_index"`
+	Value *Hash `json:"h_value"`
 }
 
 // CircomSiblingsFromSiblings returns the full siblings compatible with circom
