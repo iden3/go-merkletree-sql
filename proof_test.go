@@ -71,30 +71,35 @@ func TestProof_MarshalJSON_NonInclusionProofWithoutNodeAux(t *testing.T) {
 
 	// gives the same proof
 	proof, _, err = mt.GenerateProof(ctx, big.NewInt(14), mt.Root())
+	require.NoError(t, err)
 	jsonProof, err = proof.MarshalJSON()
 	require.NoError(t, err)
 	assert.Equal(t, expected, string(jsonProof))
 
 	// gives the same proof
 	proof, _, err = mt.GenerateProof(ctx, big.NewInt(22), mt.Root())
+	require.NoError(t, err)
 	jsonProof, err = proof.MarshalJSON()
 	require.NoError(t, err)
 	assert.Equal(t, expected, string(jsonProof))
 
 	// gives the same proof
 	proof, _, err = mt.GenerateProof(ctx, big.NewInt(30), mt.Root())
+	require.NoError(t, err)
 	jsonProof, err = proof.MarshalJSON()
 	require.NoError(t, err)
 	assert.Equal(t, expected, string(jsonProof))
 
 	// gives the same proof
 	proof, _, err = mt.GenerateProof(ctx, big.NewInt(38), mt.Root())
+	require.NoError(t, err)
 	jsonProof, err = proof.MarshalJSON()
 	require.NoError(t, err)
 	assert.Equal(t, expected, string(jsonProof))
 
 	// gives the same proof
 	proof, _, err = mt.GenerateProof(ctx, big.NewInt(46), mt.Root())
+	require.NoError(t, err)
 	jsonProof, err = proof.MarshalJSON()
 	require.NoError(t, err)
 	assert.Equal(t, expected, string(jsonProof))
