@@ -633,8 +633,8 @@ func getPath(numLevels int, k []byte) []bool {
 
 // NodeAux contains the auxiliary node used in a non-existence proof.
 type NodeAux struct {
-	Key   *Hash `json:"h_index"`
-	Value *Hash `json:"h_value"`
+	Key   *Hash `json:"key"`
+	Value *Hash `json:"value"`
 }
 
 // CircomSiblingsFromSiblings returns the full siblings compatible with circom
@@ -785,7 +785,7 @@ func (mt *MerkleTree) GenerateProof(ctx context.Context, k *big.Int,
 		}
 		if !bytes.Equal(siblingKey[:], HashZero[:]) {
 			SetBitBigEndian(p.notempties[:], uint(p.depth))
-			p.Siblings = append(p.Siblings, siblingKey)
+			p.siblings = append(p.siblings, siblingKey)
 		}
 	}
 	return nil, nil, ErrKeyNotFound
