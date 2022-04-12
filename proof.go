@@ -34,7 +34,7 @@ type proofJSON struct {
 	NodeAux *NodeAux `json:"node_aux,omitempty"`
 }
 
-// NewProofFromBytes parses a byte array into a Proof.
+// NewProofFromBytes parses a byte array into a Proof
 func NewProofFromBytes(bs []byte) (*Proof, error) {
 	if len(bs) < ElemBytesLen {
 		return nil, ErrInvalidProofBytes
@@ -71,6 +71,7 @@ func NewProofFromBytes(bs []byte) (*Proof, error) {
 	return p, nil
 }
 
+// NewProofFromData reconstructs proof from siblings and auxiliary node
 func NewProofFromData(existence bool, allSiblings []*Hash, nodeAux *NodeAux) (*Proof, error) {
 	var p Proof
 	p.Existence = existence
@@ -117,6 +118,7 @@ func (p *Proof) AllSiblings() []*Hash {
 	return SiblingsFromProof(p)
 }
 
+// MarshalJSON implements json.Marshaler interface
 func (p Proof) MarshalJSON() ([]byte, error) {
 	obj := proofJSON{
 		Existence: p.Existence,
@@ -126,6 +128,7 @@ func (p Proof) MarshalJSON() ([]byte, error) {
 	return json.Marshal(obj)
 }
 
+// UnmarshalJSON implements json.Unmarshaler interface
 func (p *Proof) UnmarshalJSON(data []byte) error {
 	var obj proofJSON
 	err := json.Unmarshal(data, &obj)
