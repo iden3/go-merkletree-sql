@@ -27,11 +27,11 @@ func TestProof_MarshalJSON(t *testing.T) {
 
 	jsonProof, err := proof.MarshalJSON()
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof))
+	assert.JSONEq(t, expected, string(jsonProof))
 
 	jsonProof2, err := json.Marshal(proof)
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof2))
+	assert.JSONEq(t, expected, string(jsonProof2))
 
 	var p merkletree.Proof
 	err = json.Unmarshal(jsonProof, &p)
@@ -54,12 +54,12 @@ func TestProof_MarshalJSON_NonInclusionProofWithoutNodeAux(t *testing.T) {
 	mt, err := merkletree.NewMerkleTree(ctx, db, 40)
 	require.NoError(t, err)
 
-	mt.Add(ctx, big.NewInt(1), big.NewInt(2))  //nolint:errcheck,gosec
-	mt.Add(ctx, big.NewInt(2), big.NewInt(8))  //nolint:errcheck,gosec
-	mt.Add(ctx, big.NewInt(3), big.NewInt(8))  //nolint:errcheck,gosec
-	mt.Add(ctx, big.NewInt(17), big.NewInt(8)) //nolint:errcheck,gosec
-	mt.Add(ctx, big.NewInt(18), big.NewInt(8)) //nolint:errcheck,gosec
-	mt.Add(ctx, big.NewInt(19), big.NewInt(8)) //nolint:errcheck,gosec
+	_ = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
+	_ = mt.Add(ctx, big.NewInt(2), big.NewInt(8))
+	_ = mt.Add(ctx, big.NewInt(3), big.NewInt(8))
+	_ = mt.Add(ctx, big.NewInt(17), big.NewInt(8))
+	_ = mt.Add(ctx, big.NewInt(18), big.NewInt(8))
+	_ = mt.Add(ctx, big.NewInt(19), big.NewInt(8))
 
 	expected := `{"existence":false,"siblings":["11445591970430686524669302036672429838422356071483318076578901368167305782934","0","19623034175990655567331847335376057032468128626960956120127301863642129702078"]}` //nolint:lll
 
@@ -67,48 +67,48 @@ func TestProof_MarshalJSON_NonInclusionProofWithoutNodeAux(t *testing.T) {
 	require.NoError(t, err)
 	jsonProof, err := proof.MarshalJSON()
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof))
+	assert.JSONEq(t, expected, string(jsonProof))
 
 	// gives the same proof
 	proof, _, err = mt.GenerateProof(ctx, big.NewInt(14), mt.Root())
 	require.NoError(t, err)
 	jsonProof, err = proof.MarshalJSON()
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof))
+	assert.JSONEq(t, expected, string(jsonProof))
 
 	// gives the same proof
 	proof, _, err = mt.GenerateProof(ctx, big.NewInt(22), mt.Root())
 	require.NoError(t, err)
 	jsonProof, err = proof.MarshalJSON()
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof))
+	assert.JSONEq(t, expected, string(jsonProof))
 
 	// gives the same proof
 	proof, _, err = mt.GenerateProof(ctx, big.NewInt(30), mt.Root())
 	require.NoError(t, err)
 	jsonProof, err = proof.MarshalJSON()
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof))
+	assert.JSONEq(t, expected, string(jsonProof))
 
 	// gives the same proof
 	proof, _, err = mt.GenerateProof(ctx, big.NewInt(38), mt.Root())
 	require.NoError(t, err)
 	jsonProof, err = proof.MarshalJSON()
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof))
+	assert.JSONEq(t, expected, string(jsonProof))
 
 	// gives the same proof
 	proof, _, err = mt.GenerateProof(ctx, big.NewInt(46), mt.Root())
 	require.NoError(t, err)
 	jsonProof, err = proof.MarshalJSON()
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof))
+	assert.JSONEq(t, expected, string(jsonProof))
 
 	//fmt.Println(string(jsonProof))
 
 	jsonProof2, err := json.Marshal(proof)
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof2))
+	assert.JSONEq(t, expected, string(jsonProof2))
 
 	var p merkletree.Proof
 	err = json.Unmarshal(jsonProof, &p)
@@ -131,10 +131,10 @@ func TestProof_MarshalJSON_NonInclusionProofWithNodeAux(t *testing.T) {
 	mt, err := merkletree.NewMerkleTree(ctx, db, 40)
 	require.NoError(t, err)
 
-	mt.Add(ctx, big.NewInt(1), big.NewInt(2)) //nolint:errcheck,gosec // 1 0b000001
-	mt.Add(ctx, big.NewInt(3), big.NewInt(8)) //nolint:errcheck,gosec // 3 0b000011
-	mt.Add(ctx, big.NewInt(7), big.NewInt(8)) //nolint:errcheck,gosec // 7 0b000111
-	mt.Add(ctx, big.NewInt(9), big.NewInt(8)) //nolint:errcheck,gosec // 9 0b001001
+	_ = mt.Add(ctx, big.NewInt(1), big.NewInt(2)) // 1 0b000001
+	_ = mt.Add(ctx, big.NewInt(3), big.NewInt(8)) // 3 0b000011
+	_ = mt.Add(ctx, big.NewInt(7), big.NewInt(8)) // 7 0b000111
+	_ = mt.Add(ctx, big.NewInt(9), big.NewInt(8)) // 9 0b001001
 
 	//nolint:lll
 	expected := `{"existence":false,"siblings":["0","12166698708103333637493481507263348370172773813051235807348785759284762677336","7750564177398573185975752951631372712868228752107043582052272719841058100111"],"node_aux":{"key":"3","value":"8"}}`
@@ -143,13 +143,13 @@ func TestProof_MarshalJSON_NonInclusionProofWithNodeAux(t *testing.T) {
 	require.NoError(t, err)
 	jsonProof, err := proof.MarshalJSON()
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof))
+	assert.JSONEq(t, expected, string(jsonProof))
 
 	//fmt.Println(string(jsonProof))
 
 	jsonProof2, err := json.Marshal(proof)
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(jsonProof2))
+	assert.JSONEq(t, expected, string(jsonProof2))
 
 	var p merkletree.Proof
 	err = json.Unmarshal(jsonProof, &p)
