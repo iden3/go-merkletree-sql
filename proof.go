@@ -77,7 +77,6 @@ func NewProofFromData(existence bool, allSiblings []*Hash, nodeAux *NodeAux) (*P
 	p.NodeAux = nodeAux
 	var siblings []*Hash
 	p.depth = uint(len(allSiblings))
-	p.notempties = [ElemBytesLen - proofFlagsLen]byte{}
 	for lvl, sibling := range allSiblings {
 		if !sibling.Equals(&HashZero) {
 			SetBitBigEndian(p.notempties[:], uint(lvl))
