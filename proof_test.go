@@ -18,8 +18,8 @@ func TestProof_MarshalJSON(t *testing.T) {
 	mt, err := merkletree.NewMerkleTree(ctx, db, 40)
 	require.NoError(t, err)
 
-	mt.Add(ctx, big.NewInt(0x0001), big.NewInt(2)) //nolint:errcheck,gosec
-	mt.Add(ctx, big.NewInt(0x0011), big.NewInt(8)) //nolint:errcheck,gosec
+	_ = mt.Add(ctx, big.NewInt(0x0001), big.NewInt(2))
+	_ = mt.Add(ctx, big.NewInt(0x0011), big.NewInt(8))
 	proof, _, err := mt.GenerateProof(ctx, big.NewInt(1), mt.Root())
 	require.NoError(t, err)
 
