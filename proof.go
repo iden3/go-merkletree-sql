@@ -2,6 +2,7 @@ package merkletree
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/big"
 )
@@ -9,19 +10,31 @@ import (
 // Proof defines the required elements for a MT proof of existence or
 // non-existence.
 type Proof struct {
-	// existence indicates wether this is a proof of existence or
-	// non-existence.
+	// existence indicates whether this is a proof of existence or
+	// non-existence
 	Existence bool
-	// depth indicates how deep in the tree the proof goes.
+	// depth indicates how deep in the tree the proof goes
 	depth uint
-	// notempties is a bitmap of non-empty Siblings found in Siblings.
+	// notempties is a bitmap of non-empty siblings found in siblings
 	notempties [ElemBytesLen - proofFlagsLen]byte
-	// Siblings is a list of non-empty sibling keys.
-	Siblings []*Hash
-	NodeAux  *NodeAux
+	// siblings is a list of non-empty sibling keys
+	siblings []*Hash
+	// Auxiliary node if needed
+	NodeAux *NodeAux
 }
 
-// NewProofFromBytes parses a byte array into a Proof.
+// proofJSON defines the required elements for a MT proof in json serializable structure
+type proofJSON struct {
+	// existence indicates whether this is a proof of existence or
+	// non-existence
+	Existence bool `json:"existence"`
+	// Siblings is a list of all sibling keys
+	Siblings []*Hash `json:"siblings"`
+	// Auxiliary node if needed
+	NodeAux *NodeAux `json:"node_aux,omitempty"`
+}
+
+// NewProofFromBytes parses a byte array into a Proof
 func NewProofFromBytes(bs []byte) (*Proof, error) {
 	if len(bs) < ElemBytesLen {
 		return nil, ErrInvalidProofBytes
@@ -41,14 +54,14 @@ func NewProofFromBytes(bs []byte) (*Proof, error) {
 			}
 			var sib Hash
 			copy(sib[:], siblingBytes[sibIdx*ElemBytesLen:(sibIdx+1)*ElemBytesLen])
-			p.Siblings = append(p.Siblings, &sib)
+			p.siblings = append(p.siblings, &sib)
 			sibIdx++
 		}
 	}
 
 	if !p.Existence && ((bs[0] & 0x02) != 0) {
 		p.NodeAux = &NodeAux{Key: &Hash{}, Value: &Hash{}}
-		nodeAuxBytes := siblingBytes[len(p.Siblings)*ElemBytesLen:]
+		nodeAuxBytes := siblingBytes[len(p.siblings)*ElemBytesLen:]
 		if len(nodeAuxBytes) != 2*ElemBytesLen {
 			return nil, ErrInvalidProofBytes
 		}
@@ -58,9 +71,26 @@ func NewProofFromBytes(bs []byte) (*Proof, error) {
 	return p, nil
 }
 
+// NewProofFromData reconstructs proof from siblings and auxiliary node
+func NewProofFromData(existence bool, allSiblings []*Hash, nodeAux *NodeAux) (*Proof, error) {
+	var p Proof
+	p.Existence = existence
+	p.NodeAux = nodeAux
+	var siblings []*Hash
+	p.depth = uint(len(allSiblings))
+	for lvl, sibling := range allSiblings {
+		if !sibling.Equals(&HashZero) {
+			SetBitBigEndian(p.notempties[:], uint(lvl))
+			siblings = append(siblings, sibling)
+		}
+	}
+	p.siblings = siblings
+	return &p, nil
+}
+
 // Bytes serializes a Proof into a byte array.
 func (p *Proof) Bytes() []byte {
-	bsLen := proofFlagsLen + len(p.notempties) + ElemBytesLen*len(p.Siblings)
+	bsLen := proofFlagsLen + len(p.notempties) + ElemBytesLen*len(p.siblings)
 	if p.NodeAux != nil {
 		bsLen += 2 * ElemBytesLen
 	}
@@ -72,7 +102,7 @@ func (p *Proof) Bytes() []byte {
 	bs[1] = byte(p.depth)
 	copy(bs[proofFlagsLen:len(p.notempties)+proofFlagsLen], p.notempties[:])
 	siblingsBytes := bs[len(p.notempties)+proofFlagsLen:]
-	for i, k := range p.Siblings {
+	for i, k := range p.siblings {
 		copy(siblingsBytes[i*ElemBytesLen:(i+1)*ElemBytesLen], k[:])
 	}
 	if p.NodeAux != nil {
@@ -83,24 +113,56 @@ func (p *Proof) Bytes() []byte {
 	return bs
 }
 
+// AllSiblings returns all the siblings of the proof.
+func (p *Proof) AllSiblings() []*Hash {
+	return SiblingsFromProof(p)
+}
+
+// MarshalJSON implements json.Marshaler interface
+func (p Proof) MarshalJSON() ([]byte, error) {
+	obj := proofJSON{
+		Existence: p.Existence,
+		Siblings:  p.AllSiblings(),
+		NodeAux:   p.NodeAux,
+	}
+	return json.Marshal(obj)
+}
+
+// UnmarshalJSON implements json.Unmarshaler interface
+func (p *Proof) UnmarshalJSON(data []byte) error {
+	var obj proofJSON
+	err := json.Unmarshal(data, &obj)
+	if err != nil {
+		return err
+	}
+
+	proof, err := NewProofFromData(obj.Existence, obj.Siblings, obj.NodeAux)
+	if err != nil {
+		return err
+	}
+
+	p.siblings = proof.siblings
+	p.Existence = proof.Existence
+	p.NodeAux = proof.NodeAux
+	p.notempties = proof.notempties
+	p.depth = proof.depth
+
+	return nil
+}
+
 // SiblingsFromProof returns all the siblings of the proof.
 func SiblingsFromProof(proof *Proof) []*Hash {
 	sibIdx := 0
 	siblings := []*Hash{}
 	for lvl := 0; lvl < int(proof.depth); lvl++ {
 		if TestBitBigEndian(proof.notempties[:], uint(lvl)) {
-			siblings = append(siblings, proof.Siblings[sibIdx])
+			siblings = append(siblings, proof.siblings[sibIdx])
 			sibIdx++
 		} else {
 			siblings = append(siblings, &HashZero)
 		}
 	}
 	return siblings
-}
-
-// AllSiblings returns all the siblings of the proof.
-func (p *Proof) AllSiblings() []*Hash {
-	return SiblingsFromProof(p)
 }
 
 // VerifyProof verifies the Merkle Proof for the entry and root.
@@ -118,7 +180,7 @@ func VerifyProof(rootKey *Hash, proof *Proof, k, v *big.Int) bool {
 func RootFromProof(proof *Proof, k, v *big.Int) (*Hash, error) {
 	kHash := NewHashFromBigInt(k)
 	vHash := NewHashFromBigInt(v)
-	sibIdx := len(proof.Siblings) - 1
+	sibIdx := len(proof.siblings) - 1
 	var err error
 	var midKey *Hash
 	if proof.Existence {
@@ -144,7 +206,7 @@ func RootFromProof(proof *Proof, k, v *big.Int) (*Hash, error) {
 	var siblingKey *Hash
 	for lvl := int(proof.depth) - 1; lvl >= 0; lvl-- {
 		if TestBitBigEndian(proof.notempties[:], uint(lvl)) {
-			siblingKey = proof.Siblings[sibIdx]
+			siblingKey = proof.siblings[sibIdx]
 			sibIdx--
 		} else {
 			siblingKey = &HashZero
