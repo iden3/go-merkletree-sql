@@ -117,19 +117,18 @@ func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) error {
 		return ErrNotWritable
 	}
 
-	// verify that k & v are valid and fit inside the Finite Field.
-	if !cryptoUtils.CheckBigIntInField(k) {
-		return errors.New("Key not inside the Finite Field")
+	kHash, err := NewHashFromBigInt(k)
+	if err != nil {
+		return fmt.Errorf("can't create hash from Key: %w", err)
 	}
-	if !cryptoUtils.CheckBigIntInField(v) {
-		return errors.New("Value not inside the Finite Field")
+	vHash, err := NewHashFromBigInt(v)
+	if err != nil {
+		return fmt.Errorf("can't create hash from Value: %w", err)
 	}
 
 	mt.Lock()
 	defer mt.Unlock()
 
-	kHash := NewHashFromBigInt(k)
-	vHash := NewHashFromBigInt(v)
 	newNodeLeaf := NewNodeLeaf(kHash, vHash)
 	path := getPath(mt.maxLevels, kHash[:])
 
@@ -184,8 +183,14 @@ func (mt *MerkleTree) AddAndGetCircomProof(ctx context.Context,
 	if err != nil && err != ErrKeyNotFound {
 		return nil, err
 	}
-	cp.OldKey = NewHashFromBigInt(gotK)
-	cp.OldValue = NewHashFromBigInt(gotV)
+	cp.OldKey, err = NewHashFromBigInt(gotK)
+	if err != nil {
+		return nil, err
+	}
+	cp.OldValue, err = NewHashFromBigInt(gotV)
+	if err != nil {
+		return nil, err
+	}
 	if bytes.Equal(cp.OldKey[:], HashZero[:]) {
 		cp.IsOld0 = true
 	}
@@ -200,8 +205,14 @@ func (mt *MerkleTree) AddAndGetCircomProof(ctx context.Context,
 		return nil, err
 	}
 
-	cp.NewKey = NewHashFromBigInt(k)
-	cp.NewValue = NewHashFromBigInt(v)
+	cp.NewKey, err = NewHashFromBigInt(k)
+	if err != nil {
+		return nil, err
+	}
+	cp.NewValue, err = NewHashFromBigInt(v)
+	if err != nil {
+		return nil, err
+	}
 	cp.NewRoot = mt.rootKey
 
 	return &cp, nil
@@ -346,12 +357,10 @@ func (mt *MerkleTree) updateNode(ctx context.Context, n *Node) (*Hash, error) {
 // Get returns the value of the leaf for the given key
 func (mt *MerkleTree) Get(ctx context.Context,
 	k *big.Int) (*big.Int, *big.Int, []*Hash, error) {
-	// verify that k is valid and fits inside the Finite Field.
-	if !cryptoUtils.CheckBigIntInField(k) {
-		return nil, nil, nil, errors.New("Key not inside the Finite Field")
+	kHash, err := NewHashFromBigInt(k)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("can't create hash from Key: %w", err)
 	}
-
-	kHash := NewHashFromBigInt(k)
 	path := getPath(mt.maxLevels, kHash[:])
 
 	nextKey := mt.rootKey
@@ -406,8 +415,14 @@ func (mt *MerkleTree) Update(ctx context.Context,
 	mt.Lock()
 	defer mt.Unlock()
 
-	kHash := NewHashFromBigInt(k)
-	vHash := NewHashFromBigInt(v)
+	kHash, err := NewHashFromBigInt(k)
+	if err != nil {
+		return nil, err
+	}
+	vHash, err := NewHashFromBigInt(v)
+	if err != nil {
+		return nil, err
+	}
 	path := getPath(mt.maxLevels, kHash[:])
 
 	var cp CircomProcessorProof
@@ -483,15 +498,13 @@ func (mt *MerkleTree) Delete(ctx context.Context, k *big.Int) error {
 		return ErrNotWritable
 	}
 
-	// verify that k is valid and fits inside the Finite Field.
-	if !cryptoUtils.CheckBigIntInField(k) {
-		return errors.New("Key not inside the Finite Field")
-	}
-
 	mt.Lock()
 	defer mt.Unlock()
 
-	kHash := NewHashFromBigInt(k)
+	kHash, err := NewHashFromBigInt(k)
+	if err != nil {
+		return err
+	}
 	path := getPath(mt.maxLevels, kHash[:])
 
 	nextKey := mt.rootKey
@@ -731,8 +744,14 @@ func (mt *MerkleTree) GenerateSCVerifierProof(ctx context.Context, k *big.Int,
 		cp.OldKey = &HashZero
 		cp.OldValue = &HashZero
 	}
-	cp.Key = NewHashFromBigInt(k)
-	cp.Value = NewHashFromBigInt(v)
+	cp.Key, err = NewHashFromBigInt(k)
+	if err != nil {
+		return nil, err
+	}
+	cp.Value, err = NewHashFromBigInt(v)
+	if err != nil {
+		return nil, err
+	}
 	if p.Existence {
 		cp.Fnc = 0 // inclusion
 	} else {
@@ -750,7 +769,10 @@ func (mt *MerkleTree) GenerateProof(ctx context.Context, k *big.Int,
 	p := &Proof{}
 	var siblingKey *Hash
 
-	kHash := NewHashFromBigInt(k)
+	kHash, err := NewHashFromBigInt(k)
+	if err != nil {
+		return nil, nil, err
+	}
 	path := getPath(mt.maxLevels, kHash[:])
 	if rootKey == nil {
 		rootKey = mt.Root()
@@ -855,11 +877,13 @@ node [fontname=Monospace,fontsize=10,shape=box]
 			for i := range lr {
 				if lr[i] == "0" {
 					lr[i] = fmt.Sprintf("empty%v", cnt)
-					emptyNodes += fmt.Sprintf("\"%v\" [style=dashed,label=0];\n", lr[i])
+					emptyNodes += fmt.Sprintf("\"%v\" [style=dashed,label=0];\n",
+						lr[i])
 					cnt++
 				}
 			}
-			fmt.Fprintf(w, "\"%v\" -> {\"%v\" \"%v\"}\n", k.String(), lr[0], lr[1])
+			fmt.Fprintf(w, "\"%v\" -> {\"%v\" \"%v\"}\n", k.String(), lr[0],
+				lr[1])
 			fmt.Fprint(w, emptyNodes)
 		default:
 		}
@@ -894,31 +918,31 @@ func (mt *MerkleTree) PrintGraphViz(ctx context.Context, rootKey *Hash) error {
 // is given (nil), it uses the current Root of the MerkleTree.
 func (mt *MerkleTree) DumpLeafs(ctx context.Context,
 	rootKey *Hash) ([]byte, error) {
-	var b []byte
+	var buf bytes.Buffer
 	err := mt.Walk(ctx, rootKey, func(n *Node) {
 		if n.Type == NodeTypeLeaf {
-			l := n.Entry[0].Bytes()
-			r := n.Entry[1].Bytes()
-			b = append(b, append(l[:], r[:]...)...)
+			buf.Grow(len(n.Entry[0]) + len(n.Entry[1]))
+			buf.Write(n.Entry[0][:])
+			buf.Write(n.Entry[1][:])
 		}
 	})
-	return b, err
+	return buf.Bytes(), err
 }
 
 // ImportDumpedLeafs parses and adds to the MerkleTree the dumped list of leafs
 // from the DumpLeafs function.
 func (mt *MerkleTree) ImportDumpedLeafs(ctx context.Context, b []byte) error {
-	for i := 0; i < len(b); i += 64 {
-		lr := b[i : i+64]
-		lB, err := NewBigIntFromHashBytes(lr[:32])
-		if err != nil {
-			return err
-		}
-		rB, err := NewBigIntFromHashBytes(lr[32:])
-		if err != nil {
-			return err
-		}
-		err = mt.Add(ctx, lB, rB)
+	hashLn := len(Hash{})
+	nodeLn := hashLn * 2
+	if len(b)%nodeLn != 0 {
+		return errors.New("invalid input length")
+	}
+	for i := 0; i < len(b); i += nodeLn {
+		var leftHash, rightHash Hash
+		copy(leftHash[:], b[i:i+hashLn])
+		copy(rightHash[:], b[i+hashLn:i+(hashLn*2)])
+
+		err := mt.Add(ctx, leftHash.BigInt(), rightHash.BigInt())
 		if err != nil {
 			return err
 		}

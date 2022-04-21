@@ -15,7 +15,7 @@ func HashElems(elems ...*big.Int) (*Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewHashFromBigInt(poseidonHash), nil
+	return NewHashFromBigInt(poseidonHash)
 }
 
 // HashElemsKey performs a poseidon hash over the array of ElemBytes, currently
@@ -31,7 +31,7 @@ func HashElemsKey(key *big.Int, elems ...*big.Int) (*Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewHashFromBigInt(poseidonHash), nil
+	return NewHashFromBigInt(poseidonHash)
 }
 
 // SetBitBigEndian sets the bit n in the bitmap to 1, in Big Endian.

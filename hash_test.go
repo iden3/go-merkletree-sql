@@ -11,32 +11,40 @@ import (
 )
 
 func TestHashParsers(t *testing.T) {
-	h0 := NewHashFromBigInt(big.NewInt(0))
+	h0, err := NewHashFromBigInt(big.NewInt(0))
+	require.NoError(t, err)
 	assert.Equal(t, "0", h0.String())
-	h1 := NewHashFromBigInt(big.NewInt(1))
+	h1, err := NewHashFromBigInt(big.NewInt(1))
+	require.NoError(t, err)
 	assert.Equal(t, "1", h1.String())
-	h10 := NewHashFromBigInt(big.NewInt(10))
+	h10, err := NewHashFromBigInt(big.NewInt(10))
+	require.NoError(t, err)
 	assert.Equal(t, "10", h10.String())
 
-	h7l := NewHashFromBigInt(big.NewInt(1234567))
+	h7l, err := NewHashFromBigInt(big.NewInt(1234567))
+	require.NoError(t, err)
 	assert.Equal(t, "1234567", h7l.String())
-	h8l := NewHashFromBigInt(big.NewInt(12345678))
+	h8l, err := NewHashFromBigInt(big.NewInt(12345678))
+	require.NoError(t, err)
 	assert.Equal(t, "12345678...", h8l.String())
 
-	b, ok := new(big.Int).SetString("4932297968297298434239270129193057052722409868268166443802652458940273154854", 10) //nolint:lll
+	b, ok := new(big.Int).SetString(
+		"4932297968297298434239270129193057052722409868268166443802652458940273154854", //nolint:lll
+		10)
 	assert.True(t, ok)
-	h := NewHashFromBigInt(b)
-	assert.Equal(t, "4932297968297298434239270129193057052722409868268166443802652458940273154854", h.BigInt().String()) //nolint:lll
+	h, err := NewHashFromBigInt(b)
+	require.NoError(t, err)
+	assert.Equal(t,
+		"4932297968297298434239270129193057052722409868268166443802652458940273154854",
+		h.BigInt().String()) //nolint:lll
 	assert.Equal(t, "49322979...", h.String())
-	assert.Equal(t, "265baaf161e875c372d08e50f52abddc01d32efc93e90290bb8b3d9ceb94e70a", h.Hex())
+	assert.Equal(t,
+		"265baaf161e875c372d08e50f52abddc01d32efc93e90290bb8b3d9ceb94e70a",
+		h.Hex())
 
 	b1, err := NewBigIntFromHashBytes(b.Bytes())
 	assert.Nil(t, err)
 	assert.Equal(t, new(big.Int).SetBytes(b.Bytes()).String(), b1.String())
-
-	b2, err := NewHashFromBytes(b.Bytes())
-	assert.Nil(t, err)
-	assert.Equal(t, b.String(), b2.BigInt().String())
 
 	h2, err := NewHashFromHex(h.Hex())
 	assert.Nil(t, err)
@@ -53,19 +61,10 @@ func TestHashParsers(t *testing.T) {
 
 func testHashParsers(t *testing.T, a *big.Int) {
 	require.True(t, cryptoUtils.CheckBigIntInField(a))
-	h := NewHashFromBigInt(a)
+	h, err := NewHashFromBigInt(a)
+	require.NoError(t, err)
 	assert.Equal(t, a, h.BigInt())
-	hFromBytes, err := NewHashFromBytes(h.Bytes())
-	assert.Nil(t, err)
-	assert.Equal(t, h, hFromBytes)
-	assert.Equal(t, a, hFromBytes.BigInt())
-	assert.Equal(t, a.String(), hFromBytes.BigInt().String())
 	hFromHex, err := NewHashFromHex(h.Hex())
 	assert.Nil(t, err)
 	assert.Equal(t, h, hFromHex)
-
-	aBIFromHBytes, err := NewBigIntFromHashBytes(h.Bytes())
-	assert.Nil(t, err)
-	assert.Equal(t, a, aBIFromHBytes)
-	assert.Equal(t, new(big.Int).SetBytes(a.Bytes()).String(), aBIFromHBytes.String())
 }
