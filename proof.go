@@ -53,7 +53,8 @@ func NewProofFromBytes(bs []byte) (*Proof, error) {
 				return nil, ErrInvalidProofBytes
 			}
 			var sib Hash
-			copy(sib[:], siblingBytes[sibIdx*ElemBytesLen:(sibIdx+1)*ElemBytesLen])
+			copy(sib[:],
+				siblingBytes[sibIdx*ElemBytesLen:(sibIdx+1)*ElemBytesLen])
 			p.siblings = append(p.siblings, &sib)
 			sibIdx++
 		}
@@ -72,7 +73,9 @@ func NewProofFromBytes(bs []byte) (*Proof, error) {
 }
 
 // NewProofFromData reconstructs proof from siblings and auxiliary node
-func NewProofFromData(existence bool, allSiblings []*Hash, nodeAux *NodeAux) (*Proof, error) {
+func NewProofFromData(existence bool,
+	allSiblings []*Hash,
+	nodeAux *NodeAux) (*Proof, error) {
 	var p Proof
 	p.Existence = existence
 	p.NodeAux = nodeAux
@@ -178,10 +181,15 @@ func VerifyProof(rootKey *Hash, proof *Proof, k, v *big.Int) bool {
 // siblings are the ones in the proof with the leaf hashing to hIndex and
 // hValue.
 func RootFromProof(proof *Proof, k, v *big.Int) (*Hash, error) {
-	kHash := NewHashFromBigInt(k)
-	vHash := NewHashFromBigInt(v)
+	kHash, err := NewHashFromBigInt(k)
+	if err != nil {
+		return nil, fmt.Errorf("can't create hash from Key: %w", err)
+	}
+	vHash, err := NewHashFromBigInt(v)
+	if err != nil {
+		return nil, fmt.Errorf("can't create hash from Value: %w", err)
+	}
 	sibIdx := len(proof.siblings) - 1
-	var err error
 	var midKey *Hash
 	if proof.Existence {
 		midKey, err = LeafKey(kHash, vHash)
