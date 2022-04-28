@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/iden3/go-iden3-crypto/constants"
+	"github.com/iden3/go-iden3-crypto/poseidon"
 	"github.com/iden3/go-merkletree-sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,6 +49,9 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 	})
 	t.Run("TestNewTree", func(t *testing.T) {
 		TestNewTree(t, sb.NewStorage(t))
+	})
+	t.Run("TestTreeRootWithOneNode", func(t *testing.T) {
+		TestTreeRootWithOneNode(t, sb.NewStorage(t))
 	})
 	t.Run("TestAddDifferentOrder", func(t *testing.T) {
 		TestAddDifferentOrder(t, sb.NewStorage(t), sb.NewStorage(t))
@@ -421,6 +425,27 @@ func TestNewTree(t *testing.T, sto merkletree.Storage) {
 		mt.Root(), proof, big.NewInt(33), big.NewInt(44)))
 	assert.True(t, !merkletree.VerifyProof(
 		mt.Root(), proof, big.NewInt(33), big.NewInt(45)))
+}
+
+func TestTreeRootWithOneNode(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 10)
+	assert.Nil(t, err)
+	assert.Equal(t, "0", mt.Root().String())
+
+	err = mt.Add(ctx, big.NewInt(100), big.NewInt(200))
+	assert.Nil(t, err)
+	assert.Equal(t,
+		"798876344175601936808542466911896801961231313012372360729165540443724338832",
+		mt.Root().BigInt().String())
+
+	inputs := []*big.Int{
+		big.NewInt(100), // key
+		big.NewInt(200), // value
+		big.NewInt(1),
+	}
+	res, _ := poseidon.Hash(inputs)
+	assert.Equal(t, mt.Root().BigInt().String(), res.String())
 }
 
 func TestAddDifferentOrder(t *testing.T, sto merkletree.Storage,
