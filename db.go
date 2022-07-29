@@ -15,13 +15,10 @@ var ErrNotFound = errors.New("key not found")
 // the merkletree. Examples of the interface implementation can be found at
 // db/memory and db/leveldb directories.
 type Storage interface {
-	WithPrefix(prefix []byte) Storage
 	Get(context.Context, []byte) (*Node, error)
 	Put(ctx context.Context, k []byte, v *Node) error
 	GetRoot(context.Context) (*Hash, error)
 	SetRoot(context.Context, *Hash) error
-	List(context.Context, int) ([]KV, error)
-	Iterate(context.Context, func([]byte, *Node) (bool, error)) error
 }
 
 // KV contains a key (K) and a value (V)
