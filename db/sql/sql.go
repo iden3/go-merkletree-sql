@@ -128,7 +128,7 @@ func (s *Storage) GetRoot(ctx context.Context) (*merkletree.Hash, error) {
 
 	item := RootItem{}
 	row := s.db.QueryRow(ctx,
-		"SELECT mt_id, key, created_at, deleted_at, FROM mt_roots WHERE mt_id = $1", s.mtId)
+		"SELECT mt_id, key, created_at, deleted_at FROM mt_roots WHERE mt_id = $1", s.mtId)
 	err = row.Scan(&item.MTId, &item.Key, &item.CreatedAt, &item.DeletedAt)
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return nil, merkletree.ErrNotFound
@@ -159,10 +159,12 @@ func (s *Storage) SetRoot(ctx context.Context, hash *merkletree.Hash) error {
 // Iterate implements the method Iterate of the interface db.Storage
 func (s *Storage) Iterate(ctx context.Context,
 	f func([]byte, *merkletree.Node) (bool, error)) error {
-	rows, err := s.db.Query(ctx, "SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
+	rows, err := s.db.Query(ctx, `SELECT mt_id, key, type, child_l, child_r, entry, created_at, deleted_at
+		FROM mt_nodes WHERE mt_id = $1`, s.mtId)
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var node NodeItem
