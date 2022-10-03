@@ -2,10 +2,12 @@ package sql
 
 import (
 	"context"
-	"database/sql"
 	"encoding/binary"
+	"errors"
 
 	"github.com/iden3/go-merkletree-sql"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 )
 
 // TODO: upsert or insert?
@@ -16,9 +18,9 @@ const updateRootStmt = `INSERT INTO mt_roots (mt_id, key) VALUES ($1, $2) ` +
 	`ON CONFLICT (mt_id) DO UPDATE SET key = $2`
 
 type DB interface {
-	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
-	GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
-	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
 }
 
 // Storage implements the db.Storage interface
@@ -68,14 +70,22 @@ func (s *Storage) WithPrefix(prefix []byte) merkletree.Storage {
 func (s *Storage) Get(ctx context.Context,
 	key []byte) (*merkletree.Node, error) {
 	item := NodeItem{}
-	err := s.db.GetContext(ctx, &item,
-		"SELECT * FROM mt_nodes WHERE mt_id = $1 AND key = $2", s.mtId, key)
-	if err == sql.ErrNoRows {
+	row := s.db.QueryRow(ctx, `SELECT mt_id, key, type, child_l, child_r, entry, created_at, deleted_at
+		FROM mt_nodes WHERE mt_id = $1 AND key = $2`, s.mtId, key)
+	err := row.Scan(&item.MTId,
+		&item.Key,
+		&item.Type,
+		&item.ChildL,
+		&item.ChildR,
+		&item.Entry,
+		&item.CreatedAt,
+		&item.DeletedAt)
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return nil, merkletree.ErrNotFound
-	}
-	if err != nil {
+	} else if err != nil {
 		return nil, err
 	}
+
 	node, err := item.Node()
 	if err != nil {
 		return nil, err
@@ -101,7 +111,7 @@ func (s *Storage) Put(ctx context.Context, key []byte,
 		entry = append(node.Entry[0][:], node.Entry[1][:]...)
 	}
 
-	_, err := s.db.ExecContext(ctx, upsertStmt, s.mtId, key[:], node.Type,
+	_, err := s.db.Exec(ctx, upsertStmt, s.mtId, key[:], node.Type,
 		childL, childR, entry)
 	return err
 }
@@ -117,14 +127,15 @@ func (s *Storage) GetRoot(ctx context.Context) (*merkletree.Hash, error) {
 	}
 
 	item := RootItem{}
-	err = s.db.GetContext(ctx, &item,
-		"SELECT * FROM mt_roots WHERE mt_id = $1", s.mtId)
-	if err == sql.ErrNoRows {
+	row := s.db.QueryRow(ctx,
+		"SELECT mt_id, key, created_at, deleted_at, FROM mt_roots WHERE mt_id = $1", s.mtId)
+	err = row.Scan(&item.MTId, &item.Key, &item.CreatedAt, &item.DeletedAt)
+	if err != nil && errors.Is(err, pgx.ErrNoRows) {
 		return nil, merkletree.ErrNotFound
-	}
-	if err != nil {
+	} else if err != nil {
 		return nil, err
 	}
+
 	if s.currentRoot == nil {
 		s.currentRoot = &merkletree.Hash{}
 	}
@@ -138,7 +149,7 @@ func (s *Storage) SetRoot(ctx context.Context, hash *merkletree.Hash) error {
 		s.currentRoot = &merkletree.Hash{}
 	}
 	copy(s.currentRoot[:], hash[:])
-	_, err := s.db.ExecContext(ctx, updateRootStmt, s.mtId, s.currentRoot[:])
+	_, err := s.db.Exec(ctx, updateRootStmt, s.mtId, s.currentRoot[:])
 	if err != nil {
 		err = newErr(err, "failed to update current root hash")
 	}
@@ -148,16 +159,28 @@ func (s *Storage) SetRoot(ctx context.Context, hash *merkletree.Hash) error {
 // Iterate implements the method Iterate of the interface db.Storage
 func (s *Storage) Iterate(ctx context.Context,
 	f func([]byte, *merkletree.Node) (bool, error)) error {
-	items := []NodeItem{}
-
-	err := s.db.SelectContext(ctx, &items,
-		"SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
+	rows, err := s.db.Query(ctx, "SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
 	if err != nil {
 		return err
 	}
-	for _, v := range items {
-		k := v.Key[:]
-		n, err := v.Node()
+
+	for rows.Next() {
+		var node NodeItem
+		if err = rows.Scan(
+			&node.MTId,
+			&node.Key,
+			&node.Type,
+			&node.ChildL,
+			&node.ChildR,
+			&node.Entry,
+			&node.CreatedAt,
+			&node.DeletedAt,
+		); err != nil {
+			return err
+		}
+
+		k := node.Key[:]
+		n, err := node.Node()
 		if err != nil {
 			return err
 		}
@@ -169,6 +192,10 @@ func (s *Storage) Iterate(ctx context.Context,
 			break
 		}
 	}
+	if rows.Err() != nil {
+		return rows.Err()
+	}
+
 	return nil
 }
 
