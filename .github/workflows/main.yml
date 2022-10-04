@@ -52,8 +52,10 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    - name: Run tests
+    - name: Run sqlx driver tests
       run: cd db/sql && go test -race ./...
+    - name: Run pgx driver tests
+      run: cd db/pgx && go test -race ./...
     services:
       postgres:
         image: postgres:13.3
