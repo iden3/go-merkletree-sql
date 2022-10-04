@@ -9,5 +9,3 @@ require (
 	github.com/olomix/go-test-pg v1.0.1
 	github.com/stretchr/testify v1.7.0
 )
-
-// replace github.com/iden3/go-merkletree-sql => ../../
