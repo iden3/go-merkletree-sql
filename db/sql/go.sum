@@ -16,6 +16,8 @@ github.com/iden3/go-iden3-crypto v0.0.13 h1:ixWRiaqDULNyIDdOWz2QQJG5t4PpNHkQk2P6
 github.com/iden3/go-iden3-crypto v0.0.13/go.mod h1:swXIv0HFbJKobbQBtsB50G7IHr6PbTowutSew/iBEoo=
 github.com/iden3/go-merkletree-sql v1.0.0-pre9 h1:TySvFYUwC01oxIPfs2u40FSFYEoGthNXFg/0ds17lYg=
 github.com/iden3/go-merkletree-sql v1.0.0-pre9/go.mod h1:NhLFvX01F/3QqS0FUkC6T2BXPksz+9EbRhKQ7abaBSE=
+github.com/iden3/go-merkletree-sql v1.0.2 h1:R1VKrXQu2onBkGnM+M4VsuICIJG7MF8l3atB4WH7BCc=
+github.com/iden3/go-merkletree-sql v1.0.2/go.mod h1:NhLFvX01F/3QqS0FUkC6T2BXPksz+9EbRhKQ7abaBSE=
 github.com/jackc/chunkreader v1.0.0 h1:4s39bBR8ByfqH+DKm8rQA3E1LHZWB9XWcrz8fqaZbe0=
 github.com/jackc/chunkreader v1.0.0/go.mod h1:RT6O25fNZIuasFJRyZ4R/Y2BbhasbmZXF9QQ7T3kePo=
 github.com/jackc/chunkreader/v2 v2.0.0/go.mod h1:odVSm741yZoC3dpHEUXIqA9tQRhFrgOHwnPIn9lDKlk=
