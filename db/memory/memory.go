@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+
 	"github.com/iden3/go-merkletree-sql"
 )
 
