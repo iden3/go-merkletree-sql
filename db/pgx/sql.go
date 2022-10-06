@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 
 	"github.com/iden3/go-merkletree-sql"
@@ -56,14 +55,6 @@ type RootItem struct {
 // NewSqlStorage returns a new Storage
 func NewSqlStorage(db DB, mtId uint64) *Storage {
 	return &Storage{db: db, mtId: mtId}
-}
-
-// WithPrefix implements the method WithPrefix of the interface db.Storage
-func (s *Storage) WithPrefix(prefix []byte) merkletree.Storage {
-	//return &Storage{db: s.db, prefix: merkletree.Concat(s.prefix, prefix)}
-	// TODO: remove WithPrefix method
-	mtId, _ := binary.Uvarint(prefix)
-	return &Storage{db: s.db, mtId: mtId}
 }
 
 // Get retrieves a value from a key in the db.Storage
@@ -154,65 +145,6 @@ func (s *Storage) SetRoot(ctx context.Context, hash *merkletree.Hash) error {
 		err = newErr(err, "failed to update current root hash")
 	}
 	return err
-}
-
-// Iterate implements the method Iterate of the interface db.Storage
-func (s *Storage) Iterate(ctx context.Context,
-	f func([]byte, *merkletree.Node) (bool, error)) error {
-	rows, err := s.db.Query(ctx, `SELECT mt_id, key, type, child_l, child_r, entry, created_at, deleted_at
-		FROM mt_nodes WHERE mt_id = $1`, s.mtId)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var node NodeItem
-		if err = rows.Scan(
-			&node.MTId,
-			&node.Key,
-			&node.Type,
-			&node.ChildL,
-			&node.ChildR,
-			&node.Entry,
-			&node.CreatedAt,
-			&node.DeletedAt,
-		); err != nil {
-			return err
-		}
-
-		k := node.Key[:]
-		n, err := node.Node()
-		if err != nil {
-			return err
-		}
-		cont, err := f(k, n)
-		if err != nil {
-			return err
-		}
-		if !cont {
-			break
-		}
-	}
-	if rows.Err() != nil {
-		return rows.Err()
-	}
-
-	return nil
-}
-
-// List implements the method List of the interface db.Storage
-func (s *Storage) List(ctx context.Context, limit int) ([]merkletree.KV, error) {
-	ret := []merkletree.KV{}
-	err := s.Iterate(ctx,
-		func(key []byte, value *merkletree.Node) (bool, error) {
-			ret = append(ret, merkletree.KV{K: merkletree.Clone(key), V: *value})
-			if len(ret) == limit {
-				return false, nil
-			}
-			return true, nil
-		})
-	return ret, err
 }
 
 func (item *NodeItem) Node() (*merkletree.Node, error) {

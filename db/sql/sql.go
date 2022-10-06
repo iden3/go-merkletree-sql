@@ -3,8 +3,6 @@ package sql
 import (
 	"context"
 	"database/sql"
-	"encoding/binary"
-
 	"github.com/iden3/go-merkletree-sql"
 )
 
@@ -54,14 +52,6 @@ type RootItem struct {
 // NewSqlStorage returns a new Storage
 func NewSqlStorage(db DB, mtId uint64) *Storage {
 	return &Storage{db: db, mtId: mtId}
-}
-
-// WithPrefix implements the method WithPrefix of the interface db.Storage
-func (s *Storage) WithPrefix(prefix []byte) merkletree.Storage {
-	//return &Storage{db: s.db, prefix: merkletree.Concat(s.prefix, prefix)}
-	// TODO: remove WithPrefix method
-	mtId, _ := binary.Uvarint(prefix)
-	return &Storage{db: s.db, mtId: mtId}
 }
 
 // Get retrieves a value from a key in the db.Storage
@@ -143,47 +133,6 @@ func (s *Storage) SetRoot(ctx context.Context, hash *merkletree.Hash) error {
 		err = newErr(err, "failed to update current root hash")
 	}
 	return err
-}
-
-// Iterate implements the method Iterate of the interface db.Storage
-func (s *Storage) Iterate(ctx context.Context,
-	f func([]byte, *merkletree.Node) (bool, error)) error {
-	items := []NodeItem{}
-
-	err := s.db.SelectContext(ctx, &items,
-		"SELECT * FROM mt_nodes WHERE mt_id = $1", s.mtId)
-	if err != nil {
-		return err
-	}
-	for _, v := range items {
-		k := v.Key[:]
-		n, err := v.Node()
-		if err != nil {
-			return err
-		}
-		cont, err := f(k, n)
-		if err != nil {
-			return err
-		}
-		if !cont {
-			break
-		}
-	}
-	return nil
-}
-
-// List implements the method List of the interface db.Storage
-func (s *Storage) List(ctx context.Context, limit int) ([]merkletree.KV, error) {
-	ret := []merkletree.KV{}
-	err := s.Iterate(ctx,
-		func(key []byte, value *merkletree.Node) (bool, error) {
-			ret = append(ret, merkletree.KV{K: merkletree.Clone(key), V: *value})
-			if len(ret) == limit {
-				return false, nil
-			}
-			return true, nil
-		})
-	return ret, err
 }
 
 func (item *NodeItem) Node() (*merkletree.Node, error) {
