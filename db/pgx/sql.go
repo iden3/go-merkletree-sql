@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/iden3/go-merkletree-sql"
+	"github.com/iden3/go-merkletree-sql/v2"
 	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
+	pgx "github.com/jackc/pgx/v4"
 )
 
 // TODO: upsert or insert?

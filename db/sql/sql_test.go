@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/iden3/go-merkletree-sql"
-	"github.com/iden3/go-merkletree-sql/db/test"
+	"github.com/iden3/go-merkletree-sql/v2"
+	"github.com/iden3/go-merkletree-sql/v2/db/test"
 	"github.com/jmoiron/sqlx"
 	go_test_pg "github.com/olomix/go-test-pg"
 	"github.com/stretchr/testify/require"
