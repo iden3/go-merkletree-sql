@@ -1,10 +1,11 @@
-module github.com/iden3/go-merkletree-sql/v2/db/sql
+module github.com/iden3/go-merkletree-sql/v2/db/pgx
 
 go 1.18
 
 require (
 	github.com/iden3/go-merkletree-sql/v2 v2.0.0-20221021103137-27704423e26a
-	github.com/jmoiron/sqlx v1.3.4
+	github.com/jackc/pgconn v1.5.0
+	github.com/jackc/pgx/v4 v4.6.0
 	github.com/olomix/go-test-pg v1.0.1
 	github.com/stretchr/testify v1.7.0
 )
@@ -13,13 +14,11 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/iden3/go-iden3-crypto v0.0.13 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.5.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.0.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200307190119-3430c5407db8 // indirect
 	github.com/jackc/pgtype v1.3.0 // indirect
-	github.com/jackc/pgx/v4 v4.6.0 // indirect
 	github.com/jackc/puddle v1.1.0 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
