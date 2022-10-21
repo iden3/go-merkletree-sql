@@ -1,4 +1,4 @@
-module github.com/iden3/go-merkletree-sql/v2/db/pgx
+module github.com/iden3/go-merkletree-sql/db/pgx/v2
 
 go 1.18
 
