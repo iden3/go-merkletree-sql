@@ -400,7 +400,9 @@ func (mt *MerkleTree) Update(ctx context.Context,
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
 				cp.OldValue = n.Entry[1]
-				cp.Siblings = CircomSiblingsFromSiblings(siblings, mt.maxLevels)
+				// TODO(illia-korotia): should we have fixed size array?
+				// this fixed size need for circom. Since circom doesn't support dynamic arrays.
+				cp.Siblings = fillEmptySiblings(siblings, mt.maxLevels)
 				// update leaf and upload to the root
 				newNodeLeaf := NewNodeLeaf(kHash, vHash)
 				_, err := mt.updateNode(ctx, newNodeLeaf)
@@ -605,15 +607,6 @@ type NodeAux struct {
 	Value *Hash `json:"value"`
 }
 
-// CircomSiblingsFromSiblings returns the full siblings compatible with circom
-func CircomSiblingsFromSiblings(siblings []*Hash, levels int) []*Hash {
-	// Add the rest of empty levels to the siblings
-	for i := len(siblings); i < levels+1; i++ {
-		siblings = append(siblings, &HashZero)
-	}
-	return siblings
-}
-
 // CircomProcessorProof defines the ProcessorProof compatible with circom. Is
 // the data of the proof between the transition from one state to another.
 type CircomProcessorProof struct {
@@ -672,7 +665,7 @@ func (mt *MerkleTree) GenerateCircomVerifierProof(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	cp.Siblings = CircomSiblingsFromSiblings(cp.Siblings, mt.maxLevels)
+	cp.Siblings = fillEmptySiblings(cp.Siblings, mt.maxLevels)
 	return cp, nil
 }
 

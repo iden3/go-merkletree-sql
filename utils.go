@@ -69,3 +69,12 @@ func Uint16ToBytes(u uint16) []byte {
 func BytesToUint16(b []byte) uint16 {
 	return binary.LittleEndian.Uint16(b[:2])
 }
+
+// fillEmptySiblings fill empty siblings with HashZero
+func fillEmptySiblings(siblings []*Hash, levels int) []*Hash {
+	// add the rest of empty levels to the siblings
+	for i := len(siblings); i < levels+1; i++ {
+		siblings = append(siblings, &HashZero)
+	}
+	return siblings
+}
