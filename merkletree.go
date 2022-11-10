@@ -93,22 +93,6 @@ func (mt *MerkleTree) MaxLevels() int {
 	return mt.maxLevels
 }
 
-// Snapshot returns a read-only copy of the MerkleTree
-func (mt *MerkleTree) Snapshot(
-	ctx context.Context, rootKey *Hash) (*MerkleTree, error) {
-	mt.RLock()
-	defer mt.RUnlock()
-	_, err := mt.GetNode(ctx, rootKey)
-	if err != nil {
-		return nil, err
-	}
-	return &MerkleTree{
-		db:        mt.db,
-		maxLevels: mt.maxLevels,
-		rootKey:   rootKey,
-		writable:  false}, nil
-}
-
 // Add adds a Key & Value into the MerkleTree. Where the `k` determines the
 // path from the Root to the Leaf.
 func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) error {
