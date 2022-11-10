@@ -1,7 +1,6 @@
 package merkletree
 
 import (
-	"encoding/binary"
 	"math/big"
 
 	"github.com/iden3/go-iden3-crypto/poseidon"
@@ -56,18 +55,6 @@ func SwapEndianness(b []byte) []byte {
 		o[len(b)-1-i] = b[i]
 	}
 	return o
-}
-
-// Uint16ToBytes returns a byte array from a uint16
-func Uint16ToBytes(u uint16) []byte {
-	var b [2]byte
-	binary.LittleEndian.PutUint16(b[:], u)
-	return b[:]
-}
-
-// BytesToUint16 returns a uint16 from a byte array
-func BytesToUint16(b []byte) uint16 {
-	return binary.LittleEndian.Uint16(b[:2])
 }
 
 // fillEmptySiblings fill empty siblings with HashZero
