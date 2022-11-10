@@ -173,51 +173,6 @@ func (mt *MerkleTree) AddEntry(ctx context.Context, e *Entry) error {
 	return mt.db.SetRoot(ctx, mt.rootKey)
 }
 
-// AddAndGetCircomProof does an Add, and returns a CircomProcessorProof
-func (mt *MerkleTree) AddAndGetCircomProof(ctx context.Context,
-	k, v *big.Int) (*CircomProcessorProof, error) {
-	var cp CircomProcessorProof
-	cp.Fnc = 2
-	cp.OldRoot = mt.rootKey
-	gotK, gotV, _, err := mt.Get(ctx, k)
-	if err != nil && err != ErrKeyNotFound {
-		return nil, err
-	}
-	cp.OldKey, err = NewHashFromBigInt(gotK)
-	if err != nil {
-		return nil, err
-	}
-	cp.OldValue, err = NewHashFromBigInt(gotV)
-	if err != nil {
-		return nil, err
-	}
-	if bytes.Equal(cp.OldKey[:], HashZero[:]) {
-		cp.IsOld0 = true
-	}
-	_, _, siblings, err := mt.Get(ctx, k)
-	if err != nil && err != ErrKeyNotFound {
-		return nil, err
-	}
-	cp.Siblings = CircomSiblingsFromSiblings(siblings, mt.maxLevels)
-
-	err = mt.Add(ctx, k, v)
-	if err != nil {
-		return nil, err
-	}
-
-	cp.NewKey, err = NewHashFromBigInt(k)
-	if err != nil {
-		return nil, err
-	}
-	cp.NewValue, err = NewHashFromBigInt(v)
-	if err != nil {
-		return nil, err
-	}
-	cp.NewRoot = mt.rootKey
-
-	return &cp, nil
-}
-
 // pushLeaf recursively pushes an existing oldLeaf down until its path diverges
 // from newLeaf, at which point both leafs are stored, all while updating the
 // path.

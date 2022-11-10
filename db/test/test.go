@@ -97,9 +97,6 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 	t.Run("TestDumpLeafsImportLeafs", func(t *testing.T) {
 		TestDumpLeafsImportLeafs(t, sb.NewStorage(t), sb.NewStorage(t))
 	})
-	t.Run("TestAddAndGetCircomProof", func(t *testing.T) {
-		TestAddAndGetCircomProof(t, sb.NewStorage(t))
-	})
 	t.Run("TestUpdateCircomProcessorProof", func(t *testing.T) {
 		TestUpdateCircomProcessorProof(t, sb.NewStorage(t))
 	})
@@ -768,51 +765,6 @@ func TestDumpLeafsImportLeafs(t *testing.T, sto merkletree.Storage,
 	assert.Nil(t, err)
 
 	assert.Equal(t, mt.Root(), mt2.Root())
-}
-
-func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
-	ctx := context.Background()
-	mt, err := merkletree.NewMerkleTree(ctx, sto, 10)
-	assert.Nil(t, err)
-	assert.Equal(t, "0", mt.Root().String())
-
-	// test vectors generated using https://github.com/iden3/circomlib smt.js
-	cpp, err := mt.AddAndGetCircomProof(ctx, big.NewInt(1), big.NewInt(2))
-	assert.Nil(t, err)
-	assert.Equal(t, "0", cpp.OldRoot.String())
-	assert.Equal(t, "13578938...", cpp.NewRoot.String())
-	assert.Equal(t, "0", cpp.OldKey.String())
-	assert.Equal(t, "0", cpp.OldValue.String())
-	assert.Equal(t, "1", cpp.NewKey.String())
-	assert.Equal(t, "2", cpp.NewValue.String())
-	assert.Equal(t, true, cpp.IsOld0)
-	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
-	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
-
-	cpp, err = mt.AddAndGetCircomProof(ctx, big.NewInt(33), big.NewInt(44))
-	assert.Nil(t, err)
-	assert.Equal(t, "13578938...", cpp.OldRoot.String())
-	assert.Equal(t, "54123936...", cpp.NewRoot.String())
-	assert.Equal(t, "1", cpp.OldKey.String())
-	assert.Equal(t, "2", cpp.OldValue.String())
-	assert.Equal(t, "33", cpp.NewKey.String())
-	assert.Equal(t, "44", cpp.NewValue.String())
-	assert.Equal(t, false, cpp.IsOld0)
-	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
-	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
-
-	cpp, err = mt.AddAndGetCircomProof(ctx, big.NewInt(55), big.NewInt(66))
-	assert.Nil(t, err)
-	assert.Equal(t, "54123936...", cpp.OldRoot.String())
-	assert.Equal(t, "50943640...", cpp.NewRoot.String())
-	assert.Equal(t, "0", cpp.OldKey.String())
-	assert.Equal(t, "0", cpp.OldValue.String())
-	assert.Equal(t, "55", cpp.NewKey.String())
-	assert.Equal(t, "66", cpp.NewValue.String())
-	assert.Equal(t, true, cpp.IsOld0)
-	assert.Equal(t, "[0 21312042... 0 0 0 0 0 0 0 0 0]",
-		fmt.Sprintf("%v", cpp.Siblings))
-	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
 }
 
 func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {
