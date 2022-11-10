@@ -656,59 +656,6 @@ type CircomVerifierProof struct {
 	Fnc      int     `json:"fnc"` // 0: inclusion, 1: non inclusion
 }
 
-// GenerateCircomVerifierProof returns the CircomVerifierProof for a certain
-// key in the MerkleTree.  If the rootKey is nil, the current merkletree root
-// is used.
-func (mt *MerkleTree) GenerateCircomVerifierProof(ctx context.Context,
-	k *big.Int, rootKey *Hash) (*CircomVerifierProof, error) {
-	cp, err := mt.GenerateSCVerifierProof(ctx, k, rootKey)
-	if err != nil {
-		return nil, err
-	}
-	cp.Siblings = fillEmptySiblings(cp.Siblings, mt.maxLevels)
-	return cp, nil
-}
-
-// GenerateSCVerifierProof returns the CircomVerifierProof for a certain key in
-// the MerkleTree with the Siblings without the extra 0 needed at the circom
-// circuits, which makes it straight forward to verifiy inside a Smart
-// Contract.  If the rootKey is nil, the current merkletree root is used.
-func (mt *MerkleTree) GenerateSCVerifierProof(ctx context.Context, k *big.Int,
-	rootKey *Hash) (*CircomVerifierProof, error) {
-	if rootKey == nil {
-		rootKey = mt.Root()
-	}
-	p, v, err := mt.GenerateProof(ctx, k, rootKey)
-	if err != nil && err != ErrKeyNotFound {
-		return nil, err
-	}
-	var cp CircomVerifierProof
-	cp.Root = rootKey
-	cp.Siblings = p.AllSiblings()
-	if p.NodeAux != nil {
-		cp.OldKey = p.NodeAux.Key
-		cp.OldValue = p.NodeAux.Value
-	} else {
-		cp.OldKey = &HashZero
-		cp.OldValue = &HashZero
-	}
-	cp.Key, err = NewHashFromBigInt(k)
-	if err != nil {
-		return nil, err
-	}
-	cp.Value, err = NewHashFromBigInt(v)
-	if err != nil {
-		return nil, err
-	}
-	if p.Existence {
-		cp.Fnc = 0 // inclusion
-	} else {
-		cp.Fnc = 1 // non inclusion
-	}
-
-	return &cp, nil
-}
-
 // GenerateProof generates the proof of existence (or non-existence) of an
 // Entry's hash Index for a Merkle Tree given the root.
 // If the rootKey is nil, the current merkletree root is used
