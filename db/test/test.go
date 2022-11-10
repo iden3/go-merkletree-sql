@@ -10,7 +10,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/iden3/go-iden3-crypto/constants"
 	"github.com/iden3/go-iden3-crypto/poseidon"
 	"github.com/iden3/go-merkletree-sql/v2"
 	"github.com/stretchr/testify/assert"
@@ -93,9 +92,6 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 	})
 	t.Run("TestDeleteNonExistingKeys", func(t *testing.T) {
 		TestDeleteNonExistingKeys(t, sb.NewStorage(t))
-	})
-	t.Run("TestDumpLeafsImportLeafs", func(t *testing.T) {
-		TestDumpLeafsImportLeafs(t, sb.NewStorage(t), sb.NewStorage(t))
 	})
 	t.Run("TestUpdateCircomProcessorProof", func(t *testing.T) {
 		TestUpdateCircomProcessorProof(t, sb.NewStorage(t))
@@ -726,37 +722,6 @@ func TestDeleteNonExistingKeys(t *testing.T, sto merkletree.Storage) {
 
 	err = mt.Delete(ctx, big.NewInt(33))
 	assert.Equal(t, merkletree.ErrKeyNotFound, err)
-}
-
-func TestDumpLeafsImportLeafs(t *testing.T, sto merkletree.Storage,
-	sto2 merkletree.Storage) {
-	ctx := context.Background()
-	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
-	require.Nil(t, err)
-
-	q1 := new(big.Int).Sub(constants.Q, big.NewInt(1))
-	for i := 0; i < 10; i++ {
-		// use numbers near under Q
-		k := new(big.Int).Sub(q1, big.NewInt(int64(i)))
-		v := big.NewInt(0)
-		err = mt.Add(ctx, k, v)
-		require.Nil(t, err)
-
-		// use numbers near above 0
-		k = big.NewInt(int64(i))
-		err = mt.Add(ctx, k, v)
-		require.Nil(t, err)
-	}
-
-	d, err := mt.DumpLeafs(ctx, nil)
-	assert.Nil(t, err)
-
-	mt2, err := merkletree.NewMerkleTree(ctx, sto2, 140)
-	require.Nil(t, err)
-	err = mt2.ImportDumpedLeafs(ctx, d)
-	assert.Nil(t, err)
-
-	assert.Equal(t, mt.Root(), mt2.Root())
 }
 
 func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {

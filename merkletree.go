@@ -443,12 +443,7 @@ func (mt *MerkleTree) Update(ctx context.Context,
 // from the deleted key to the Root with the new values.  This method removes
 // the key from the MerkleTree, but does not remove the old nodes from the
 // key-value database; this means that if the tree is accessed by an old Root
-// where the key was not deleted yet, the key will still exist. If is desired
-// to remove the key-values from the database that are not under the current
-// Root, an option could be to dump all the leaves (using mt.DumpLeafs) and
-// import them in a new MerkleTree in a new database (using
-// mt.ImportDumpedLeafs), but this will loose all the Root history of the
-// MerkleTree
+// where the key was not deleted yet, the key will still exist.
 func (mt *MerkleTree) Delete(ctx context.Context, k *big.Int) error {
 	// verify that the MerkleTree is writable
 	if !mt.writable {
@@ -788,40 +783,4 @@ node [fontname=Monospace,fontsize=10,shape=box]
 		return errIn
 	}
 	return err
-}
-
-// DumpLeafs returns all the Leafs that exist under the given Root. If no Root
-// is given (nil), it uses the current Root of the MerkleTree.
-func (mt *MerkleTree) DumpLeafs(ctx context.Context,
-	rootKey *Hash) ([]byte, error) {
-	var buf bytes.Buffer
-	err := mt.Walk(ctx, rootKey, func(n *Node) {
-		if n.Type == NodeTypeLeaf {
-			buf.Grow(len(n.Entry[0]) + len(n.Entry[1]))
-			buf.Write(n.Entry[0][:])
-			buf.Write(n.Entry[1][:])
-		}
-	})
-	return buf.Bytes(), err
-}
-
-// ImportDumpedLeafs parses and adds to the MerkleTree the dumped list of leafs
-// from the DumpLeafs function.
-func (mt *MerkleTree) ImportDumpedLeafs(ctx context.Context, b []byte) error {
-	hashLn := len(Hash{})
-	nodeLn := hashLn * 2
-	if len(b)%nodeLn != 0 {
-		return errors.New("invalid input length")
-	}
-	for i := 0; i < len(b); i += nodeLn {
-		var leftHash, rightHash Hash
-		copy(leftHash[:], b[i:i+hashLn])
-		copy(rightHash[:], b[i+hashLn:i+(hashLn*2)])
-
-		err := mt.Add(ctx, leftHash.BigInt(), rightHash.BigInt())
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
