@@ -521,8 +521,6 @@ func TestGraphViz(t *testing.T, sto merkletree.Storage) {
 	_ = mt.Add(ctx, big.NewInt(5), big.NewInt(0))
 	_ = mt.Add(ctx, big.NewInt(100), big.NewInt(0))
 
-	// mt.PrintGraphViz(nil)
-
 	expected := `digraph hierarchy {
 node [fontname=Monospace,fontsize=10,shape=box]
 "56332309..." -> {"18483622..." "20902180..."}
@@ -575,10 +573,7 @@ func TestDelete(t *testing.T, sto merkletree.Storage) {
 		"14204494359367183802864593755198662203838502594566452929175967972147978322084",
 		mt.Root().BigInt().String())
 
-	// mt.PrintGraphViz(nil)
-
 	err = mt.Delete(ctx, big.NewInt(33))
-	// mt.PrintGraphViz(nil)
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"15550352095346187559699212771793131433118240951738528922418613687814377955591",

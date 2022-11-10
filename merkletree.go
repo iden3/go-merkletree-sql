@@ -843,25 +843,6 @@ node [fontname=Monospace,fontsize=10,shape=box]
 	return err
 }
 
-// PrintGraphViz prints directly the GraphViz() output
-func (mt *MerkleTree) PrintGraphViz(ctx context.Context, rootKey *Hash) error {
-	if rootKey == nil {
-		rootKey = mt.Root()
-	}
-	w := bytes.NewBufferString("")
-	fmt.Fprintf(w,
-		"--------\nGraphViz of the MerkleTree with RootKey "+rootKey.BigInt().String()+"\n")
-	err := mt.GraphViz(ctx, w, nil)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(w,
-		"End of GraphViz of the MerkleTree with RootKey "+rootKey.BigInt().String()+"\n--------\n")
-
-	fmt.Println(w)
-	return nil
-}
-
 // DumpLeafs returns all the Leafs that exist under the given Root. If no Root
 // is given (nil), it uses the current Root of the MerkleTree.
 func (mt *MerkleTree) DumpLeafs(ctx context.Context,
