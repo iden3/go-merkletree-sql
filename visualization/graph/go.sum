@@ -3,8 +3,8 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/dchest/blake512 v1.0.0/go.mod h1:FV1x7xPPLWukZlpDpWQ88rF/SFwZ5qbskrzhLMB92JI=
 github.com/iden3/go-iden3-crypto v0.0.13 h1:ixWRiaqDULNyIDdOWz2QQJG5t4PpNHkQk2P6GV94cok=
 github.com/iden3/go-iden3-crypto v0.0.13/go.mod h1:swXIv0HFbJKobbQBtsB50G7IHr6PbTowutSew/iBEoo=
-github.com/iden3/go-merkletree-sql/v2 v2.0.0 h1:7tMgHCUJCo0jxyM15fjCc7G9Dy0x2rmX+lwa8tqEfho=
-github.com/iden3/go-merkletree-sql/v2 v2.0.0/go.mod h1:hQbfImlyOJiI+c8FFuFiEMrjpZN0PylRb0aT8uAa+Sg=
+github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221111155538-385a6ef3928f h1:MMqAp/u7+Wu2dHo0DRjCBsAAEp3sIsvql72pacgGqbs=
+github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221111155538-385a6ef3928f/go.mod h1:H3dWARzx5zqOLhnYK0ENOIea9sjkB8K0DATCKcg6P7Q=
 github.com/leanovate/gopter v0.2.9 h1:fQjYxZaynp97ozCzfOyOuAGOU4aU/z37zf/tOujFk7c=
 github.com/leanovate/gopter v0.2.9/go.mod h1:U2L/78B+KVFIx2VmW6onHJQzXtFb+p5y3y2Sh+Jxxv8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

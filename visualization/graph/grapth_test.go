@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/iden3/go-merkletree-sql/v2"
-	db "github.com/iden3/go-merkletree-sql/v2/db/memory"
+	"github.com/iden3/go-merkletree-sql/v3"
+	db "github.com/iden3/go-merkletree-sql/v3/db/memory"
 	"github.com/iden3/go-merkletree-sql/visualization/graph"
 	"github.com/stretchr/testify/require"
 )

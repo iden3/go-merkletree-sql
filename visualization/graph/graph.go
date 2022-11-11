@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/iden3/go-merkletree-sql/v2"
+	"github.com/iden3/go-merkletree-sql/v3"
 )
 
 const numCharPrint = 8
@@ -19,7 +19,7 @@ func PrintGraphViz(ctx context.Context, withRootKey *merkletree.Hash, mt *merkle
 	w := bytes.NewBufferString("")
 	fmt.Fprintf(w,
 		"--------\nGraphViz of the MerkleTree with RootKey "+withRootKey.BigInt().String()+"\n")
-	err := mt.GraphViz(ctx, w, withRootKey)
+	err := GraphViz(ctx, w, withRootKey, mt)
 	if err != nil {
 		return err
 	}
@@ -46,9 +46,9 @@ node [fontname=Monospace,fontsize=10,shape=box]
 		switch n.Type {
 		case merkletree.NodeTypeEmpty:
 		case merkletree.NodeTypeLeaf:
-			fmt.Fprintf(w, "\"%v\" [style=filled];\n", k.String())
+			fmt.Fprintf(w, "\"%v\" [style=filled];\n", HashShortString(k))
 		case merkletree.NodeTypeMiddle:
-			lr := [2]string{n.ChildL.String(), n.ChildR.String()}
+			lr := [2]string{HashShortString(n.ChildL), HashShortString(n.ChildR)}
 			emptyNodes := ""
 			for i := range lr {
 				if lr[i] == "0" {
@@ -58,7 +58,7 @@ node [fontname=Monospace,fontsize=10,shape=box]
 					cnt++
 				}
 			}
-			fmt.Fprintf(w, "\"%v\" -> {\"%v\" \"%v\"}\n", k.String(), lr[0],
+			fmt.Fprintf(w, "\"%v\" -> {\"%v\" \"%v\"}\n", HashShortString(k), lr[0],
 				lr[1])
 			fmt.Fprint(w, emptyNodes)
 		default:

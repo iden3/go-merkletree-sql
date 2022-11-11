@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/iden3/go-merkletree-sql/v2"
+	"github.com/iden3/go-merkletree-sql/v3"
 	"github.com/jackc/pgconn"
 	pgx "github.com/jackc/pgx/v4"
 )

@@ -12,12 +12,8 @@ github.com/gofrs/uuid v3.2.0+incompatible h1:y12jRkkFxsd7GpqdSZ+/KCs/fJbqpEXSGd4
 github.com/gofrs/uuid v3.2.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
 github.com/iden3/go-iden3-crypto v0.0.13 h1:ixWRiaqDULNyIDdOWz2QQJG5t4PpNHkQk2P6GV94cok=
 github.com/iden3/go-iden3-crypto v0.0.13/go.mod h1:swXIv0HFbJKobbQBtsB50G7IHr6PbTowutSew/iBEoo=
-github.com/iden3/go-merkletree-sql/v2 v2.0.0-20221021103137-27704423e26a h1:/ii3UXJ8U1UiG2l/bipuNCnMQYSL214rlsvhA1aV0/M=
-github.com/iden3/go-merkletree-sql/v2 v2.0.0-20221021103137-27704423e26a/go.mod h1:a5N3crSlAZ1Ze6jzmOxkI8IM9E3LufzqHN6lKRMA8Ns=
-github.com/iden3/go-merkletree-sql/v2 v2.0.0-20221021123746-db6865a24b50 h1:n9HIF5KFkqet+dIrIjawlaqpDacAzAKovu8Neqpov8I=
-github.com/iden3/go-merkletree-sql/v2 v2.0.0-20221021123746-db6865a24b50/go.mod h1:hQbfImlyOJiI+c8FFuFiEMrjpZN0PylRb0aT8uAa+Sg=
-github.com/iden3/go-merkletree-sql/v2 v2.0.0 h1:7tMgHCUJCo0jxyM15fjCc7G9Dy0x2rmX+lwa8tqEfho=
-github.com/iden3/go-merkletree-sql/v2 v2.0.0/go.mod h1:hQbfImlyOJiI+c8FFuFiEMrjpZN0PylRb0aT8uAa+Sg=
+github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221111155538-385a6ef3928f h1:MMqAp/u7+Wu2dHo0DRjCBsAAEp3sIsvql72pacgGqbs=
+github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221111155538-385a6ef3928f/go.mod h1:H3dWARzx5zqOLhnYK0ENOIea9sjkB8K0DATCKcg6P7Q=
 github.com/jackc/chunkreader v1.0.0/go.mod h1:RT6O25fNZIuasFJRyZ4R/Y2BbhasbmZXF9QQ7T3kePo=
 github.com/jackc/chunkreader/v2 v2.0.0/go.mod h1:odVSm741yZoC3dpHEUXIqA9tQRhFrgOHwnPIn9lDKlk=
 github.com/jackc/chunkreader/v2 v2.0.1 h1:i+RDz65UE+mmpjTfyz0MoVTnzeYxroil2G82ki7MGG8=

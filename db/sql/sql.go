@@ -3,7 +3,8 @@ package sql
 import (
 	"context"
 	"database/sql"
-	"github.com/iden3/go-merkletree-sql/v2"
+
+	"github.com/iden3/go-merkletree-sql/v3"
 )
 
 // TODO: upsert or insert?
