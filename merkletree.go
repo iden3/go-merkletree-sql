@@ -364,7 +364,7 @@ func (mt *MerkleTree) Get(ctx context.Context,
 	path := getPath(mt.maxLevels, kHash[:])
 
 	nextKey := mt.rootKey
-	siblings := []*Hash{}
+	var siblings []*Hash
 	for i := 0; i < mt.maxLevels; i++ {
 		n, err := mt.GetNode(ctx, nextKey)
 		if err != nil {
@@ -433,7 +433,7 @@ func (mt *MerkleTree) Update(ctx context.Context,
 	cp.NewValue = vHash
 
 	nextKey := mt.rootKey
-	siblings := []*Hash{}
+	var siblings []*Hash
 	for i := 0; i < mt.maxLevels; i++ {
 		n, err := mt.GetNode(ctx, nextKey)
 		if err != nil {
@@ -508,7 +508,7 @@ func (mt *MerkleTree) Delete(ctx context.Context, k *big.Int) error {
 	path := getPath(mt.maxLevels, kHash[:])
 
 	nextKey := mt.rootKey
-	siblings := []*Hash{}
+	var siblings []*Hash
 	for i := 0; i < mt.maxLevels; i++ {
 		n, err := mt.GetNode(ctx, nextKey)
 		if err != nil {
