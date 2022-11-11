@@ -75,11 +75,11 @@ func (e *Entry) Bytes() []byte {
 	return b[:]
 }
 
-func (e1 *Entry) Equal(e2 *Entry) bool {
-	return e1.Data.Equal(&e2.Data)
+func (e *Entry) Equal(entry *Entry) bool {
+	return e.Data.Equal(&entry.Data)
 }
 
-func (e Entry) MarshalText() ([]byte, error) {
+func (e *Entry) MarshalText() ([]byte, error) {
 	return []byte(hex.EncodeToString(e.Bytes())), nil
 }
 
