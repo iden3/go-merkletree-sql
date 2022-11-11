@@ -122,7 +122,7 @@ func (p *Proof) AllSiblings() []*Hash {
 }
 
 // MarshalJSON implements json.Marshaler interface
-func (p Proof) MarshalJSON() ([]byte, error) {
+func (p *Proof) MarshalJSON() ([]byte, error) {
 	obj := proofJSON{
 		Existence: p.Existence,
 		Siblings:  p.AllSiblings(),
@@ -156,7 +156,7 @@ func (p *Proof) UnmarshalJSON(data []byte) error {
 // SiblingsFromProof returns all the siblings of the proof.
 func SiblingsFromProof(proof *Proof) []*Hash {
 	sibIdx := 0
-	siblings := []*Hash{}
+	siblings := make([]*Hash, 0, proof.depth)
 	for lvl := 0; lvl < int(proof.depth); lvl++ {
 		if TestBitBigEndian(proof.notempties[:], uint(lvl)) {
 			siblings = append(siblings, proof.siblings[sibIdx])
