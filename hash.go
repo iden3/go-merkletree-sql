@@ -21,7 +21,7 @@ var (
 type Hash [32]byte
 
 // MarshalText implements the marshaler for the Hash type
-func (h Hash) MarshalText() ([]byte, error) {
+func (h *Hash) MarshalText() ([]byte, error) {
 	return []byte(h.BigInt().String()), nil
 }
 
@@ -36,7 +36,7 @@ func (h *Hash) UnmarshalText(b []byte) error {
 }
 
 // String returns decimal representation in string format of the Hash
-func (h Hash) String() string {
+func (h *Hash) String() string {
 	s := h.BigInt().String()
 	if len(s) < numCharPrint {
 		return s
@@ -45,7 +45,7 @@ func (h Hash) String() string {
 }
 
 // Hex returns the hexadecimal representation of the Hash
-func (h Hash) Hex() string {
+func (h *Hash) Hex() string {
 	return hex.EncodeToString(h[:])
 	// alternatively equivalent, but with too extra steps:
 	// bRaw := h.BigInt().Bytes()
