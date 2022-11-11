@@ -23,12 +23,12 @@ func (d *Data) Bytes() (b [ElemBytesLen * DataLen]byte) {
 	return b
 }
 
-func (d1 *Data) Equal(d2 *Data) bool {
-	return bytes.Equal(d1[0][:], d2[0][:]) && bytes.Equal(d1[1][:], d2[1][:]) &&
-		bytes.Equal(d1[2][:], d2[2][:]) && bytes.Equal(d1[3][:], d2[3][:])
+func (d *Data) Equal(data *Data) bool {
+	return bytes.Equal(d[0][:], data[0][:]) && bytes.Equal(d[1][:], data[1][:]) &&
+		bytes.Equal(d[2][:], data[2][:]) && bytes.Equal(d[3][:], data[3][:])
 }
 
-func (d Data) MarshalText() ([]byte, error) {
+func (d *Data) MarshalText() ([]byte, error) {
 	dataBytes := d.Bytes()
 	return []byte(hex.EncodeToString(dataBytes[:])), nil
 }
