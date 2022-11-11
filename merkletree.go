@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"math/big"
 	"sync"
 
@@ -851,67 +850,6 @@ func (mt *MerkleTree) Walk(ctx context.Context, rootKey *Hash,
 	}
 	err := mt.walk(ctx, rootKey, f)
 	return err
-}
-
-// GraphViz uses Walk function to generate a string GraphViz representation of
-// the tree and writes it to w
-func (mt *MerkleTree) GraphViz(ctx context.Context, w io.Writer,
-	rootKey *Hash) error {
-	fmt.Fprintf(w, `digraph hierarchy {
-node [fontname=Monospace,fontsize=10,shape=box]
-`)
-	cnt := 0
-	var errIn error
-	err := mt.Walk(ctx, rootKey, func(n *Node) {
-		k, err := n.Key()
-		if err != nil {
-			errIn = err
-		}
-		switch n.Type {
-		case NodeTypeEmpty:
-		case NodeTypeLeaf:
-			fmt.Fprintf(w, "\"%v\" [style=filled];\n", k.String())
-		case NodeTypeMiddle:
-			lr := [2]string{n.ChildL.String(), n.ChildR.String()}
-			emptyNodes := ""
-			for i := range lr {
-				if lr[i] == "0" {
-					lr[i] = fmt.Sprintf("empty%v", cnt)
-					emptyNodes += fmt.Sprintf("\"%v\" [style=dashed,label=0];\n",
-						lr[i])
-					cnt++
-				}
-			}
-			fmt.Fprintf(w, "\"%v\" -> {\"%v\" \"%v\"}\n", k.String(), lr[0],
-				lr[1])
-			fmt.Fprint(w, emptyNodes)
-		default:
-		}
-	})
-	fmt.Fprintf(w, "}\n")
-	if errIn != nil {
-		return errIn
-	}
-	return err
-}
-
-// PrintGraphViz prints directly the GraphViz() output
-func (mt *MerkleTree) PrintGraphViz(ctx context.Context, rootKey *Hash) error {
-	if rootKey == nil {
-		rootKey = mt.Root()
-	}
-	w := bytes.NewBufferString("")
-	fmt.Fprintf(w,
-		"--------\nGraphViz of the MerkleTree with RootKey "+rootKey.BigInt().String()+"\n")
-	err := mt.GraphViz(ctx, w, nil)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(w,
-		"End of GraphViz of the MerkleTree with RootKey "+rootKey.BigInt().String()+"\n--------\n")
-
-	fmt.Println(w)
-	return nil
 }
 
 // DumpLeafs returns all the Leafs that exist under the given Root. If no Root

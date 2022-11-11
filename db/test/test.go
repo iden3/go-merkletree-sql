@@ -2,7 +2,6 @@
 package test
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -12,7 +11,7 @@ import (
 
 	"github.com/iden3/go-iden3-crypto/constants"
 	"github.com/iden3/go-iden3-crypto/poseidon"
-	"github.com/iden3/go-merkletree-sql/v2"
+	"github.com/iden3/go-merkletree-sql/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -72,9 +71,6 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 	})
 	t.Run("TestVerifyProofFalse", func(t *testing.T) {
 		TestVerifyProofFalse(t, sb.NewStorage(t))
-	})
-	t.Run("TestGraphViz", func(t *testing.T) {
-		TestGraphViz(t, sb.NewStorage(t))
 	})
 	t.Run("TestDelete", func(t *testing.T) {
 		TestDelete(t, sb.NewStorage(t))
@@ -512,47 +508,6 @@ func hashFromInt(in *big.Int) *merkletree.Hash {
 	return h
 }
 
-func TestGraphViz(t *testing.T, sto merkletree.Storage) {
-	ctx := context.Background()
-	mt, err := merkletree.NewMerkleTree(ctx, sto, 10)
-	assert.Nil(t, err)
-
-	_ = mt.Add(ctx, big.NewInt(1), big.NewInt(0))
-	_ = mt.Add(ctx, big.NewInt(2), big.NewInt(0))
-	_ = mt.Add(ctx, big.NewInt(3), big.NewInt(0))
-	_ = mt.Add(ctx, big.NewInt(4), big.NewInt(0))
-	_ = mt.Add(ctx, big.NewInt(5), big.NewInt(0))
-	_ = mt.Add(ctx, big.NewInt(100), big.NewInt(0))
-
-	// mt.PrintGraphViz(nil)
-
-	expected := `digraph hierarchy {
-node [fontname=Monospace,fontsize=10,shape=box]
-"56332309..." -> {"18483622..." "20902180..."}
-"18483622..." -> {"75768243..." "16893244..."}
-"75768243..." -> {"empty0" "21857056..."}
-"empty0" [style=dashed,label=0];
-"21857056..." -> {"51072523..." "empty1"}
-"empty1" [style=dashed,label=0];
-"51072523..." -> {"17311038..." "empty2"}
-"empty2" [style=dashed,label=0];
-"17311038..." -> {"69499803..." "21008290..."}
-"69499803..." [style=filled];
-"21008290..." [style=filled];
-"16893244..." [style=filled];
-"20902180..." -> {"12496585..." "18055627..."}
-"12496585..." -> {"19374975..." "15739329..."}
-"19374975..." [style=filled];
-"15739329..." [style=filled];
-"18055627..." [style=filled];
-}
-`
-	w := bytes.NewBufferString("")
-	err = mt.GraphViz(ctx, w, nil)
-	assert.Nil(t, err)
-	assert.Equal(t, []byte(expected), w.Bytes())
-}
-
 func TestDelete(t *testing.T, sto merkletree.Storage) {
 	mt, err := merkletree.NewMerkleTree(context.Background(), sto, 10)
 	assert.Nil(t, err)
@@ -780,7 +735,7 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 	cpp, err := mt.AddAndGetCircomProof(ctx, big.NewInt(1), big.NewInt(2))
 	assert.Nil(t, err)
 	assert.Equal(t, "0", cpp.OldRoot.String())
-	assert.Equal(t, "13578938...", cpp.NewRoot.String())
+	assert.Equal(t, "13578938674299138072471463694055224830892726234048532520316387704878000008795", cpp.NewRoot.String())
 	assert.Equal(t, "0", cpp.OldKey.String())
 	assert.Equal(t, "0", cpp.OldValue.String())
 	assert.Equal(t, "1", cpp.NewKey.String())
@@ -791,8 +746,8 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 
 	cpp, err = mt.AddAndGetCircomProof(ctx, big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
-	assert.Equal(t, "13578938...", cpp.OldRoot.String())
-	assert.Equal(t, "54123936...", cpp.NewRoot.String())
+	assert.Equal(t, "13578938674299138072471463694055224830892726234048532520316387704878000008795", cpp.OldRoot.String())
+	assert.Equal(t, "5412393676474193513566895793055462193090331607895808993925969873307089394741", cpp.NewRoot.String())
 	assert.Equal(t, "1", cpp.OldKey.String())
 	assert.Equal(t, "2", cpp.OldValue.String())
 	assert.Equal(t, "33", cpp.NewKey.String())
@@ -803,14 +758,14 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 
 	cpp, err = mt.AddAndGetCircomProof(ctx, big.NewInt(55), big.NewInt(66))
 	assert.Nil(t, err)
-	assert.Equal(t, "54123936...", cpp.OldRoot.String())
-	assert.Equal(t, "50943640...", cpp.NewRoot.String())
+	assert.Equal(t, "5412393676474193513566895793055462193090331607895808993925969873307089394741", cpp.OldRoot.String())
+	assert.Equal(t, "5094364082618099436543535513148866130251600642297988457797401489780171282025", cpp.NewRoot.String())
 	assert.Equal(t, "0", cpp.OldKey.String())
 	assert.Equal(t, "0", cpp.OldValue.String())
 	assert.Equal(t, "55", cpp.NewKey.String())
 	assert.Equal(t, "66", cpp.NewValue.String())
 	assert.Equal(t, true, cpp.IsOld0)
-	assert.Equal(t, "[0 21312042... 0 0 0 0 0 0 0 0 0]",
+	assert.Equal(t, "[0 21312042436525850949775663177240566532157857119003189090405819719191539342280 0 0 0 0 0 0 0 0 0]",
 		fmt.Sprintf("%v", cpp.Siblings))
 	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
 }
@@ -833,15 +788,19 @@ func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {
 	// test vectors generated using https://github.com/iden3/circomlib smt.js
 	cpp, err := mt.Update(ctx, big.NewInt(10), big.NewInt(1024))
 	assert.Nil(t, err)
-	assert.Equal(t, "39010880...", cpp.OldRoot.String())
-	assert.Equal(t, "18587862...", cpp.NewRoot.String())
+	assert.Equal(t, "3901088098157312895771168508102875327412498476307103941861116446804059788045", cpp.OldRoot.String())
+	assert.Equal(t, "18587862578201383535363956627488622136678432340275446723812600963773389007517", cpp.NewRoot.String())
 	assert.Equal(t, "10", cpp.OldKey.String())
 	assert.Equal(t, "20", cpp.OldValue.String())
 	assert.Equal(t, "10", cpp.NewKey.String())
 	assert.Equal(t, "1024", cpp.NewValue.String())
 	assert.Equal(t, false, cpp.IsOld0)
 	assert.Equal(t,
-		"[34930557... 20201609... 18790542... 15930030... 0 0 0 0 0 0 0]",
+		"[3493055760199345983787399479799897884337329583575225430469748865784580035592"+
+			" 20201609720365205433999360001442791710365537253733030676534981802168302054263 "+
+			"18790542149740435554763618183910097219145811410462734411095932062387939731734 "+
+			"15930030482599007570177067416534114035267479078907080052418814162004846408322 "+
+			"0 0 0 0 0 0 0]",
 		fmt.Sprintf("%v", cpp.Siblings))
 }
 

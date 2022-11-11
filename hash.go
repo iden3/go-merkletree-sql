@@ -35,13 +35,9 @@ func (h *Hash) UnmarshalText(b []byte) error {
 	return nil
 }
 
-// String returns decimal representation in string format of the Hash
+// String returns string representation of the big.Int
 func (h *Hash) String() string {
-	s := h.BigInt().String()
-	if len(s) < numCharPrint {
-		return s
-	}
-	return s[0:numCharPrint] + "..."
+	return h.BigInt().String()
 }
 
 // Hex returns the hexadecimal representation of the Hash

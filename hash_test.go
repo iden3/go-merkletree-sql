@@ -26,7 +26,7 @@ func TestHashParsers(t *testing.T) {
 	assert.Equal(t, "1234567", h7l.String())
 	h8l, err := NewHashFromBigInt(big.NewInt(12345678))
 	require.NoError(t, err)
-	assert.Equal(t, "12345678...", h8l.String())
+	assert.Equal(t, "12345678", h8l.String())
 
 	b, ok := new(big.Int).SetString(
 		"4932297968297298434239270129193057052722409868268166443802652458940273154854", //nolint:lll
@@ -37,7 +37,7 @@ func TestHashParsers(t *testing.T) {
 	assert.Equal(t,
 		"4932297968297298434239270129193057052722409868268166443802652458940273154854",
 		h.BigInt().String()) //nolint:lll
-	assert.Equal(t, "49322979...", h.String())
+	assert.Equal(t, "4932297968297298434239270129193057052722409868268166443802652458940273154854", h.String())
 	assert.Equal(t,
 		"265baaf161e875c372d08e50f52abddc01d32efc93e90290bb8b3d9ceb94e70a",
 		h.Hex())

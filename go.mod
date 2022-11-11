@@ -1,4 +1,4 @@
-module github.com/iden3/go-merkletree-sql/v2
+module github.com/iden3/go-merkletree-sql/v3
 
 go 1.18
 

@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/iden3/go-merkletree-sql/v2"
-	"github.com/iden3/go-merkletree-sql/v2/db/memory"
+	"github.com/iden3/go-merkletree-sql/v3"
+	"github.com/iden3/go-merkletree-sql/v3/db/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
