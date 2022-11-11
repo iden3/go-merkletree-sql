@@ -16,8 +16,6 @@ const (
 	// (first 32 bytes).
 	proofFlagsLen = 2
 
-	numCharPrint = 8
-
 	// IndexLen indicates how many elements are used for the index.
 	IndexLen = 4
 	// DataLen indicates how many elements are used for the data.
