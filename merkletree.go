@@ -680,7 +680,7 @@ func (mt *MerkleTree) GenerateProof(ctx context.Context, k *big.Int,
 			return nil, nil, ErrInvalidNodeFound
 		}
 		if !bytes.Equal(siblingKey[:], HashZero[:]) {
-			SetBitBigEndian(p.notempties[:], p.depth)
+			setBitBigEndian(p.notempties[:], p.depth)
 			p.siblings = append(p.siblings, siblingKey)
 		}
 	}

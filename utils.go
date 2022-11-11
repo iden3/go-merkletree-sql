@@ -33,8 +33,8 @@ func HashElemsKey(key *big.Int, elems ...*big.Int) (*Hash, error) {
 	return NewHashFromBigInt(poseidonHash)
 }
 
-// SetBitBigEndian sets the bit n in the bitmap to 1, in Big Endian.
-func SetBitBigEndian(bitmap []byte, n uint) {
+// setBitBigEndian sets the bit n in the bitmap to 1, in Big Endian.
+func setBitBigEndian(bitmap []byte, n uint) {
 	bitmap[uint(len(bitmap))-n/8-1] |= 1 << (n % 8)
 }
 
@@ -43,8 +43,8 @@ func TestBit(bitmap []byte, n uint) bool {
 	return bitmap[n/8]&(1<<(n%8)) != 0
 }
 
-// TestBitBigEndian tests whether the bit n in bitmap is 1, in Big Endian.
-func TestBitBigEndian(bitmap []byte, n uint) bool {
+// testBitBigEndian tests whether the bit n in bitmap is 1, in Big Endian.
+func testBitBigEndian(bitmap []byte, n uint) bool {
 	return bitmap[uint(len(bitmap))-n/8-1]&(1<<(n%8)) != 0
 }
 

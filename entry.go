@@ -34,7 +34,7 @@ func (e *Entry) Value() []ElemBytes {
 func (e *Entry) HIndex() (*Hash, error) {
 	var err error
 	if e.hIndex == nil { // Cache the hIndex.
-		hIndex, err := HashElems(ElemBytesToBigInts(e.Index())...)
+		hIndex, err := HashElems(elemBytesToBigInts(e.Index())...)
 		if err != nil {
 			return nil, err
 		}
@@ -47,7 +47,7 @@ func (e *Entry) HIndex() (*Hash, error) {
 func (e *Entry) HValue() (*Hash, error) {
 	var err error
 	if e.hValue == nil { // Cache the hValue.
-		hValue, err := HashElems(ElemBytesToBigInts(e.Value())...)
+		hValue, err := HashElems(elemBytesToBigInts(e.Value())...)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +93,7 @@ func (e *Entry) Clone() *Entry {
 }
 
 func CheckEntryInField(e Entry) bool {
-	bigints := ElemBytesToBigInts(e.Data[:])
+	bigints := elemBytesToBigInts(e.Data[:])
 	ok := cryptoUtils.CheckBigIntArrayInField(bigints)
 	return ok
 }

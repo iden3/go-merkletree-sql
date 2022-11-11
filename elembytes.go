@@ -30,8 +30,8 @@ func (e *ElemBytes) String() string {
 	return fmt.Sprintf("%v...", hex.EncodeToString(e[:4]))
 }
 
-// ElemBytesToBytes serializes an array of ElemBytes to []byte.
-func ElemBytesToBytes(es []ElemBytes) []byte {
+// elemBytesToBytes serializes an array of ElemBytes to []byte.
+func elemBytesToBytes(es []ElemBytes) []byte {
 	bs := make([]byte, len(es)*ElemBytesLen)
 	for i := 0; i < len(es); i++ {
 		copy(bs[i*ElemBytesLen:(i+1)*ElemBytesLen], es[i][:])
@@ -39,8 +39,8 @@ func ElemBytesToBytes(es []ElemBytes) []byte {
 	return bs
 }
 
-// ElemBytesToBigInts serializes an array of ElemBytes to []byte.
-func ElemBytesToBigInts(es []ElemBytes) []*big.Int {
+// elemBytesToBigInts serializes an array of ElemBytes to []byte.
+func elemBytesToBigInts(es []ElemBytes) []*big.Int {
 	bs := make([]*big.Int, len(es))
 	for i := 0; i < len(es); i++ {
 		bs[i] = es[i].BigInt()

@@ -48,7 +48,7 @@ func NewProofFromBytes(bs []byte) (*Proof, error) {
 	siblingBytes := bs[ElemBytesLen:]
 	sibIdx := 0
 	for i := uint(0); i < p.depth; i++ {
-		if TestBitBigEndian(p.notempties[:], i) {
+		if testBitBigEndian(p.notempties[:], i) {
 			if len(siblingBytes) < (sibIdx+1)*ElemBytesLen {
 				return nil, ErrInvalidProofBytes
 			}
@@ -83,7 +83,7 @@ func NewProofFromData(existence bool,
 	p.depth = uint(len(allSiblings))
 	for lvl, sibling := range allSiblings {
 		if !sibling.Equals(&HashZero) {
-			SetBitBigEndian(p.notempties[:], uint(lvl))
+			setBitBigEndian(p.notempties[:], uint(lvl))
 			siblings = append(siblings, sibling)
 		}
 	}
@@ -158,7 +158,7 @@ func SiblingsFromProof(proof *Proof) []*Hash {
 	sibIdx := 0
 	siblings := []*Hash{}
 	for lvl := 0; lvl < int(proof.depth); lvl++ {
-		if TestBitBigEndian(proof.notempties[:], uint(lvl)) {
+		if testBitBigEndian(proof.notempties[:], uint(lvl)) {
 			siblings = append(siblings, proof.siblings[sibIdx])
 			sibIdx++
 		} else {
@@ -213,7 +213,7 @@ func RootFromProof(proof *Proof, k, v *big.Int) (*Hash, error) {
 	path := getPath(int(proof.depth), kHash[:])
 	var siblingKey *Hash
 	for lvl := int(proof.depth) - 1; lvl >= 0; lvl-- {
-		if TestBitBigEndian(proof.notempties[:], uint(lvl)) {
+		if testBitBigEndian(proof.notempties[:], uint(lvl)) {
 			siblingKey = proof.siblings[sibIdx]
 			sibIdx--
 		} else {
