@@ -34,44 +34,6 @@ type proofJSON struct {
 	NodeAux *NodeAux `json:"node_aux,omitempty"`
 }
 
-// NewProofFromBytes parses a byte array into a Proof
-func NewProofFromBytes(bs []byte) (*Proof, error) {
-	if len(bs) < ElemBytesLen {
-		return nil, ErrInvalidProofBytes
-	}
-	p := &Proof{}
-	if (bs[0] & 0x01) == 0 {
-		p.Existence = true
-	}
-	p.depth = uint(bs[1])
-	copy(p.notempties[:], bs[proofFlagsLen:ElemBytesLen])
-	siblingBytes := bs[ElemBytesLen:]
-	sibIdx := 0
-	for i := uint(0); i < p.depth; i++ {
-		if TestBitBigEndian(p.notempties[:], i) {
-			if len(siblingBytes) < (sibIdx+1)*ElemBytesLen {
-				return nil, ErrInvalidProofBytes
-			}
-			var sib Hash
-			copy(sib[:],
-				siblingBytes[sibIdx*ElemBytesLen:(sibIdx+1)*ElemBytesLen])
-			p.siblings = append(p.siblings, &sib)
-			sibIdx++
-		}
-	}
-
-	if !p.Existence && ((bs[0] & 0x02) != 0) {
-		p.NodeAux = &NodeAux{Key: &Hash{}, Value: &Hash{}}
-		nodeAuxBytes := siblingBytes[len(p.siblings)*ElemBytesLen:]
-		if len(nodeAuxBytes) != 2*ElemBytesLen {
-			return nil, ErrInvalidProofBytes
-		}
-		copy(p.NodeAux.Key[:], nodeAuxBytes[:ElemBytesLen])
-		copy(p.NodeAux.Value[:], nodeAuxBytes[ElemBytesLen:2*ElemBytesLen])
-	}
-	return p, nil
-}
-
 // NewProofFromData reconstructs proof from siblings and auxiliary node
 func NewProofFromData(existence bool,
 	allSiblings []*Hash,
@@ -89,31 +51,6 @@ func NewProofFromData(existence bool,
 	}
 	p.siblings = siblings
 	return &p, nil
-}
-
-// Bytes serializes a Proof into a byte array.
-func (p *Proof) Bytes() []byte {
-	bsLen := proofFlagsLen + len(p.notempties) + ElemBytesLen*len(p.siblings)
-	if p.NodeAux != nil {
-		bsLen += 2 * ElemBytesLen
-	}
-	bs := make([]byte, bsLen)
-
-	if !p.Existence {
-		bs[0] |= 0x01
-	}
-	bs[1] = byte(p.depth)
-	copy(bs[proofFlagsLen:len(p.notempties)+proofFlagsLen], p.notempties[:])
-	siblingsBytes := bs[len(p.notempties)+proofFlagsLen:]
-	for i, k := range p.siblings {
-		copy(siblingsBytes[i*ElemBytesLen:(i+1)*ElemBytesLen], k[:])
-	}
-	if p.NodeAux != nil {
-		bs[0] |= 0x02
-		copy(bs[len(bs)-2*ElemBytesLen:], p.NodeAux.Key[:])
-		copy(bs[len(bs)-1*ElemBytesLen:], p.NodeAux.Value[:])
-	}
-	return bs
 }
 
 // AllSiblings returns all the siblings of the proof.
