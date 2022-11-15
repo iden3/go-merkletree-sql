@@ -650,16 +650,16 @@ func CircomSiblingsFromSiblings(siblings []*Hash, levels int) []*Hash {
 
 // TransactionInfo defines information about change merkletree.
 type TransactionInfo struct {
-	OldRoot  *Hash   `json:"oldRoot"`
-	NewRoot  *Hash   `json:"newRoot"`
-	Siblings []*Hash `json:"siblings"`
-	OldKey   *Hash   `json:"oldKey"`
-	OldValue *Hash   `json:"oldValue"`
-	NewKey   *Hash   `json:"newKey"`
-	NewValue *Hash   `json:"newValue"`
-	IsOld0   bool    `json:"isOld0"`
+	OldRoot  *Hash
+	NewRoot  *Hash
+	Siblings []*Hash
+	OldKey   *Hash
+	OldValue *Hash
+	NewKey   *Hash
+	NewValue *Hash
+	IsOld0   bool
 	// 0: NOP, 1: Update, 2: Insert, 3: Delete
-	Fnc int `json:"fnc"`
+	Fnc int
 }
 
 // GenerateProof generates the proof of existence (or non-existence) of an
