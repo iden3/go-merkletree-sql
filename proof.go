@@ -53,6 +53,31 @@ func NewProofFromData(existence bool,
 	return &p, nil
 }
 
+// Bytes serializes a Proof into a byte array.
+func (p *Proof) Bytes() []byte {
+	bsLen := proofFlagsLen + len(p.notempties) + ElemBytesLen*len(p.siblings)
+	if p.NodeAux != nil {
+		bsLen += 2 * ElemBytesLen
+	}
+	bs := make([]byte, bsLen)
+
+	if !p.Existence {
+		bs[0] |= 0x01
+	}
+	bs[1] = byte(p.depth)
+	copy(bs[proofFlagsLen:len(p.notempties)+proofFlagsLen], p.notempties[:])
+	siblingsBytes := bs[len(p.notempties)+proofFlagsLen:]
+	for i, k := range p.siblings {
+		copy(siblingsBytes[i*ElemBytesLen:(i+1)*ElemBytesLen], k[:])
+	}
+	if p.NodeAux != nil {
+		bs[0] |= 0x02
+		copy(bs[len(bs)-2*ElemBytesLen:], p.NodeAux.Key[:])
+		copy(bs[len(bs)-1*ElemBytesLen:], p.NodeAux.Value[:])
+	}
+	return bs
+}
+
 // AllSiblings returns all the siblings of the proof.
 func (p *Proof) AllSiblings() []*Hash {
 	return SiblingsFromProof(p)
