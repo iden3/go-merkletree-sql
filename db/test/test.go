@@ -6,14 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math/big"
-	"testing"
-
-	"github.com/iden3/go-iden3-crypto/constants"
 	"github.com/iden3/go-iden3-crypto/poseidon"
 	"github.com/iden3/go-merkletree-sql/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"math/big"
+	"testing"
 )
 
 var debug = false
@@ -90,17 +88,11 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 	t.Run("TestDeleteNonExistingKeys", func(t *testing.T) {
 		TestDeleteNonExistingKeys(t, sb.NewStorage(t))
 	})
-	t.Run("TestDumpLeafsImportLeafs", func(t *testing.T) {
-		TestDumpLeafsImportLeafs(t, sb.NewStorage(t), sb.NewStorage(t))
-	})
 	t.Run("TestAddAndGetCircomProof", func(t *testing.T) {
 		TestAddAndGetCircomProof(t, sb.NewStorage(t))
 	})
 	t.Run("TestUpdateCircomProcessorProof", func(t *testing.T) {
 		TestUpdateCircomProcessorProof(t, sb.NewStorage(t))
-	})
-	t.Run("TestSmtVerifier", func(t *testing.T) {
-		TestSmtVerifier(t, sb.NewStorage(t))
 	})
 	t.Run("TestTypesMarshalers", func(t *testing.T) {
 		TestTypesMarshalers(t, sb.NewStorage(t))
@@ -150,19 +142,19 @@ func TestNewTree(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "0", mt.Root().String())
 
 	// test vectors generated using https://github.com/iden3/circomlib smt.js
-	err = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
+	_, err = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"13578938674299138072471463694055224830892726234048532520316387704878000008795",
 		mt.Root().BigInt().String())
 
-	err = mt.Add(ctx, big.NewInt(33), big.NewInt(44))
+	_, err = mt.Add(ctx, big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"5412393676474193513566895793055462193090331607895808993925969873307089394741",
 		mt.Root().BigInt().String())
 
-	err = mt.Add(ctx, big.NewInt(1234), big.NewInt(9876))
+	_, err = mt.Add(ctx, big.NewInt(1234), big.NewInt(9876))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"14204494359367183802864593755198662203838502594566452929175967972147978322084",
@@ -188,7 +180,7 @@ func TestTreeRootWithOneNode(t *testing.T, sto merkletree.Storage) {
 	assert.Nil(t, err)
 	assert.Equal(t, "0", mt.Root().String())
 
-	err = mt.Add(ctx, big.NewInt(100), big.NewInt(200))
+	_, err = mt.Add(ctx, big.NewInt(100), big.NewInt(200))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"798876344175601936808542466911896801961231313012372360729165540443724338832",
@@ -211,7 +203,7 @@ func TestAddDifferentOrder(t *testing.T, sto merkletree.Storage,
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
-		if err := mt1.Add(ctx, k, v); err != nil {
+		if _, err := mt1.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -220,7 +212,7 @@ func TestAddDifferentOrder(t *testing.T, sto merkletree.Storage,
 	for i := 16 - 1; i >= 0; i-- {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
-		if err := mt2.Add(ctx, k, v); err != nil {
+		if _, err := mt2.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -236,10 +228,10 @@ func TestAddRepeatedIndex(t *testing.T, sto merkletree.Storage) {
 	k := big.NewInt(int64(3))
 	v := big.NewInt(int64(12))
 	ctx := context.Background()
-	if err := mt.Add(ctx, k, v); err != nil {
+	if _, err := mt.Add(ctx, k, v); err != nil {
 		t.Fatal(err)
 	}
-	err := mt.Add(ctx, k, v)
+	_, err := mt.Add(ctx, k, v)
 	assert.NotNil(t, err)
 	assert.Equal(t, err, merkletree.ErrEntryIndexAlreadyExists)
 }
@@ -251,7 +243,7 @@ func TestGet(t *testing.T, sto merkletree.Storage) {
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(int64(i * 2))
-		if err := mt.Add(ctx, k, v); err != nil {
+		if _, err := mt.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -280,7 +272,7 @@ func TestUpdate(t *testing.T, sto merkletree.Storage) {
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(int64(i * 2))
-		if err := mt.Add(ctx, k, v); err != nil {
+		if _, err := mt.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -308,18 +300,18 @@ func TestUpdate2(t *testing.T, sto merkletree.Storage) {
 
 	ctx := context.Background()
 
-	err := mt1.Add(ctx, big.NewInt(1), big.NewInt(119))
+	_, err := mt1.Add(ctx, big.NewInt(1), big.NewInt(119))
 	assert.Nil(t, err)
-	err = mt1.Add(ctx, big.NewInt(2), big.NewInt(229))
+	_, err = mt1.Add(ctx, big.NewInt(2), big.NewInt(229))
 	assert.Nil(t, err)
-	err = mt1.Add(ctx, big.NewInt(9876), big.NewInt(6789))
+	_, err = mt1.Add(ctx, big.NewInt(9876), big.NewInt(6789))
 	assert.Nil(t, err)
 
-	err = mt2.Add(ctx, big.NewInt(1), big.NewInt(11))
+	_, err = mt2.Add(ctx, big.NewInt(1), big.NewInt(11))
 	assert.Nil(t, err)
-	err = mt2.Add(ctx, big.NewInt(2), big.NewInt(22))
+	_, err = mt2.Add(ctx, big.NewInt(2), big.NewInt(22))
 	assert.Nil(t, err)
-	err = mt2.Add(ctx, big.NewInt(9876), big.NewInt(10))
+	_, err = mt2.Add(ctx, big.NewInt(9876), big.NewInt(10))
 	assert.Nil(t, err)
 
 	_, err = mt1.Update(ctx, big.NewInt(1), big.NewInt(11))
@@ -340,7 +332,7 @@ func TestGenerateAndVerifyProof128(t *testing.T, sto merkletree.Storage) {
 	for i := 0; i < 128; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
-		if err := mt.Add(ctx, k, v); err != nil {
+		if _, err := mt.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -357,12 +349,12 @@ func TestTreeLimit(t *testing.T, sto merkletree.Storage) {
 	require.Nil(t, err)
 
 	for i := 0; i < 16; i++ {
-		err = mt.Add(ctx, big.NewInt(int64(i)), big.NewInt(int64(i)))
+		_, err = mt.Add(ctx, big.NewInt(int64(i)), big.NewInt(int64(i)))
 		assert.Nil(t, err)
 	}
 
 	// here the tree is full, should not allow to add more data as reaches the maximum number of levels
-	err = mt.Add(ctx, big.NewInt(int64(16)), big.NewInt(int64(16)))
+	_, err = mt.Add(ctx, big.NewInt(int64(16)), big.NewInt(int64(16)))
 	assert.NotNil(t, err)
 	assert.Equal(t, merkletree.ErrReachedMaxLevel, err)
 }
@@ -375,7 +367,7 @@ func TestSiblingsFromProof(t *testing.T, sto merkletree.Storage) {
 	for i := 0; i < 64; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
-		if err := mt.Add(ctx, k, v); err != nil {
+		if _, err := mt.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -412,7 +404,7 @@ func TestVerifyProofCases(t *testing.T, sto merkletree.Storage) {
 
 	ctx := context.Background()
 	for i := 0; i < 8; i++ {
-		if err := mt.Add(ctx, big.NewInt(int64(i)), big.NewInt(0)); err != nil {
+		if _, err := mt.Add(ctx, big.NewInt(int64(i)), big.NewInt(0)); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -468,7 +460,7 @@ func TestVerifyProofFalse(t *testing.T, sto merkletree.Storage) {
 
 	ctx := context.Background()
 	for i := 0; i < 8; i++ {
-		if err := mt.Add(ctx, big.NewInt(int64(i)), big.NewInt(0)); err != nil {
+		if _, err := mt.Add(ctx, big.NewInt(int64(i)), big.NewInt(0)); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -515,19 +507,19 @@ func TestDelete(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 
 	// test vectors generated using https://github.com/iden3/circomlib smt.js
-	err = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
+	_, err = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"13578938674299138072471463694055224830892726234048532520316387704878000008795",
 		mt.Root().BigInt().String())
 
-	err = mt.Add(ctx, big.NewInt(33), big.NewInt(44))
+	_, err = mt.Add(ctx, big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"5412393676474193513566895793055462193090331607895808993925969873307089394741",
 		mt.Root().BigInt().String())
 
-	err = mt.Add(ctx, big.NewInt(1234), big.NewInt(9876))
+	_, err = mt.Add(ctx, big.NewInt(1234), big.NewInt(9876))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"14204494359367183802864593755198662203838502594566452929175967972147978322084",
@@ -535,16 +527,16 @@ func TestDelete(t *testing.T, sto merkletree.Storage) {
 
 	// mt.PrintGraphViz(nil)
 
-	err = mt.Delete(ctx, big.NewInt(33))
+	_, err = mt.Delete(ctx, big.NewInt(33))
 	// mt.PrintGraphViz(nil)
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"15550352095346187559699212771793131433118240951738528922418613687814377955591",
 		mt.Root().BigInt().String())
 
-	err = mt.Delete(ctx, big.NewInt(1234))
+	_, err = mt.Delete(ctx, big.NewInt(1234))
 	assert.Nil(t, err)
-	err = mt.Delete(ctx, big.NewInt(1))
+	_, err = mt.Delete(ctx, big.NewInt(1))
 	assert.Nil(t, err)
 	assert.Equal(t, "0", mt.Root().String())
 
@@ -560,7 +552,7 @@ func TestDelete2(t *testing.T, sto merkletree.Storage,
 	for i := 0; i < 8; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
-		if err := mt.Add(ctx, k, v); err != nil {
+		if _, err := mt.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -569,10 +561,10 @@ func TestDelete2(t *testing.T, sto merkletree.Storage,
 
 	k := big.NewInt(8)
 	v := big.NewInt(0)
-	err := mt.Add(ctx, k, v)
+	_, err := mt.Add(ctx, k, v)
 	require.Nil(t, err)
 
-	err = mt.Delete(ctx, big.NewInt(8))
+	_, err = mt.Delete(ctx, big.NewInt(8))
 	assert.Nil(t, err)
 	assert.Equal(t, expectedRoot, mt.Root())
 
@@ -580,7 +572,7 @@ func TestDelete2(t *testing.T, sto merkletree.Storage,
 	for i := 0; i < 8; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(0)
-		if err := mt2.Add(ctx, k, v); err != nil {
+		if _, err := mt2.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -592,23 +584,23 @@ func TestDelete3(t *testing.T, sto merkletree.Storage,
 	mt := newTestingMerkle(t, sto, 140)
 
 	ctx := context.Background()
-	err := mt.Add(ctx, big.NewInt(1), big.NewInt(1))
+	_, err := mt.Add(ctx, big.NewInt(1), big.NewInt(1))
 	assert.Nil(t, err)
 
-	err = mt.Add(ctx, big.NewInt(2), big.NewInt(2))
+	_, err = mt.Add(ctx, big.NewInt(2), big.NewInt(2))
 	assert.Nil(t, err)
 
 	assert.Equal(t,
 		"19060075022714027595905950662613111880864833370144986660188929919683258088314",
 		mt.Root().BigInt().String())
-	err = mt.Delete(ctx, big.NewInt(1))
+	_, err = mt.Delete(ctx, big.NewInt(1))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"849831128489032619062850458217693666094013083866167024127442191257793527951",
 		mt.Root().BigInt().String())
 
 	mt2 := newTestingMerkle(t, sto2, 140)
-	err = mt2.Add(ctx, big.NewInt(2), big.NewInt(2))
+	_, err = mt2.Add(ctx, big.NewInt(2), big.NewInt(2))
 	assert.Nil(t, err)
 	assert.Equal(t, mt2.Root(), mt.Root())
 }
@@ -618,28 +610,28 @@ func TestDelete4(t *testing.T, sto merkletree.Storage,
 	mt := newTestingMerkle(t, sto, 140)
 
 	ctx := context.Background()
-	err := mt.Add(ctx, big.NewInt(1), big.NewInt(1))
+	_, err := mt.Add(ctx, big.NewInt(1), big.NewInt(1))
 	assert.Nil(t, err)
 
-	err = mt.Add(ctx, big.NewInt(2), big.NewInt(2))
+	_, err = mt.Add(ctx, big.NewInt(2), big.NewInt(2))
 	assert.Nil(t, err)
 
-	err = mt.Add(ctx, big.NewInt(3), big.NewInt(3))
+	_, err = mt.Add(ctx, big.NewInt(3), big.NewInt(3))
 	assert.Nil(t, err)
 
 	assert.Equal(t,
 		"14109632483797541575275728657193822866549917334388996328141438956557066918117",
 		mt.Root().BigInt().String())
-	err = mt.Delete(ctx, big.NewInt(1))
+	_, err = mt.Delete(ctx, big.NewInt(1))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"159935162486187606489815340465698714590556679404589449576549073038844694972",
 		mt.Root().BigInt().String())
 
 	mt2 := newTestingMerkle(t, sto2, 140)
-	err = mt2.Add(ctx, big.NewInt(2), big.NewInt(2))
+	_, err = mt2.Add(ctx, big.NewInt(2), big.NewInt(2))
 	assert.Nil(t, err)
-	err = mt2.Add(ctx, big.NewInt(3), big.NewInt(3))
+	_, err = mt2.Add(ctx, big.NewInt(3), big.NewInt(3))
 	assert.Nil(t, err)
 	assert.Equal(t, mt2.Root(), mt.Root())
 }
@@ -650,22 +642,22 @@ func TestDelete5(t *testing.T, sto merkletree.Storage,
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 10)
 	assert.Nil(t, err)
 
-	err = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
+	_, err = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
 	assert.Nil(t, err)
-	err = mt.Add(ctx, big.NewInt(33), big.NewInt(44))
+	_, err = mt.Add(ctx, big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"5412393676474193513566895793055462193090331607895808993925969873307089394741",
 		mt.Root().BigInt().String())
 
-	err = mt.Delete(ctx, big.NewInt(1))
+	_, err = mt.Delete(ctx, big.NewInt(1))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"18869260084287237667925661423624848342947598951870765316380602291081195309822",
 		mt.Root().BigInt().String())
 
 	mt2 := newTestingMerkle(t, sto2, 140)
-	err = mt2.Add(ctx, big.NewInt(33), big.NewInt(44))
+	_, err = mt2.Add(ctx, big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
 	assert.Equal(t, mt2.Root(), mt.Root())
 }
@@ -675,54 +667,23 @@ func TestDeleteNonExistingKeys(t *testing.T, sto merkletree.Storage) {
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 10)
 	assert.Nil(t, err)
 
-	err = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
+	_, err = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
 	assert.Nil(t, err)
-	err = mt.Add(ctx, big.NewInt(33), big.NewInt(44))
+	_, err = mt.Add(ctx, big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
 
-	err = mt.Delete(ctx, big.NewInt(33))
+	_, err = mt.Delete(ctx, big.NewInt(33))
 	assert.Nil(t, err)
-	err = mt.Delete(ctx, big.NewInt(33))
+	_, err = mt.Delete(ctx, big.NewInt(33))
 	assert.Equal(t, merkletree.ErrKeyNotFound, err)
 
-	err = mt.Delete(ctx, big.NewInt(1))
+	_, err = mt.Delete(ctx, big.NewInt(1))
 	assert.Nil(t, err)
 
 	assert.Equal(t, "0", mt.Root().String())
 
-	err = mt.Delete(ctx, big.NewInt(33))
+	_, err = mt.Delete(ctx, big.NewInt(33))
 	assert.Equal(t, merkletree.ErrKeyNotFound, err)
-}
-
-func TestDumpLeafsImportLeafs(t *testing.T, sto merkletree.Storage,
-	sto2 merkletree.Storage) {
-	ctx := context.Background()
-	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
-	require.Nil(t, err)
-
-	q1 := new(big.Int).Sub(constants.Q, big.NewInt(1))
-	for i := 0; i < 10; i++ {
-		// use numbers near under Q
-		k := new(big.Int).Sub(q1, big.NewInt(int64(i)))
-		v := big.NewInt(0)
-		err = mt.Add(ctx, k, v)
-		require.Nil(t, err)
-
-		// use numbers near above 0
-		k = big.NewInt(int64(i))
-		err = mt.Add(ctx, k, v)
-		require.Nil(t, err)
-	}
-
-	d, err := mt.DumpLeafs(ctx, nil)
-	assert.Nil(t, err)
-
-	mt2, err := merkletree.NewMerkleTree(ctx, sto2, 140)
-	require.Nil(t, err)
-	err = mt2.ImportDumpedLeafs(ctx, d)
-	assert.Nil(t, err)
-
-	assert.Equal(t, mt.Root(), mt2.Root())
 }
 
 func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
@@ -732,7 +693,7 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "0", mt.Root().String())
 
 	// test vectors generated using https://github.com/iden3/circomlib smt.js
-	cpp, err := mt.AddAndGetCircomProof(ctx, big.NewInt(1), big.NewInt(2))
+	cpp, err := mt.Add(ctx, big.NewInt(1), big.NewInt(2))
 	assert.Nil(t, err)
 	assert.Equal(t, "0", cpp.OldRoot.String())
 	assert.Equal(t,
@@ -746,7 +707,7 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
 
-	cpp, err = mt.AddAndGetCircomProof(ctx, big.NewInt(33), big.NewInt(44))
+	cpp, err = mt.Add(ctx, big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"13578938674299138072471463694055224830892726234048532520316387704878000008795",
@@ -762,7 +723,7 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
 
-	cpp, err = mt.AddAndGetCircomProof(ctx, big.NewInt(55), big.NewInt(66))
+	cpp, err = mt.Add(ctx, big.NewInt(55), big.NewInt(66))
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"5412393676474193513566895793055462193090331607895808993925969873307089394741",
@@ -790,7 +751,7 @@ func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(int64(i * 2))
-		if err := mt.Add(ctx, k, v); err != nil {
+		if _, err := mt.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -819,51 +780,6 @@ func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {
 		fmt.Sprintf("%v", cpp.Siblings))
 }
 
-func TestSmtVerifier(t *testing.T, sto merkletree.Storage) {
-	ctx := context.Background()
-	mt, err := merkletree.NewMerkleTree(ctx, sto, 4)
-	assert.Nil(t, err)
-
-	err = mt.Add(ctx, big.NewInt(1), big.NewInt(11))
-	assert.Nil(t, err)
-
-	cvp, err := mt.GenerateSCVerifierProof(ctx, big.NewInt(1), nil)
-	assert.Nil(t, err)
-	jCvp, err := json.Marshal(cvp)
-	assert.Nil(t, err)
-	// expect siblings to be '[]', instead of 'null'
-	expected := `{"root":"6525056641794203554583616941316772618766382307684970171204065038799368146416","siblings":[],"oldKey":"0","oldValue":"0","isOld0":false,"key":"1","value":"11","fnc":0}` //nolint:lll
-
-	assert.Equal(t, expected, string(jCvp))
-	err = mt.Add(ctx, big.NewInt(2), big.NewInt(22))
-	assert.Nil(t, err)
-	err = mt.Add(ctx, big.NewInt(3), big.NewInt(33))
-	assert.Nil(t, err)
-	err = mt.Add(ctx, big.NewInt(4), big.NewInt(44))
-	assert.Nil(t, err)
-
-	cvp, err = mt.GenerateCircomVerifierProof(ctx, big.NewInt(2), nil)
-	assert.Nil(t, err)
-
-	jCvp, err = json.Marshal(cvp)
-	assert.Nil(t, err)
-	// Test vectors generated using https://github.com/iden3/circomlib smt.js
-	// Expect siblings with the extra 0 that the circom circuits need
-	expected = `{"root":"13558168455220559042747853958949063046226645447188878859760119761585093422436","siblings":["11620130507635441932056895853942898236773847390796721536119314875877874016518","5158240518874928563648144881543092238925265313977134167935552944620041388700","0","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
-	assert.Equal(t, expected, string(jCvp))
-
-	cvp, err = mt.GenerateSCVerifierProof(ctx, big.NewInt(2), nil)
-	assert.Nil(t, err)
-
-	jCvp, err = json.Marshal(cvp)
-	assert.Nil(t, err)
-	// Test vectors generated using https://github.com/iden3/circomlib smt.js
-	// Without the extra 0 that the circom circuits need, but that are not
-	// needed at a smart contract verification
-	expected = `{"root":"13558168455220559042747853958949063046226645447188878859760119761585093422436","siblings":["11620130507635441932056895853942898236773847390796721536119314875877874016518","5158240518874928563648144881543092238925265313977134167935552944620041388700"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
-	assert.Equal(t, expected, string(jCvp))
-}
-
 func TestTypesMarshalers(t *testing.T, sto merkletree.Storage) {
 	// test Hash marshalers
 	h, err := merkletree.NewHashFromString("42")
@@ -877,12 +793,12 @@ func TestTypesMarshalers(t *testing.T, sto merkletree.Storage) {
 
 	ctx := context.Background()
 
-	// create CircomProcessorProof
+	// create TransactionInfo
 	mt := newTestingMerkle(t, sto, 10)
 	for i := 0; i < 16; i++ {
 		k := big.NewInt(int64(i))
 		v := big.NewInt(int64(i * 2))
-		if err := mt.Add(ctx, k, v); err != nil {
+		if _, err := mt.Add(ctx, k, v); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -892,11 +808,11 @@ func TestTypesMarshalers(t *testing.T, sto merkletree.Storage) {
 	cpp, err := mt.Update(ctx, big.NewInt(10), big.NewInt(1024))
 	assert.Nil(t, err)
 
-	// test CircomProcessorProof marshalers
+	// test TransactionInfo marshalers
 	b, err := json.Marshal(&cpp)
 	assert.Nil(t, err)
 
-	var cpp2 *merkletree.CircomProcessorProof
+	var cpp2 *merkletree.TransactionInfo
 	err = json.Unmarshal(b, &cpp2)
 	assert.Nil(t, err)
 	assert.Equal(t, cpp, cpp2)

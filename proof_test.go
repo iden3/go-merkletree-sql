@@ -18,8 +18,8 @@ func TestProof_MarshalJSON(t *testing.T) {
 	mt, err := merkletree.NewMerkleTree(ctx, db, 40)
 	require.NoError(t, err)
 
-	_ = mt.Add(ctx, big.NewInt(0x0001), big.NewInt(2))
-	_ = mt.Add(ctx, big.NewInt(0x0011), big.NewInt(8))
+	_, _ = mt.Add(ctx, big.NewInt(0x0001), big.NewInt(2))
+	_, _ = mt.Add(ctx, big.NewInt(0x0011), big.NewInt(8))
 	proof, _, err := mt.GenerateProof(ctx, big.NewInt(1), mt.Root())
 	require.NoError(t, err)
 
@@ -54,12 +54,12 @@ func TestProof_MarshalJSON_NonInclusionProofWithoutNodeAux(t *testing.T) {
 	mt, err := merkletree.NewMerkleTree(ctx, db, 40)
 	require.NoError(t, err)
 
-	_ = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
-	_ = mt.Add(ctx, big.NewInt(2), big.NewInt(8))
-	_ = mt.Add(ctx, big.NewInt(3), big.NewInt(8))
-	_ = mt.Add(ctx, big.NewInt(17), big.NewInt(8))
-	_ = mt.Add(ctx, big.NewInt(18), big.NewInt(8))
-	_ = mt.Add(ctx, big.NewInt(19), big.NewInt(8))
+	_, _ = mt.Add(ctx, big.NewInt(1), big.NewInt(2))
+	_, _ = mt.Add(ctx, big.NewInt(2), big.NewInt(8))
+	_, _ = mt.Add(ctx, big.NewInt(3), big.NewInt(8))
+	_, _ = mt.Add(ctx, big.NewInt(17), big.NewInt(8))
+	_, _ = mt.Add(ctx, big.NewInt(18), big.NewInt(8))
+	_, _ = mt.Add(ctx, big.NewInt(19), big.NewInt(8))
 
 	expected := `{"existence":false,"siblings":["11445591970430686524669302036672429838422356071483318076578901368167305782934","0","19623034175990655567331847335376057032468128626960956120127301863642129702078"]}` //nolint:lll
 
@@ -131,10 +131,10 @@ func TestProof_MarshalJSON_NonInclusionProofWithNodeAux(t *testing.T) {
 	mt, err := merkletree.NewMerkleTree(ctx, db, 40)
 	require.NoError(t, err)
 
-	_ = mt.Add(ctx, big.NewInt(1), big.NewInt(2)) // 1 0b000001
-	_ = mt.Add(ctx, big.NewInt(3), big.NewInt(8)) // 3 0b000011
-	_ = mt.Add(ctx, big.NewInt(7), big.NewInt(8)) // 7 0b000111
-	_ = mt.Add(ctx, big.NewInt(9), big.NewInt(8)) // 9 0b001001
+	_, _ = mt.Add(ctx, big.NewInt(1), big.NewInt(2)) // 1 0b000001
+	_, _ = mt.Add(ctx, big.NewInt(3), big.NewInt(8)) // 3 0b000011
+	_, _ = mt.Add(ctx, big.NewInt(7), big.NewInt(8)) // 7 0b000111
+	_, _ = mt.Add(ctx, big.NewInt(9), big.NewInt(8)) // 9 0b001001
 
 	//nolint:lll
 	expected := `{"existence":false,"siblings":["0","12166698708103333637493481507263348370172773813051235807348785759284762677336","7750564177398573185975752951631372712868228752107043582052272719841058100111"],"node_aux":{"key":"3","value":"8"}}`
