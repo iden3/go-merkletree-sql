@@ -18,13 +18,13 @@ func TestPrintGraphViz(t *testing.T) {
 	mt, err := merkletree.NewMerkleTree(context.Background(), store, 3)
 	require.NoError(t, err)
 
-	err = mt.Add(context.Background(), big.NewInt(1), big.NewInt(1))
+	_, err = mt.Add(context.Background(), big.NewInt(1), big.NewInt(1))
 	require.NoError(t, err)
-	err = mt.Add(context.Background(), big.NewInt(2), big.NewInt(1))
+	_, err = mt.Add(context.Background(), big.NewInt(2), big.NewInt(1))
 	require.NoError(t, err)
-	err = mt.Add(context.Background(), big.NewInt(3), big.NewInt(1))
+	_, err = mt.Add(context.Background(), big.NewInt(3), big.NewInt(1))
 	require.NoError(t, err)
-	err = mt.Add(context.Background(), big.NewInt(4), big.NewInt(1))
+	_, err = mt.Add(context.Background(), big.NewInt(4), big.NewInt(1))
 	require.NoError(t, err)
 
 	err = graph.PrintGraphViz(context.Background(), mt.Root(), mt)
@@ -58,7 +58,7 @@ node [fontname=Monospace,fontsize=10,shape=box]
 			require.NoError(t, err)
 
 			for _, k := range tt.keys {
-				err = mt.Add(context.Background(), k, big.NewInt(1))
+				_, err = mt.Add(context.Background(), k, big.NewInt(1))
 				require.NoError(t, err)
 			}
 

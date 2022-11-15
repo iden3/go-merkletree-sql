@@ -152,9 +152,7 @@ func (mt *MerkleTree) add(ctx context.Context, kHash, vHash *Hash) error {
 }
 
 // Add new element to tree.
-func (mt *MerkleTree) Add(ctx context.Context,
-	k, v *big.Int) (*TransactionInfo, error) {
-
+func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) (*TransactionInfo, error) {
 	// verify that the MerkleTree is writable
 	if !mt.writable {
 		return nil, ErrNotWritable
