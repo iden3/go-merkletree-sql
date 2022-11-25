@@ -31,11 +31,11 @@ func ImportDumpedLeafs(ctx context.Context, b []byte, mt *merkletree.MerkleTree)
 		return errors.New("invalid input length")
 	}
 	for i := 0; i < len(b); i += nodeLn {
-		var leftHash, rightHash merkletree.Hash
-		copy(leftHash[:], b[i:i+hashLn])
-		copy(rightHash[:], b[i+hashLn:i+(hashLn*2)])
+		var k, v merkletree.Hash
+		copy(k[:], b[i:i+hashLn])
+		copy(v[:], b[i+hashLn:i+(hashLn*2)])
 
-		_, err := mt.Add(ctx, leftHash.BigInt(), rightHash.BigInt())
+		_, err := mt.Add(ctx, k.BigInt(), v.BigInt())
 		if err != nil {
 			return err
 		}

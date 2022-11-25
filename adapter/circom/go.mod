@@ -1,4 +1,4 @@
-module github.com/iden3/go-merkletree-sql/adapter
+module github.com/iden3/go-merkletree-sql/adapter/circom
 
 go 1.19
 

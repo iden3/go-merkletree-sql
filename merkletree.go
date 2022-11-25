@@ -178,7 +178,7 @@ func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) (*TransactionInfo,
 		return nil, err
 	}
 	if bytes.Equal(ti.OldKey[:], HashZero[:]) {
-		ti.IsOld0 = true
+		ti.IsOldKey0 = true
 	}
 
 	ti.Siblings = CircomSiblingsFromSiblings(siblings, mt.maxLevels)
@@ -221,7 +221,7 @@ func (mt *MerkleTree) pushLeaf(ctx context.Context, newLeaf *Node,
 		} else { // go left
 			newNodeMiddle = NewNodeMiddle(nextKey, &HashZero)
 		}
-		return mt.addNode(context.TODO(), newNodeMiddle)
+		return mt.addNode(ctx, newNodeMiddle)
 	}
 	oldLeafKey, err := oldLeaf.Key()
 	if err != nil {
@@ -301,9 +301,6 @@ func (mt *MerkleTree) addNode(ctx context.Context, n *Node) (*Hash, error) {
 	// verify that the MerkleTree is writable
 	if !mt.writable {
 		return nil, ErrNotWritable
-	}
-	if n.Type == NodeTypeEmpty {
-		return n.Key()
 	}
 	k, err := n.Key()
 	if err != nil {
@@ -650,14 +647,14 @@ func CircomSiblingsFromSiblings(siblings []*Hash, levels int) []*Hash {
 
 // TransactionInfo defines information about change merkletree.
 type TransactionInfo struct {
-	OldRoot  *Hash
-	NewRoot  *Hash
-	Siblings []*Hash
-	OldKey   *Hash
-	OldValue *Hash
-	NewKey   *Hash
-	NewValue *Hash
-	IsOld0   bool
+	OldRoot   *Hash
+	NewRoot   *Hash
+	Siblings  []*Hash
+	OldKey    *Hash
+	OldValue  *Hash
+	NewKey    *Hash
+	NewValue  *Hash
+	IsOldKey0 bool
 	// 0: NOP, 1: Update, 2: Insert, 3: Delete
 	Fnc int
 }
@@ -694,7 +691,7 @@ func (mt *MerkleTree) GenerateProof(ctx context.Context, k *big.Int,
 			}
 			// We found a leaf whose entry didn't match hIndex
 			p.NodeAux = &NodeAux{Key: n.Entry[0], Value: n.Entry[1]}
-			return p, n.Entry[1].BigInt(), nil
+			return p, big.NewInt(0), nil
 		case NodeTypeMiddle:
 			if path[p.depth] {
 				nextKey = n.ChildR

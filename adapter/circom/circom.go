@@ -1,9 +1,10 @@
-package adapter
+package circom
 
 import (
 	"context"
-	"github.com/iden3/go-merkletree-sql/v3"
 	"math/big"
+
+	"github.com/iden3/go-merkletree-sql/v3"
 )
 
 // CircomVerifierProof defines the VerifierProof compatible with circom. Is the
@@ -48,12 +49,20 @@ func GenerateSCVerifierProof(ctx context.Context, k *big.Int,
 	var cp CircomVerifierProof
 	cp.Root = rootKey
 	cp.Siblings = p.AllSiblings()
-	if p.NodeAux != nil {
-		cp.OldKey = p.NodeAux.Key
-		cp.OldValue = p.NodeAux.Value
-	} else {
+	if p.NodeAux == nil {
+		if !p.Existence {
+			cp.IsOld0 = true
+			cp.Fnc = 1 // non inclusion
+		} else {
+			cp.Fnc = 0 // inclusion
+		}
+
 		cp.OldKey = &merkletree.HashZero
 		cp.OldValue = &merkletree.HashZero
+	} else {
+		cp.OldKey = p.NodeAux.Key
+		cp.OldValue = p.NodeAux.Value
+		cp.Fnc = 1 // non inclusion
 	}
 	cp.Key, err = merkletree.NewHashFromBigInt(k)
 	if err != nil {
@@ -62,11 +71,6 @@ func GenerateSCVerifierProof(ctx context.Context, k *big.Int,
 	cp.Value, err = merkletree.NewHashFromBigInt(v)
 	if err != nil {
 		return nil, err
-	}
-	if p.Existence {
-		cp.Fnc = 0 // inclusion
-	} else {
-		cp.Fnc = 1 // non inclusion
 	}
 
 	return &cp, nil

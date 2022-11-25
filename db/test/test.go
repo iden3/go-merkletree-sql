@@ -704,7 +704,7 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "0", cpp.OldValue.String())
 	assert.Equal(t, "1", cpp.NewKey.String())
 	assert.Equal(t, "2", cpp.NewValue.String())
-	assert.Equal(t, true, cpp.IsOld0)
+	assert.Equal(t, true, cpp.IsOldKey0)
 	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
 
@@ -720,7 +720,7 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "2", cpp.OldValue.String())
 	assert.Equal(t, "33", cpp.NewKey.String())
 	assert.Equal(t, "44", cpp.NewValue.String())
-	assert.Equal(t, false, cpp.IsOld0)
+	assert.Equal(t, false, cpp.IsOldKey0)
 	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
 	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
 
@@ -736,7 +736,7 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "0", cpp.OldValue.String())
 	assert.Equal(t, "55", cpp.NewKey.String())
 	assert.Equal(t, "66", cpp.NewValue.String())
-	assert.Equal(t, true, cpp.IsOld0)
+	assert.Equal(t, true, cpp.IsOldKey0)
 	assert.Equal(t,
 		"[0 "+
 			"21312042436525850949775663177240566532157857119003189090405819719191539342280"+
@@ -771,7 +771,7 @@ func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "20", cpp.OldValue.String())
 	assert.Equal(t, "10", cpp.NewKey.String())
 	assert.Equal(t, "1024", cpp.NewValue.String())
-	assert.Equal(t, false, cpp.IsOld0)
+	assert.Equal(t, false, cpp.IsOldKey0)
 	assert.Equal(t,
 		"[3493055760199345983787399479799897884337329583575225430469748865784580035592"+
 			" 20201609720365205433999360001442791710365537253733030676534981802168302054263 "+
