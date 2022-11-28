@@ -1,18 +1,19 @@
 package sql
 
 import (
-	"context"
 	"database/sql"
 
+	"context"
 	"github.com/iden3/go-merkletree-sql/v3"
 )
 
 // TODO: upsert or insert?
-const upsertStmt = `INSERT INTO mt_nodes (mt_id, key, type, child_l, child_r, entry) VALUES ($1, $2, $3, $4, $5, $6) ` +
-	`ON CONFLICT (mt_id, key) DO UPDATE SET type = $3, child_l = $4, child_r = $5, entry = $6`
+const upsertStmt = `INSERT INTO mt_nodes (mt_id, key, type, child_l, child_r, entry)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (mt_id, key) DO UPDATE SET type = $3, child_l = $4, child_r = $5, entry = $6`
 
-const updateRootStmt = `INSERT INTO mt_roots (mt_id, key) VALUES ($1, $2) ` +
-	`ON CONFLICT (mt_id) DO UPDATE SET key = $2`
+const updateRootStmt = `INSERT INTO mt_roots (mt_id, key) VALUES ($1, $2)
+ON CONFLICT (mt_id) DO UPDATE SET key = $2`
 
 type DB interface {
 	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
@@ -22,10 +23,9 @@ type DB interface {
 
 // Storage implements the db.Storage interface
 type Storage struct {
-	db             DB
-	mtId           uint64
-	currentVersion uint64
-	currentRoot    *merkletree.Hash
+	db          DB
+	mtId        uint64
+	currentRoot *merkletree.Hash
 }
 
 type NodeItem struct {
@@ -74,9 +74,7 @@ func (s *Storage) Get(ctx context.Context,
 	return node, nil
 }
 
-func (s *Storage) Put(ctx context.Context, key []byte,
-	node *merkletree.Node) error {
-
+func (s *Storage) Put(ctx context.Context, key []byte, node *merkletree.Node) error {
 	var childL []byte
 	if node.ChildL != nil {
 		childL = append(childL, node.ChildL[:]...)

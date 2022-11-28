@@ -10,7 +10,10 @@ import (
 
 // DumpLeafs returns all the Leafs that exist under the given Root. If no Root
 // is given (nil), it uses the current Root of the MerkleTree.
-func DumpLeafs(ctx context.Context, rootKey *merkletree.Hash, mt *merkletree.MerkleTree) ([]byte, error) {
+func DumpLeafs(
+	ctx context.Context,
+	rootKey *merkletree.Hash,
+	mt *merkletree.MerkleTree) ([]byte, error) {
 	var buf bytes.Buffer
 	err := mt.Walk(ctx, rootKey, func(n *merkletree.Node) {
 		if n.Type == merkletree.NodeTypeLeaf {

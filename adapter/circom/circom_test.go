@@ -3,11 +3,12 @@ package circom
 import (
 	"context"
 	"encoding/json"
+	"math/big"
+	"testing"
+
 	"github.com/iden3/go-merkletree-sql/v3"
 	"github.com/iden3/go-merkletree-sql/v3/db/memory"
 	"github.com/stretchr/testify/require"
-	"math/big"
-	"testing"
 )
 
 func TestSmtVerifier(t *testing.T) {
@@ -256,8 +257,11 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 	}
 }
 
-// since stretchr/testify unsupported print value by pointer. You can use debug for more information.
+// since stretchr/testify unsupported print value by pointer.
+// You can use debug for more information.
 // https://github.com/stretchr/testify/pull/1287
+//
+//nolint:unused // Uses for debug
 func debugEqual(t *testing.T, expected, actual *CircomVerifierProof) {
 	require.Equal(t, expected.Root, actual.Root)
 

@@ -1,14 +1,19 @@
 SHELL := /bin/bash
 
-# Unit test
-test:
-	pushd $(shell pwd)/db/pgx && go test -race -count=1 -timeout=60s ./...
-	pushd $(shell pwd)/db/sql && go test -race -count=1 -timeout=60s ./...
-	pushd $(shell pwd)/visualization/graph && go test -race -count=1 -timeout=60s ./...
-	pushd $(shell pwd)/adapter/circom && go test -race -count=1 -timeout=60s ./...
-	pushd $(shell pwd)/dump && go test -race -count=1 -timeout=60s ./...
-	go test -race -count=1 -timeout=60s ./...
+# There is no easy way to run the linter and tests for submodules.
+# The following cases do not work.
+# go test ./db/pgx/... || go test ./db/pgx/. || etc.
+# golangci-lint --config .golangci.yml run db/pgx/*.go || golangci-lint --config .golangci.yml run db/pgx/* || etc.
 
-# Linter
+test:
+	$(eval SUB_DIRS:=$(shell find . -type f -name go.mod -printf '%h\n'))
+	for dir in ${SUB_DIRS} ; do \
+		cd ${PWD}/$$dir && go test -race -count=1 -timeout=60s ./... ; \
+	done
+
+.SILENT:
 lint:
-	 golangci-lint --config .golangci.yml run
+	$(eval SUB_DIRS:=$(shell find . -type f -name go.mod -printf '%h\n'))
+	for dir in ${SUB_DIRS} ; do \
+		cd ${PWD}/$$dir && golangci-lint --config ${PWD}/.golangci.yml run ; \
+	done

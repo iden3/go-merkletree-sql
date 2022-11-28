@@ -12,7 +12,10 @@ import (
 const numCharPrint = 8
 
 // PrintGraphViz prints directly the GraphViz() output
-func PrintGraphViz(ctx context.Context, withRootKey *merkletree.Hash, mt *merkletree.MerkleTree) error {
+func PrintGraphViz(
+	ctx context.Context,
+	withRootKey *merkletree.Hash,
+	mt *merkletree.MerkleTree) error {
 	if withRootKey == nil {
 		withRootKey = mt.Root()
 	}
@@ -32,7 +35,10 @@ func PrintGraphViz(ctx context.Context, withRootKey *merkletree.Hash, mt *merkle
 
 // GraphViz uses Walk function to generate a string GraphViz representation of
 // the tree and writes it to w
-func GraphViz(ctx context.Context, w io.Writer, withRootKey *merkletree.Hash, mt *merkletree.MerkleTree) error {
+func GraphViz(ctx context.Context,
+	w io.Writer,
+	withRootKey *merkletree.Hash,
+	mt *merkletree.MerkleTree) error {
 	fmt.Fprintf(w, `digraph hierarchy {
 node [fontname=Monospace,fontsize=10,shape=box]
 `)

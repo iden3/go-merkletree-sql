@@ -2,13 +2,14 @@ package dump
 
 import (
 	"context"
+	"math/big"
+	"testing"
+
 	"github.com/iden3/go-iden3-crypto/constants"
 	"github.com/iden3/go-merkletree-sql/v3"
 	"github.com/iden3/go-merkletree-sql/v3/db/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"math/big"
-	"testing"
 )
 
 func TestDumpLeafsImportLeafs(t *testing.T) {

@@ -8,6 +8,12 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.18.x
-      - uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.50.0
+# Since we are using custom script for running linter
+# We can't use golangci-lint-action, that run automatically.
+#      - uses: golangci/golangci-lint-action@v3
+#        with:
+#          version: v1.50.0
+      - uses: Install golang lint
+        run: wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.50.1
+      - uses: Run linter
+        run: make lint
