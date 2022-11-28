@@ -1,9 +1,9 @@
 package sql
 
 import (
+	"context"
 	"database/sql"
 
-	"context"
 	"github.com/iden3/go-merkletree-sql/v3"
 )
 

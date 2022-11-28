@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-
 	"sync"
+
 	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
 )
 
