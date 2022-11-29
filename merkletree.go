@@ -20,6 +20,13 @@ const (
 	IndexLen = 4
 	// DataLen indicates how many elements are used for the data.
 	DataLen = 8
+
+	// countGraph. Іs a magic number that represents
+	// the depth of the tree using the number of paths rather than nodes.
+	// With a tree depth of N, we can have a maximum of N-1 paths to the depth.
+	diffCountPath = 1
+	// Since nodes start count from 1 but paths from 0
+	diffStartIndex = 1
 )
 
 var (
@@ -66,7 +73,7 @@ func NewMerkleTree(ctx context.Context, storage Storage,
 	mt := MerkleTree{db: storage, maxLevels: maxLevels, writable: true}
 
 	root, err := mt.db.GetRoot(ctx)
-	if err == ErrNotFound {
+	if errors.Is(err, ErrNotFound) {
 		mt.rootKey = &HashZero
 		err = mt.db.SetRoot(ctx, mt.rootKey)
 		if err != nil {
@@ -166,7 +173,7 @@ func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) (*TransactionInfo,
 		OldRoot: mt.rootKey,
 	}
 	gotK, gotV, siblings, err := mt.Get(ctx, k)
-	if err != nil && err != ErrKeyNotFound {
+	if err != nil && !errors.Is(err, ErrKeyNotFound) {
 		return nil, err
 	}
 	ti.OldKey, err = NewHashFromBigInt(gotK)
@@ -181,7 +188,7 @@ func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) (*TransactionInfo,
 		ti.IsOldKey0 = true
 	}
 
-	ti.Siblings = CircomSiblingsFromSiblings(siblings, mt.maxLevels)
+	ti.Siblings = ZeroPaddedSiblings(siblings, mt.maxLevels)
 
 	ti.NewKey, err = NewHashFromBigInt(k)
 	if err != nil {
@@ -206,7 +213,7 @@ func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) (*TransactionInfo,
 func (mt *MerkleTree) pushLeaf(ctx context.Context, newLeaf *Node,
 	oldLeaf *Node, lvl int, pathNewLeaf []bool,
 	pathOldLeaf []bool) (*Hash, error) {
-	if lvl > mt.maxLevels-2 {
+	if lvl > mt.maxLevels-diffCountPath-diffStartIndex {
 		return nil, ErrReachedMaxLevel
 	}
 	var newNodeMiddle *Node
@@ -251,7 +258,7 @@ func (mt *MerkleTree) addLeaf(ctx context.Context, newLeaf *Node, key *Hash,
 	lvl int, path []bool) (*Hash, error) {
 	var err error
 	var nextKey *Hash
-	if lvl > mt.maxLevels-1 {
+	if lvl > mt.maxLevels-diffStartIndex {
 		return nil, ErrReachedMaxLevel
 	}
 	n, err := mt.GetNode(ctx, key)
@@ -259,7 +266,7 @@ func (mt *MerkleTree) addLeaf(ctx context.Context, newLeaf *Node, key *Hash,
 		return nil, err
 	}
 	switch n.Type {
-	case NodeTypeEmpty:
+	case NodeTypeNullable:
 		// We can add newLeaf now
 		return mt.addNode(ctx, newLeaf)
 	case NodeTypeLeaf:
@@ -321,7 +328,7 @@ func (mt *MerkleTree) updateNode(ctx context.Context, n *Node) (*Hash, error) {
 	if !mt.writable {
 		return nil, ErrNotWritable
 	}
-	if n.Type == NodeTypeEmpty {
+	if n.Type == NodeTypeNullable {
 		return n.Key()
 	}
 	k, err := n.Key()
@@ -350,7 +357,7 @@ func (mt *MerkleTree) Get(ctx context.Context,
 			return nil, nil, nil, err
 		}
 		switch n.Type {
-		case NodeTypeEmpty:
+		case NodeTypeNullable:
 			return big.NewInt(0), big.NewInt(0), siblings, ErrKeyNotFound
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
@@ -419,12 +426,12 @@ func (mt *MerkleTree) Update(ctx context.Context,
 			return nil, err
 		}
 		switch n.Type {
-		case NodeTypeEmpty:
+		case NodeTypeNullable:
 			return nil, ErrKeyNotFound
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
 				ti.OldValue = n.Entry[1]
-				ti.Siblings = CircomSiblingsFromSiblings(siblings, mt.maxLevels)
+				ti.Siblings = ZeroPaddedSiblings(siblings, mt.maxLevels)
 				// update leaf and upload to the root
 				newNodeLeaf := NewNodeLeaf(kHash, vHash)
 				_, err := mt.updateNode(ctx, newNodeLeaf)
@@ -498,7 +505,7 @@ func (mt *MerkleTree) Delete(ctx context.Context, k *big.Int) (*TransactionInfo,
 			return nil, err
 		}
 		switch n.Type {
-		case NodeTypeEmpty:
+		case NodeTypeNullable:
 			return nil, ErrKeyNotFound
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
@@ -536,7 +543,7 @@ func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 		return err
 	}
 
-	toUpload := siblings[len(siblings)-1]
+	toUpload := siblings[len(siblings)-diffStartIndex]
 	if len(siblings) < 2 {
 		mt.rootKey = siblings[0]
 		err := mt.db.SetRoot(ctx, mt.rootKey)
@@ -553,7 +560,7 @@ func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 				newNode = NewNodeMiddle(toUpload, siblings[i])
 			}
 			_, err := mt.addNode(context.TODO(), newNode)
-			if err != ErrNodeKeyAlreadyExists && err != nil {
+			if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
 				return err
 			}
 			// go up until the root
@@ -598,7 +605,7 @@ func (mt *MerkleTree) recalculatePathUntilRoot(path []bool, node *Node,
 			node = NewNodeMiddle(nodeKey, siblings[i])
 		}
 		_, err = mt.addNode(context.TODO(), node)
-		if err != ErrNodeKeyAlreadyExists && err != nil {
+		if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
 			return nil, err
 		}
 	}
@@ -612,7 +619,7 @@ func (mt *MerkleTree) recalculatePathUntilRoot(path []bool, node *Node,
 // tree; they are all the same and assumed to always exist.
 func (mt *MerkleTree) GetNode(ctx context.Context, key *Hash) (*Node, error) {
 	if bytes.Equal(key[:], HashZero[:]) {
-		return NewNodeEmpty(), nil
+		return NewNodeNullable(), nil
 	}
 	n, err := mt.db.Get(ctx, key[:])
 	if err != nil {
@@ -622,6 +629,8 @@ func (mt *MerkleTree) GetNode(ctx context.Context, key *Hash) (*Node, error) {
 }
 
 // getPath returns the binary path, from the root to the leaf.
+// uses for convert decimal value to bit slice
+// check tests for more examples
 func getPath(numLevels int, k []byte) []bool {
 	path := make([]bool, numLevels)
 	for n := 0; n < numLevels; n++ {
@@ -636,8 +645,8 @@ type NodeAux struct {
 	Value *Hash `json:"value"`
 }
 
-// CircomSiblingsFromSiblings returns the full siblings compatible with circom
-func CircomSiblingsFromSiblings(siblings []*Hash, levels int) []*Hash {
+// ZeroPaddedSiblings returns the full siblings compatible with circom
+func ZeroPaddedSiblings(siblings []*Hash, levels int) []*Hash {
 	// Add the rest of empty levels to the siblings
 	for i := len(siblings); i < levels+1; i++ {
 		siblings = append(siblings, &HashZero)
@@ -682,7 +691,7 @@ func (mt *MerkleTree) GenerateProof(ctx context.Context, k *big.Int,
 			return nil, nil, err
 		}
 		switch n.Type {
-		case NodeTypeEmpty:
+		case NodeTypeNullable:
 			return p, big.NewInt(0), nil
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
@@ -719,7 +728,7 @@ func (mt *MerkleTree) walk(ctx context.Context,
 		return err
 	}
 	switch n.Type {
-	case NodeTypeEmpty:
+	case NodeTypeNullable:
 		f(n)
 	case NodeTypeLeaf:
 		f(n)

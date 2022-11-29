@@ -19,11 +19,13 @@ type Proof struct {
 	notempties [ElemBytesLen - proofFlagsLen]byte
 	// siblings is a list of non-empty sibling keys
 	siblings []*Hash
-	// Auxiliary node if needed
+	// Auxiliary node if needed. The filed can return when p.Existence = false.
+	// Represent node that exists on position instead expected key.
+	// On case when on expected position exists NullableNode, NodeAux will nil.
 	NodeAux *NodeAux
 }
 
-// proofJSON defines the required elements for a MT proof in json serializable structure
+// proofJSON defines the required elements for MT proof in json serializable structure
 type proofJSON struct {
 	// existence indicates whether this is a proof of existence or
 	// non-existence

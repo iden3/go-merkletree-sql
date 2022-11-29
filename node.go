@@ -11,15 +11,13 @@ type NodeType byte
 const (
 	// NodeTypeMiddle indicates the type of middle Node that has children.
 	NodeTypeMiddle NodeType = 0
-	// NodeTypeLeaf indicates the type of a leaf Node that contains a key &
+	// NodeTypeLeaf indicates the type of leaf Node that contains a key &
 	// value.
 	NodeTypeLeaf NodeType = 1
-	// NodeTypeEmpty indicates the type of an empty Node.
-	NodeTypeEmpty NodeType = 2
-
-	// DBEntryTypeRoot indicates a type of DB entry that indicates the
-	// current Root of a MerkleTree
-	DBEntryTypeRoot NodeType = 3
+	// NodeTypeNullable indicates the type of empty Node.
+	// Virtual node that is not stored in the database.
+	// Also, this node haven't representation on tree.
+	NodeTypeNullable NodeType = 2
 )
 
 // Node is the struct that represents a node in the MT. The node should not be
@@ -47,9 +45,9 @@ func NewNodeMiddle(childL *Hash, childR *Hash) *Node {
 	return &Node{Type: NodeTypeMiddle, ChildL: childL, ChildR: childR}
 }
 
-// NewNodeEmpty creates a new empty node.
-func NewNodeEmpty() *Node {
-	return &Node{Type: NodeTypeEmpty}
+// NewNodeNullable creates a new empty node.
+func NewNodeNullable() *Node {
+	return &Node{Type: NodeTypeNullable}
 }
 
 // NewNodeFromBytes creates a new node by parsing the input []byte.
@@ -74,7 +72,7 @@ func NewNodeFromBytes(b []byte) (*Node, error) {
 		n.Entry = [2]*Hash{{}, {}}
 		copy(n.Entry[0][:], b[0:32])
 		copy(n.Entry[1][:], b[32:64])
-	case NodeTypeEmpty:
+	case NodeTypeNullable:
 		break
 	default:
 		return nil, ErrInvalidNodeFound
@@ -107,7 +105,7 @@ func (n *Node) Key() (*Hash, error) {
 			if err != nil {
 				return nil, err
 			}
-		case NodeTypeEmpty: // Zero
+		case NodeTypeNullable: // Zero
 			n.key = &HashZero
 		default:
 			n.key = &HashZero
@@ -124,7 +122,7 @@ func (n *Node) Value() []byte {
 		return append([]byte{byte(n.Type)}, append(n.ChildL[:], n.ChildR[:]...)...)
 	case NodeTypeLeaf: // {Type || Data...}
 		return append([]byte{byte(n.Type)}, append(n.Entry[0][:], n.Entry[1][:]...)...)
-	case NodeTypeEmpty: // {}
+	case NodeTypeNullable: // {}
 		return []byte{}
 	default:
 		return []byte{}
@@ -138,8 +136,8 @@ func (n *Node) String() string {
 		return fmt.Sprintf("Middle L:%s R:%s", n.ChildL, n.ChildR)
 	case NodeTypeLeaf: // {Type || Data...}
 		return fmt.Sprintf("Leaf I:%v D:%v", n.Entry[0], n.Entry[1])
-	case NodeTypeEmpty: // {}
-		return "Empty"
+	case NodeTypeNullable: // {}
+		return "Nullable"
 	default:
 		return "Invalid Node"
 	}

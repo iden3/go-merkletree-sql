@@ -59,9 +59,6 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 	t.Run("TestGenerateAndVerifyProof128", func(t *testing.T) {
 		TestGenerateAndVerifyProof128(t, sb.NewStorage(t))
 	})
-	t.Run("TestTreeLimit", func(t *testing.T) {
-		TestTreeLimit(t, sb.NewStorage(t))
-	})
 	t.Run("TestSiblingsFromProof", func(t *testing.T) {
 		TestSiblingsFromProof(t, sb.NewStorage(t))
 	})
@@ -97,6 +94,9 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 	})
 	t.Run("TestTypesMarshalers", func(t *testing.T) {
 		TestTypesMarshalers(t, sb.NewStorage(t))
+	})
+	t.Run("TestTreeDeep", func(t *testing.T) {
+		TestTreeDeep(t, sb)
 	})
 }
 
@@ -342,22 +342,6 @@ func TestGenerateAndVerifyProof128(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "0", v.String())
 	assert.True(t, merkletree.VerifyProof(
 		mt.Root(), proof, big.NewInt(42), big.NewInt(0)))
-}
-
-func TestTreeLimit(t *testing.T, sto merkletree.Storage) {
-	ctx := context.Background()
-	mt, err := merkletree.NewMerkleTree(ctx, sto, 5)
-	require.Nil(t, err)
-
-	for i := 0; i < 16; i++ {
-		_, err = mt.Add(ctx, big.NewInt(int64(i)), big.NewInt(int64(i)))
-		assert.Nil(t, err)
-	}
-
-	// here the tree is full, should not allow to add more data as reaches the maximum number of levels
-	_, err = mt.Add(ctx, big.NewInt(int64(16)), big.NewInt(int64(16)))
-	assert.NotNil(t, err)
-	assert.Equal(t, merkletree.ErrReachedMaxLevel, err)
 }
 
 func TestSiblingsFromProof(t *testing.T, sto merkletree.Storage) {
@@ -817,4 +801,76 @@ func TestTypesMarshalers(t *testing.T, sto merkletree.Storage) {
 	err = json.Unmarshal(b, &cpp2)
 	assert.Nil(t, err)
 	assert.Equal(t, cpp, cpp2)
+}
+
+func TestTreeDeep(t *testing.T, stb StorageBuilder) {
+	type node struct {
+		k *big.Int
+	}
+
+	tests := []struct {
+		name      string
+		maxLevels int
+		nodes     []node
+		expectErr error
+	}{
+		{
+			name:      "Insert 4 paths to 5 levels tree",
+			maxLevels: 5, // with root
+			nodes: []node{
+				{
+					k: big.NewInt(2), // 0010
+				},
+				{
+					k: big.NewInt(3), // 0111
+				},
+				{
+					k: big.NewInt(7), // 0111
+				},
+				{
+					k: big.NewInt(15), // 1111
+				},
+			},
+			expectErr: nil,
+		},
+		{
+			name:      "Insert 5 paths to 5 levels tree",
+			maxLevels: 5, // with root
+			nodes: []node{
+				{
+					k: big.NewInt(2), // 00010
+				},
+				{
+					k: big.NewInt(3), // 00011
+				},
+				{
+					k: big.NewInt(7), // 00111
+				},
+				{
+					k: big.NewInt(15), // 01111
+				},
+				{
+					k: big.NewInt(31), // 11111
+				},
+			},
+			expectErr: merkletree.ErrReachedMaxLevel,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sto := stb.NewStorage(t)
+			mt, err := merkletree.NewMerkleTree(context.Background(), sto, tt.maxLevels)
+			require.NoError(t, err)
+
+			var actualErr error
+			for _, v := range tt.nodes {
+				_, actualErr = mt.Add(context.Background(), v.k, big.NewInt(0))
+				if actualErr != nil {
+					break
+				}
+			}
+			require.ErrorIs(t, actualErr, tt.expectErr)
+		})
+	}
 }
