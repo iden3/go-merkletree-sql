@@ -29,7 +29,7 @@ func GenerateCircomVerifierProof(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	cp.Siblings = merkletree.CircomSiblingsFromSiblings(cp.Siblings, mt.MaxLevels())
+	cp.Siblings = merkletree.ZeroPaddedSiblings(cp.Siblings, mt.MaxLevels())
 	return cp, nil
 }
 

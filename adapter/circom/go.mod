@@ -3,7 +3,7 @@ module github.com/iden3/go-merkletree-sql/adapter/circom
 go 1.19
 
 require (
-	github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221115173019-d168820ba074
+	github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221129091720-7359f9c6cf37
 	github.com/stretchr/testify v1.7.0
 )
 

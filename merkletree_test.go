@@ -1,9 +1,10 @@
 package merkletree
 
 import (
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // NOTICE: go-merkletree-sql uses BigEndian for bits representation!
