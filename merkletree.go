@@ -685,7 +685,7 @@ func (mt *MerkleTree) GenerateProof(ctx context.Context, k *big.Int,
 		rootKey = mt.Root()
 	}
 	nextKey := rootKey
-	for p.depth = 0; p.depth < uint(mt.maxLevels); p.depth++ {
+	for depth := 0; depth < mt.maxLevels; depth++ {
 		n, err := mt.GetNode(ctx, nextKey)
 		if err != nil {
 			return nil, nil, err
@@ -702,7 +702,7 @@ func (mt *MerkleTree) GenerateProof(ctx context.Context, k *big.Int,
 			p.NodeAux = &NodeAux{Key: n.Entry[0], Value: n.Entry[1]}
 			return p, big.NewInt(0), nil
 		case NodeTypeMiddle:
-			if path[p.depth] {
+			if path[depth] {
 				nextKey = n.ChildR
 				siblingKey = n.ChildL
 			} else {
@@ -712,10 +712,7 @@ func (mt *MerkleTree) GenerateProof(ctx context.Context, k *big.Int,
 		default:
 			return nil, nil, ErrInvalidNodeFound
 		}
-		if !bytes.Equal(siblingKey[:], HashZero[:]) {
-			SetBitBigEndian(p.notempties[:], p.depth)
-			p.siblings = append(p.siblings, siblingKey)
-		}
+		p.siblings = append(p.siblings, siblingKey)
 	}
 	return nil, nil, ErrKeyNotFound
 }

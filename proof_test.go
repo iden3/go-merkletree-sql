@@ -18,8 +18,8 @@ func TestProof_MarshalJSON(t *testing.T) {
 	mt, err := merkletree.NewMerkleTree(ctx, db, 40)
 	require.NoError(t, err)
 
-	_, _ = mt.Add(ctx, big.NewInt(0x0001), big.NewInt(2))
-	_, _ = mt.Add(ctx, big.NewInt(0x0011), big.NewInt(8))
+	_, _ = mt.Add(ctx, big.NewInt(0b00001), big.NewInt(2)) // 1
+	_, _ = mt.Add(ctx, big.NewInt(0b10001), big.NewInt(8)) // 17
 	proof, _, err := mt.GenerateProof(ctx, big.NewInt(1), mt.Root())
 	require.NoError(t, err)
 
@@ -37,7 +37,7 @@ func TestProof_MarshalJSON(t *testing.T) {
 	err = json.Unmarshal(jsonProof, &p)
 	require.NoError(t, err)
 
-	assert.Equal(t, proof.AllSiblings(), p.AllSiblings())
+	assert.Equal(t, proof.Siblings(), p.Siblings())
 	assert.Equal(t, proof.NodeAux, p.NodeAux)
 	assert.Equal(t, proof.Existence, p.Existence)
 
@@ -114,7 +114,7 @@ func TestProof_MarshalJSON_NonInclusionProofWithoutNodeAux(t *testing.T) {
 	err = json.Unmarshal(jsonProof, &p)
 	require.NoError(t, err)
 
-	assert.Equal(t, proof.AllSiblings(), p.AllSiblings())
+	assert.Equal(t, proof.Siblings(), p.Siblings())
 	assert.Equal(t, proof.NodeAux, p.NodeAux)
 	assert.Equal(t, proof.Existence, p.Existence)
 
@@ -155,7 +155,7 @@ func TestProof_MarshalJSON_NonInclusionProofWithNodeAux(t *testing.T) {
 	err = json.Unmarshal(jsonProof, &p)
 	require.NoError(t, err)
 
-	assert.Equal(t, proof.AllSiblings(), p.AllSiblings())
+	assert.Equal(t, proof.Siblings(), p.Siblings())
 	assert.Equal(t, proof.NodeAux, p.NodeAux)
 	assert.Equal(t, proof.Existence, p.Existence)
 

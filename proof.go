@@ -10,13 +10,9 @@ import (
 // Proof defines the required elements for a MT proof of existence or
 // non-existence.
 type Proof struct {
-	// existence indicates whether this is a proof of existence or
+	// Existence indicates whether this is a proof of existence or
 	// non-existence
 	Existence bool
-	// depth indicates how deep in the tree the proof goes
-	depth uint
-	// notempties is a bitmap of non-empty siblings found in siblings
-	notempties [ElemBytesLen - proofFlagsLen]byte
 	// siblings is a list of non-empty sibling keys
 	siblings []*Hash
 	// Auxiliary node if needed. The filed can return when p.Existence = false.
@@ -43,21 +39,14 @@ func NewProofFromData(existence bool,
 	var p Proof
 	p.Existence = existence
 	p.NodeAux = nodeAux
-	var siblings []*Hash
-	p.depth = uint(len(allSiblings))
-	for lvl, sibling := range allSiblings {
-		if !sibling.Equals(&HashZero) {
-			SetBitBigEndian(p.notempties[:], uint(lvl))
-			siblings = append(siblings, sibling)
-		}
-	}
-	p.siblings = siblings
+	p.siblings = make([]*Hash, len(allSiblings))
+	copy(p.siblings, allSiblings)
 	return &p, nil
 }
 
 // Bytes serializes a Proof into a byte array.
 func (p *Proof) Bytes() []byte {
-	bsLen := proofFlagsLen + len(p.notempties) + ElemBytesLen*len(p.siblings)
+	bsLen := proofFlagsLen + ElemBytesLen*len(p.siblings)
 	if p.NodeAux != nil {
 		bsLen += 2 * ElemBytesLen
 	}
@@ -66,9 +55,8 @@ func (p *Proof) Bytes() []byte {
 	if !p.Existence {
 		bs[0] |= 0x01
 	}
-	bs[1] = byte(p.depth)
-	copy(bs[proofFlagsLen:len(p.notempties)+proofFlagsLen], p.notempties[:])
-	siblingsBytes := bs[len(p.notempties)+proofFlagsLen:]
+	bs[1] = byte(len(p.siblings))
+	siblingsBytes := bs[proofFlagsLen:]
 	for i, k := range p.siblings {
 		copy(siblingsBytes[i*ElemBytesLen:(i+1)*ElemBytesLen], k[:])
 	}
@@ -80,16 +68,18 @@ func (p *Proof) Bytes() []byte {
 	return bs
 }
 
-// AllSiblings returns all the siblings of the proof.
-func (p *Proof) AllSiblings() []*Hash {
-	return SiblingsFromProof(p)
+// Siblings returns proof's siblings.
+func (p *Proof) Siblings() []*Hash {
+	res := make([]*Hash, len(p.siblings))
+	copy(res, p.siblings)
+	return res
 }
 
 // MarshalJSON implements json.Marshaler interface
 func (p *Proof) MarshalJSON() ([]byte, error) {
 	obj := proofJSON{
 		Existence: p.Existence,
-		Siblings:  p.AllSiblings(),
+		Siblings:  p.siblings,
 		NodeAux:   p.NodeAux,
 	}
 	return json.Marshal(obj)
@@ -111,25 +101,8 @@ func (p *Proof) UnmarshalJSON(data []byte) error {
 	p.siblings = proof.siblings
 	p.Existence = proof.Existence
 	p.NodeAux = proof.NodeAux
-	p.notempties = proof.notempties
-	p.depth = proof.depth
 
 	return nil
-}
-
-// SiblingsFromProof returns all the siblings of the proof.
-func SiblingsFromProof(proof *Proof) []*Hash {
-	sibIdx := 0
-	siblings := make([]*Hash, 0, proof.depth)
-	for lvl := 0; lvl < int(proof.depth); lvl++ {
-		if TestBitBigEndian(proof.notempties[:], uint(lvl)) {
-			siblings = append(siblings, proof.siblings[sibIdx])
-			sibIdx++
-		} else {
-			siblings = append(siblings, &HashZero)
-		}
-	}
-	return siblings
 }
 
 // VerifyProof verifies the Merkle Proof for the entry and root.
@@ -153,7 +126,6 @@ func RootFromProof(proof *Proof, k, v *big.Int) (*Hash, error) {
 	if err != nil {
 		return nil, fmt.Errorf("can't create hash from Value: %w", err)
 	}
-	sibIdx := len(proof.siblings) - 1
 	var midKey *Hash
 	if proof.Existence {
 		midKey, err = LeafKey(kHash, vHash)
@@ -174,15 +146,10 @@ func RootFromProof(proof *Proof, k, v *big.Int) (*Hash, error) {
 			}
 		}
 	}
-	path := getPath(int(proof.depth), kHash[:])
+	path := getPath(len(proof.siblings), kHash[:])
 	var siblingKey *Hash
-	for lvl := int(proof.depth) - 1; lvl >= 0; lvl-- {
-		if TestBitBigEndian(proof.notempties[:], uint(lvl)) {
-			siblingKey = proof.siblings[sibIdx]
-			sibIdx--
-		} else {
-			siblingKey = &HashZero
-		}
+	for lvl := len(proof.siblings) - 1; lvl >= 0; lvl-- {
+		siblingKey = proof.siblings[lvl]
 		if path[lvl] {
 			midKey, err = NewNodeMiddle(siblingKey, midKey).Key()
 			if err != nil {
