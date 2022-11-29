@@ -48,7 +48,7 @@ func GenerateSCVerifierProof(ctx context.Context, k *big.Int,
 	}
 	var cp CircomVerifierProof
 	cp.Root = rootKey
-	cp.Siblings = p.AllSiblings()
+	cp.Siblings = p.Siblings()
 	if p.NodeAux == nil {
 		if !p.Existence {
 			cp.IsOld0 = true

@@ -18,6 +18,8 @@ github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221115173019-d168820ba074 h1:cknh
 github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221115173019-d168820ba074/go.mod h1:H3dWARzx5zqOLhnYK0ENOIea9sjkB8K0DATCKcg6P7Q=
 github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221129091720-7359f9c6cf37 h1:SI524ANF/7O2LG8TXD2Tjl4dNgl8Yem4RbWUiWCOZXI=
 github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221129091720-7359f9c6cf37/go.mod h1:H3dWARzx5zqOLhnYK0ENOIea9sjkB8K0DATCKcg6P7Q=
+github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221129185840-e47cd9cde5a1 h1:upnAYTBawc0Y/yc31kiXbRxXSj20Y/LnKIomneh2OSk=
+github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221129185840-e47cd9cde5a1/go.mod h1:H3dWARzx5zqOLhnYK0ENOIea9sjkB8K0DATCKcg6P7Q=
 github.com/jackc/chunkreader v1.0.0/go.mod h1:RT6O25fNZIuasFJRyZ4R/Y2BbhasbmZXF9QQ7T3kePo=
 github.com/jackc/chunkreader/v2 v2.0.0/go.mod h1:odVSm741yZoC3dpHEUXIqA9tQRhFrgOHwnPIn9lDKlk=
 github.com/jackc/chunkreader/v2 v2.0.1 h1:i+RDz65UE+mmpjTfyz0MoVTnzeYxroil2G82ki7MGG8=
