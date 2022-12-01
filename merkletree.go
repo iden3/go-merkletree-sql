@@ -266,7 +266,7 @@ func (mt *MerkleTree) addLeaf(ctx context.Context, newLeaf *Node, key *Hash,
 		return nil, err
 	}
 	switch n.Type {
-	case NodeTypeNullable:
+	case NodeTypeEmpty:
 		// We can add newLeaf now
 		return mt.addNode(ctx, newLeaf)
 	case NodeTypeLeaf:
@@ -328,7 +328,7 @@ func (mt *MerkleTree) updateNode(ctx context.Context, n *Node) (*Hash, error) {
 	if !mt.writable {
 		return nil, ErrNotWritable
 	}
-	if n.Type == NodeTypeNullable {
+	if n.Type == NodeTypeEmpty {
 		return n.Key()
 	}
 	k, err := n.Key()
@@ -357,7 +357,7 @@ func (mt *MerkleTree) Get(ctx context.Context,
 			return nil, nil, nil, err
 		}
 		switch n.Type {
-		case NodeTypeNullable:
+		case NodeTypeEmpty:
 			return big.NewInt(0), big.NewInt(0), siblings, ErrKeyNotFound
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
@@ -426,7 +426,7 @@ func (mt *MerkleTree) Update(ctx context.Context,
 			return nil, err
 		}
 		switch n.Type {
-		case NodeTypeNullable:
+		case NodeTypeEmpty:
 			return nil, ErrKeyNotFound
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
@@ -505,7 +505,7 @@ func (mt *MerkleTree) Delete(ctx context.Context, k *big.Int) (*TransactionInfo,
 			return nil, err
 		}
 		switch n.Type {
-		case NodeTypeNullable:
+		case NodeTypeEmpty:
 			return nil, ErrKeyNotFound
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
@@ -691,7 +691,7 @@ func (mt *MerkleTree) GenerateProof(ctx context.Context, k *big.Int,
 			return nil, nil, err
 		}
 		switch n.Type {
-		case NodeTypeNullable:
+		case NodeTypeEmpty:
 			return p, big.NewInt(0), nil
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
@@ -725,7 +725,7 @@ func (mt *MerkleTree) walk(ctx context.Context,
 		return err
 	}
 	switch n.Type {
-	case NodeTypeNullable:
+	case NodeTypeEmpty:
 		f(n)
 	case NodeTypeLeaf:
 		f(n)

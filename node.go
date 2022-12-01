@@ -14,10 +14,10 @@ const (
 	// NodeTypeLeaf indicates the type of leaf Node that contains a key &
 	// value.
 	NodeTypeLeaf NodeType = 1
-	// NodeTypeNullable indicates the type of empty Node.
+	// NodeTypeEmpty indicates the type of empty Node.
 	// Virtual node that is not stored in the database.
 	// Also, this node haven't representation on tree.
-	NodeTypeNullable NodeType = 2
+	NodeTypeEmpty NodeType = 2
 )
 
 // Node is the struct that represents a node in the MT. The node should not be
@@ -47,7 +47,7 @@ func NewNodeMiddle(childL *Hash, childR *Hash) *Node {
 
 // NewNodeNullable creates a new empty node.
 func NewNodeNullable() *Node {
-	return &Node{Type: NodeTypeNullable}
+	return &Node{Type: NodeTypeEmpty}
 }
 
 // NewNodeFromBytes creates a new node by parsing the input []byte.
@@ -72,7 +72,7 @@ func NewNodeFromBytes(b []byte) (*Node, error) {
 		n.Entry = [2]*Hash{{}, {}}
 		copy(n.Entry[0][:], b[0:32])
 		copy(n.Entry[1][:], b[32:64])
-	case NodeTypeNullable:
+	case NodeTypeEmpty:
 		break
 	default:
 		return nil, ErrInvalidNodeFound
@@ -105,7 +105,7 @@ func (n *Node) Key() (*Hash, error) {
 			if err != nil {
 				return nil, err
 			}
-		case NodeTypeNullable: // Zero
+		case NodeTypeEmpty: // Zero
 			n.key = &HashZero
 		default:
 			n.key = &HashZero
@@ -122,7 +122,7 @@ func (n *Node) Value() []byte {
 		return append([]byte{byte(n.Type)}, append(n.ChildL[:], n.ChildR[:]...)...)
 	case NodeTypeLeaf: // {Type || Data...}
 		return append([]byte{byte(n.Type)}, append(n.Entry[0][:], n.Entry[1][:]...)...)
-	case NodeTypeNullable: // {}
+	case NodeTypeEmpty: // {}
 		return []byte{}
 	default:
 		return []byte{}
@@ -136,7 +136,7 @@ func (n *Node) String() string {
 		return fmt.Sprintf("Middle L:%s R:%s", n.ChildL, n.ChildR)
 	case NodeTypeLeaf: // {Type || Data...}
 		return fmt.Sprintf("Leaf I:%v D:%v", n.Entry[0], n.Entry[1])
-	case NodeTypeNullable: // {}
+	case NodeTypeEmpty: // {}
 		return "Nullable"
 	default:
 		return "Invalid Node"
