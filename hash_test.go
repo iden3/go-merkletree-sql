@@ -61,6 +61,14 @@ func TestHashParsers(t *testing.T) {
 	testHashParsers(t, a)
 }
 
+func TestHashParsersNotFit(t *testing.T) {
+	upperMaxSize := "21888242871839275222246405745257275088548364400416034343698204186575808495618"
+	b, ok := big.NewInt(0).SetString(upperMaxSize, 10)
+	require.True(t, ok)
+	_, err := NewHashFromBigInt(b)
+	require.Error(t, err)
+}
+
 func testHashParsers(t *testing.T, a *big.Int) {
 	require.True(t, cryptoUtils.CheckBigIntInField(a))
 	h, err := NewHashFromBigInt(a)

@@ -45,8 +45,8 @@ func NewNodeMiddle(childL *Hash, childR *Hash) *Node {
 	return &Node{Type: NodeTypeMiddle, ChildL: childL, ChildR: childR}
 }
 
-// NewNodeNullable creates a new empty node.
-func NewNodeNullable() *Node {
+// NewNodeEmpty creates a new empty node.
+func NewNodeEmpty() *Node {
 	return &Node{Type: NodeTypeEmpty}
 }
 

@@ -619,7 +619,7 @@ func (mt *MerkleTree) recalculatePathUntilRoot(path []bool, node *Node,
 // tree; they are all the same and assumed to always exist.
 func (mt *MerkleTree) GetNode(ctx context.Context, key *Hash) (*Node, error) {
 	if bytes.Equal(key[:], HashZero[:]) {
-		return NewNodeNullable(), nil
+		return NewNodeEmpty(), nil
 	}
 	n, err := mt.db.Get(ctx, key[:])
 	if err != nil {
