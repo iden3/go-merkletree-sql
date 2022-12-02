@@ -3,7 +3,7 @@ module github.com/iden3/go-merkletree-sql/db/pgx/v2
 go 1.18
 
 require (
-	github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221202163614-f0747d611eb1
+	github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221202174329-7155cafa2213
 	github.com/jackc/pgconn v1.5.0
 	github.com/jackc/pgx/v4 v4.6.0
 	github.com/olomix/go-test-pg v1.0.1

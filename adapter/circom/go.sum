@@ -11,6 +11,8 @@ github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221129185840-e47cd9cde5a1 h1:upnA
 github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221129185840-e47cd9cde5a1/go.mod h1:H3dWARzx5zqOLhnYK0ENOIea9sjkB8K0DATCKcg6P7Q=
 github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221202163614-f0747d611eb1 h1:wdpz4pO7TC2ukTVh8Q3tpVfKm9H/Vq8uw6dCHD2QTYA=
 github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221202163614-f0747d611eb1/go.mod h1:H3dWARzx5zqOLhnYK0ENOIea9sjkB8K0DATCKcg6P7Q=
+github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221202174329-7155cafa2213 h1:xoe5o58nmXeDtxGDZKAXi8Vbl5IIg41R0njJlw2KJo4=
+github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221202174329-7155cafa2213/go.mod h1:H3dWARzx5zqOLhnYK0ENOIea9sjkB8K0DATCKcg6P7Q=
 github.com/leanovate/gopter v0.2.9 h1:fQjYxZaynp97ozCzfOyOuAGOU4aU/z37zf/tOujFk7c=
 github.com/leanovate/gopter v0.2.9/go.mod h1:U2L/78B+KVFIx2VmW6onHJQzXtFb+p5y3y2Sh+Jxxv8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
