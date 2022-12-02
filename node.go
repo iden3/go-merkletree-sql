@@ -137,7 +137,7 @@ func (n *Node) String() string {
 	case NodeTypeLeaf: // {Type || Data...}
 		return fmt.Sprintf("Leaf I:%v D:%v", n.Entry[0], n.Entry[1])
 	case NodeTypeEmpty: // {}
-		return "Nullable"
+		return "Empty"
 	default:
 		return "Invalid Node"
 	}

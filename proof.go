@@ -17,7 +17,7 @@ type Proof struct {
 	siblings []*Hash
 	// Auxiliary node if needed. The filed can return when p.Existence = false.
 	// Represent node that exists on position instead expected key.
-	// On case when on expected position exists NullableNode, NodeAux will nil.
+	// On case when on expected position exists EmptyNode, NodeAux will nil.
 	NodeAux *NodeAux
 }
 
