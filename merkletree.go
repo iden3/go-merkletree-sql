@@ -3,7 +3,6 @@ package merkletree
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -21,13 +20,6 @@ const (
 	IndexLen = 4
 	// DataLen indicates how many elements are used for the data.
 	DataLen = 8
-
-	// countGraph. Іs a magic number that represents
-	// the depth of the tree using the number of paths rather than nodes.
-	// With a tree depth of N, we can have a maximum of N-1 paths to the depth.
-	diffCountPath = 1
-	// Since nodes start count from 1 but paths from 0
-	diffStartIndex = 1
 )
 
 var (
@@ -181,7 +173,7 @@ func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) (*TransactionInfo,
 func (mt *MerkleTree) pushLeaf(ctx context.Context, newLeaf *Node,
 	oldLeaf *Node, lvl int, pathNewLeaf []bool,
 	pathOldLeaf []bool) (*Hash, error) {
-	if lvl > mt.maxLevels-diffCountPath-diffStartIndex {
+	if lvl > mt.maxLevels-2 {
 		return nil, ErrReachedMaxLevel
 	}
 	var newNodeMiddle *Node
@@ -226,7 +218,7 @@ func (mt *MerkleTree) addLeaf(ctx context.Context, newLeaf *Node, key *Hash,
 	lvl int, path []bool) (*Hash, error) {
 	var err error
 	var nextKey *Hash
-	if lvl > mt.maxLevels-diffStartIndex {
+	if lvl > mt.maxLevels-1 {
 		return nil, ErrReachedMaxLevel
 	}
 	n, err := mt.GetNode(ctx, key)
@@ -609,36 +601,6 @@ func getPath(numLevels int, k []byte) []bool {
 type NodeAux struct {
 	Key   *Hash `json:"key"`
 	Value *Hash `json:"value"`
-}
-
-type nodeAuxJSON struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-func (n *NodeAux) UnmarshalJSON(data []byte) error {
-	res := &nodeAuxJSON{}
-	if err := json.Unmarshal(data, res); err != nil {
-		return err
-	}
-	var err error
-	n.Key, err = NewHashFromString(res.Key, 10)
-	if err != nil {
-		return err
-	}
-	n.Value, err = NewHashFromString(res.Value, 10)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (n *NodeAux) MarshalJSON() ([]byte, error) {
-	res := nodeAuxJSON{
-		Key:   n.Key.String(),
-		Value: n.Value.String(),
-	}
-	return json.Marshal(res)
 }
 
 // ZeroPaddedSiblings returns the full siblings compatible with circom

@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/iden3/go-iden3-crypto v0.0.13
-	github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221129185840-e47cd9cde5a1
+	github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221202163614-f0747d611eb1
 	github.com/stretchr/testify v1.7.0
 )
 

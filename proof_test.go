@@ -112,8 +112,6 @@ func TestProof_MarshalJSON_NonInclusionProofWithoutNodeAux(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, expected, string(jsonProof))
 
-	//fmt.Println(string(jsonProof))
-
 	jsonProof2, err := json.Marshal(proof)
 	require.NoError(t, err)
 	assert.JSONEq(t, expected, string(jsonProof2))
@@ -149,7 +147,9 @@ func TestProof_MarshalJSON_NonInclusionProofWithNodeAux(t *testing.T) {
 		"[\"0000000000000000000000000000000000000000000000000000000000000000\"," +
 		"\"58908ea0040f9fbf9411a90a60c0d7ca0d9e3b465c1fa5c80f1e0bd1801be61a\"," +
 		"\"8f13884439a26f4295d310badce9fb6d2851fbf85de04de84fe3582ef3a92211\"]," +
-		"\"node_aux\":{\"key\":\"3\",\"value\":\"8\"}}"
+		"\"node_aux\":{" +
+		"\"key\":\"0300000000000000000000000000000000000000000000000000000000000000\"," +
+		"\"value\":\"0800000000000000000000000000000000000000000000000000000000000000\"}}"
 
 	proof, _, err := mt.GenerateProof(ctx, big.NewInt(11), mt.Root()) // 11 0b001011
 	require.NoError(t, err)

@@ -50,7 +50,7 @@ node [fontname=Monospace,fontsize=10,shape=box]
 			errIn = err
 		}
 		switch n.Type {
-		case merkletree.NodeTypeNullable:
+		case merkletree.NodeTypeEmpty:
 		case merkletree.NodeTypeLeaf:
 			fmt.Fprintf(w, "\"%v\" [style=filled];\n", HashShortString(k))
 		case merkletree.NodeTypeMiddle:
