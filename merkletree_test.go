@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// NOTICE: go-merkletree-sql uses BigEndian for bits representation!
+// NOTICE: go-merkletree-sql uses LittleEndian for bits representation!
 func TestGetPath(t *testing.T) {
 	tests := []struct {
 		name      string
