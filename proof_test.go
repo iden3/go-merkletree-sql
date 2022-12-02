@@ -23,29 +23,34 @@ func TestProof_MarshalJSON(t *testing.T) {
 	proof, _, err := mt.GenerateProof(ctx, big.NewInt(1), mt.Root())
 	require.NoError(t, err)
 
-	expected := `{"existence":true,"siblings":["0","0","0","0","13167809686468103484252970188077542812117386492167015186848701688893624465068"]}` //nolint:lll
+	expected := "{\"existence\":true,\"" +
+		"siblings\":[\"0000000000000000000000000000000000000000000000000000000000000000\"," +
+		"\"0000000000000000000000000000000000000000000000000000000000000000\"," +
+		"\"0000000000000000000000000000000000000000000000000000000000000000\"," +
+		"\"0000000000000000000000000000000000000000000000000000000000000000\"," +
+		"\"acb6d2c171708d80a11b6480e2c88bb02b7299da248949acd34521cd56b71c1d\"]}" //nolint:lll
 
 	jsonProof, err := proof.MarshalJSON()
 	require.NoError(t, err)
-	assert.JSONEq(t, expected, string(jsonProof))
+	require.JSONEq(t, expected, string(jsonProof))
 
 	jsonProof2, err := json.Marshal(proof)
 	require.NoError(t, err)
-	assert.JSONEq(t, expected, string(jsonProof2))
+	require.JSONEq(t, expected, string(jsonProof2))
 
 	var p merkletree.Proof
 	err = json.Unmarshal(jsonProof, &p)
 	require.NoError(t, err)
 
-	assert.Equal(t, proof.Siblings(), p.Siblings())
-	assert.Equal(t, proof.NodeAux, p.NodeAux)
-	assert.Equal(t, proof.Existence, p.Existence)
+	require.Equal(t, proof.Siblings(), p.Siblings())
+	require.Equal(t, proof.NodeAux, p.NodeAux)
+	require.Equal(t, proof.Existence, p.Existence)
 
 	valid := merkletree.VerifyProof(mt.Root(), proof, big.NewInt(1), big.NewInt(2))
-	assert.True(t, valid)
+	require.True(t, valid)
 
 	valid = merkletree.VerifyProof(mt.Root(), &p, big.NewInt(1), big.NewInt(2))
-	assert.True(t, valid)
+	require.True(t, valid)
 }
 
 func TestProof_MarshalJSON_NonInclusionProofWithoutNodeAux(t *testing.T) {
@@ -61,7 +66,10 @@ func TestProof_MarshalJSON_NonInclusionProofWithoutNodeAux(t *testing.T) {
 	_, _ = mt.Add(ctx, big.NewInt(18), big.NewInt(8))
 	_, _ = mt.Add(ctx, big.NewInt(19), big.NewInt(8))
 
-	expected := `{"existence":false,"siblings":["11445591970430686524669302036672429838422356071483318076578901368167305782934","0","19623034175990655567331847335376057032468128626960956120127301863642129702078"]}` //nolint:lll
+	expected := "{\"existence\":false," +
+		"\"siblings\":[\"9626630d48edcfcb934ce098e8223b5eedf4a19c019897b41c898c59b9f94d19\"," +
+		"\"0000000000000000000000000000000000000000000000000000000000000000\"," +
+		"\"be1c5b391e5ca5660f98e1ecfc68c908f85910b77ede0f79efa47a9b663e622b\"]}" //nolint:lll
 
 	proof, _, err := mt.GenerateProof(ctx, big.NewInt(6), mt.Root())
 	require.NoError(t, err)
@@ -137,15 +145,17 @@ func TestProof_MarshalJSON_NonInclusionProofWithNodeAux(t *testing.T) {
 	_, _ = mt.Add(ctx, big.NewInt(9), big.NewInt(8)) // 9 0b001001
 
 	//nolint:lll
-	expected := `{"existence":false,"siblings":["0","12166698708103333637493481507263348370172773813051235807348785759284762677336","7750564177398573185975752951631372712868228752107043582052272719841058100111"],"node_aux":{"key":"3","value":"8"}}`
+	expected := "{\"existence\":false,\"siblings\":" +
+		"[\"0000000000000000000000000000000000000000000000000000000000000000\"," +
+		"\"58908ea0040f9fbf9411a90a60c0d7ca0d9e3b465c1fa5c80f1e0bd1801be61a\"," +
+		"\"8f13884439a26f4295d310badce9fb6d2851fbf85de04de84fe3582ef3a92211\"]," +
+		"\"node_aux\":{\"key\":\"3\",\"value\":\"8\"}}"
 
 	proof, _, err := mt.GenerateProof(ctx, big.NewInt(11), mt.Root()) // 11 0b001011
 	require.NoError(t, err)
 	jsonProof, err := proof.MarshalJSON()
 	require.NoError(t, err)
 	assert.JSONEq(t, expected, string(jsonProof))
-
-	//fmt.Println(string(jsonProof))
 
 	jsonProof2, err := json.Marshal(proof)
 	require.NoError(t, err)

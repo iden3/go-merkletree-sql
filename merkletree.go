@@ -3,6 +3,7 @@ package merkletree
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -113,51 +114,6 @@ func (mt *MerkleTree) Snapshot(
 		writable:  false}, nil
 }
 
-// AddEntry adds the Entry to the MerkleTree
-func (mt *MerkleTree) AddEntry(ctx context.Context, e *Entry) error {
-	// verify that the MerkleTree is writable
-	if !mt.writable {
-		return ErrNotWritable
-	}
-	// verify that the ElemBytes are valid and fit inside the mimc7 field.
-	if !CheckEntryInField(*e) {
-		return errors.New("Elements not inside the Finite Field over R")
-	}
-
-	mt.Lock()
-	defer mt.Unlock()
-
-	hIndex, err := e.HIndex()
-	if err != nil {
-		return err
-	}
-	hValue, err := e.HValue()
-	if err != nil {
-		return err
-	}
-	newNodeLeaf := NewNodeLeaf(hIndex, hValue)
-	path := getPath(mt.maxLevels, hIndex[:])
-
-	newRootKey, err := mt.addLeaf(ctx, newNodeLeaf, mt.rootKey, 0, path)
-	if err != nil {
-		return err
-	}
-	mt.rootKey = newRootKey
-	return mt.db.SetRoot(ctx, mt.rootKey)
-}
-
-func (mt *MerkleTree) add(ctx context.Context, kHash, vHash *Hash) error {
-	newNodeLeaf := NewNodeLeaf(kHash, vHash)
-	path := getPath(mt.maxLevels, kHash[:])
-
-	newRootKey, err := mt.addLeaf(ctx, newNodeLeaf, mt.rootKey, 0, path)
-	if err != nil {
-		return err
-	}
-	mt.rootKey = newRootKey
-	return mt.db.SetRoot(ctx, mt.rootKey)
-}
-
 // Add new element to tree.
 func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) (*TransactionInfo, error) {
 	// verify that the MerkleTree is writable
@@ -198,7 +154,19 @@ func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) (*TransactionInfo,
 	if err != nil {
 		return nil, err
 	}
-	err = mt.add(ctx, ti.NewKey, ti.NewValue)
+
+	newRootKey, err := mt.addLeaf(
+		ctx,
+		NewNodeLeaf(ti.NewKey, ti.NewValue),
+		mt.rootKey,
+		0,
+		getPath(mt.maxLevels, ti.NewKey[:]))
+	if err != nil {
+		return nil, err
+	}
+
+	mt.rootKey = newRootKey
+	err = mt.db.SetRoot(ctx, mt.rootKey)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +310,7 @@ func (mt *MerkleTree) updateNode(ctx context.Context, n *Node) (*Hash, error) {
 
 // Get returns the value of the leaf for the given key
 func (mt *MerkleTree) Get(ctx context.Context,
-	k *big.Int) (*big.Int, *big.Int, []*Hash, error) {
+	k *big.Int) (key *big.Int, value *big.Int, siblings []*Hash, err error) {
 	kHash, err := NewHashFromBigInt(k)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("can't create hash from Key: %w", err)
@@ -350,7 +318,6 @@ func (mt *MerkleTree) Get(ctx context.Context,
 	path := getPath(mt.maxLevels, kHash[:])
 
 	nextKey := mt.rootKey
-	var siblings []*Hash
 	for i := 0; i < mt.maxLevels; i++ {
 		n, err := mt.GetNode(ctx, nextKey)
 		if err != nil {
@@ -510,7 +477,7 @@ func (mt *MerkleTree) Delete(ctx context.Context, k *big.Int) (*TransactionInfo,
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
 				// remove and go up with the sibling
-				err = mt.rmAndUpload(ctx, path, kHash, siblings)
+				err = mt.rmAndUpload(ctx, path, siblings)
 				return nil, err
 			}
 			return nil, ErrKeyNotFound
@@ -535,15 +502,14 @@ func (mt *MerkleTree) Delete(ctx context.Context, k *big.Int) (*TransactionInfo,
 
 // rmAndUpload removes the key, and goes up until the root updating all the
 // nodes with the new values.
-func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
-	siblings []*Hash) error {
+func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, siblings []*Hash) error {
 	if len(siblings) == 0 {
 		mt.rootKey = &HashZero
 		err := mt.db.SetRoot(ctx, mt.rootKey)
 		return err
 	}
 
-	toUpload := siblings[len(siblings)-diffStartIndex]
+	toUpload := siblings[len(siblings)-1]
 	if len(siblings) < 2 {
 		mt.rootKey = siblings[0]
 		err := mt.db.SetRoot(ctx, mt.rootKey)
@@ -559,7 +525,7 @@ func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 			} else {
 				newNode = NewNodeMiddle(toUpload, siblings[i])
 			}
-			_, err := mt.addNode(context.TODO(), newNode)
+			_, err := mt.addNode(ctx, newNode)
 			if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
 				return err
 			}
@@ -645,6 +611,36 @@ type NodeAux struct {
 	Value *Hash `json:"value"`
 }
 
+type nodeAuxJSON struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+func (n *NodeAux) UnmarshalJSON(data []byte) error {
+	res := &nodeAuxJSON{}
+	if err := json.Unmarshal(data, res); err != nil {
+		return err
+	}
+	var err error
+	n.Key, err = NewHashFromString(res.Key, 10)
+	if err != nil {
+		return err
+	}
+	n.Value, err = NewHashFromString(res.Value, 10)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (n *NodeAux) MarshalJSON() ([]byte, error) {
+	res := nodeAuxJSON{
+		Key:   n.Key.String(),
+		Value: n.Value.String(),
+	}
+	return json.Marshal(res)
+}
+
 // ZeroPaddedSiblings returns the full siblings compatible with circom
 func ZeroPaddedSiblings(siblings []*Hash, levels int) []*Hash {
 	// Add the rest of empty levels to the siblings
@@ -672,8 +668,8 @@ type TransactionInfo struct {
 // Entry's hash Index for a Merkle Tree given the root.
 // If the rootKey is nil, the current merkletree root is used
 func (mt *MerkleTree) GenerateProof(ctx context.Context, k *big.Int,
-	rootKey *Hash) (*Proof, *big.Int, error) {
-	p := &Proof{}
+	rootKey *Hash) (p *Proof, value *big.Int, err error) {
+	p = new(Proof)
 	var siblingKey *Hash
 
 	kHash, err := NewHashFromBigInt(k)

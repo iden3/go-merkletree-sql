@@ -22,12 +22,12 @@ type Hash [32]byte
 
 // MarshalText implements the marshaler for the Hash type
 func (h *Hash) MarshalText() ([]byte, error) {
-	return []byte(h.BigInt().String()), nil
+	return []byte(h.Hex()), nil
 }
 
 // UnmarshalText implements the unmarshaler for the Hash type
 func (h *Hash) UnmarshalText(b []byte) error {
-	ha, err := NewHashFromString(string(b))
+	ha, err := NewHashFromHex(string(b))
 	if err != nil {
 		return err
 	}
@@ -43,19 +43,15 @@ func (h *Hash) String() string {
 // Hex returns the hexadecimal representation of the Hash
 func (h *Hash) Hex() string {
 	return hex.EncodeToString(h[:])
-	// alternatively equivalent, but with too extra steps:
-	// bRaw := h.BigInt().Bytes()
-	// b := [32]byte{}
-	// copy(b[:], SwapEndianness(bRaw[:]))
-	// return hex.EncodeToString(b[:])
 }
 
 // BigInt returns the *big.Int representation of the *Hash
 func (h *Hash) BigInt() *big.Int {
-	if new(big.Int).SetBytes(SwapEndianness(h[:])) == nil {
+	r := new(big.Int).SetBytes(SwapEndianness(h[:]))
+	if r == nil {
 		return big.NewInt(0)
 	}
-	return new(big.Int).SetBytes(SwapEndianness(h[:]))
+	return r
 }
 
 func (h *Hash) Equals(h2 *Hash) bool {
@@ -70,7 +66,7 @@ func NewBigIntFromHashBytes(b []byte) (*big.Int, error) {
 	if len(b) != ElemBytesLen {
 		return nil, fmt.Errorf("Expected 32 bytes, found %d bytes", len(b))
 	}
-	bi := new(big.Int).SetBytes(b[:ElemBytesLen])
+	bi := new(big.Int).SetBytes(b)
 	if !cryptoUtils.CheckBigIntInField(bi) {
 		return nil, fmt.Errorf("NewBigIntFromHashBytes: Value not inside the Finite Field")
 	}
@@ -104,8 +100,8 @@ func NewHashFromHex(h string) (*Hash, error) {
 }
 
 // NewHashFromString returns a *Hash representation of the given decimal string
-func NewHashFromString(s string) (*Hash, error) {
-	bi, ok := new(big.Int).SetString(s, 10)
+func NewHashFromString(s string, base int) (*Hash, error) {
+	bi, ok := new(big.Int).SetString(s, base)
 	if !ok {
 		return nil, fmt.Errorf("Can not parse string to Hash")
 	}

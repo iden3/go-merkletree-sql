@@ -510,10 +510,7 @@ func TestDelete(t *testing.T, sto merkletree.Storage) {
 		"14204494359367183802864593755198662203838502594566452929175967972147978322084",
 		mt.Root().BigInt().String())
 
-	// mt.PrintGraphViz(nil)
-
 	_, err = mt.Delete(ctx, big.NewInt(33))
-	// mt.PrintGraphViz(nil)
 	assert.Nil(t, err)
 	assert.Equal(t,
 		"15550352095346187559699212771793131433118240951738528922418613687814377955591",
@@ -767,7 +764,7 @@ func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {
 
 func TestTypesMarshalers(t *testing.T, sto merkletree.Storage) {
 	// test Hash marshalers
-	h, err := merkletree.NewHashFromString("42")
+	h, err := merkletree.NewHashFromString("42", 10)
 	assert.Nil(t, err)
 	s, err := json.Marshal(h)
 	assert.Nil(t, err)

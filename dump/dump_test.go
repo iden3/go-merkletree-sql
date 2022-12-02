@@ -43,3 +43,27 @@ func TestDumpLeafsImportLeafs(t *testing.T) {
 
 	assert.Equal(t, mt.Root(), mt2.Root())
 }
+
+func TestDumpWithDeletedNode(t *testing.T) {
+	ctx := context.Background()
+	store1 := memory.NewMemoryStorage()
+	store2 := memory.NewMemoryStorage()
+	mt, err := merkletree.NewMerkleTree(ctx, store1, 140)
+	require.Nil(t, err)
+
+	for i := int64(0); i < 10; i++ {
+		_, err := mt.Add(context.Background(), big.NewInt(i), big.NewInt(i))
+		require.NoError(t, err)
+	}
+	_, err = mt.Delete(context.Background(), big.NewInt(7))
+	require.NoError(t, err)
+	leafs, err := DumpLeafs(context.Background(), nil, mt)
+	require.NoError(t, err)
+
+	mt2, err := merkletree.NewMerkleTree(ctx, store2, 140)
+	require.Nil(t, err)
+	err = ImportDumpedLeafs(context.Background(), leafs, mt2)
+	require.NoError(t, err)
+	_, err = mt2.Add(context.Background(), big.NewInt(7), big.NewInt(7))
+	require.NoError(t, err)
+}
