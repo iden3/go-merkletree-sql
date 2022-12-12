@@ -103,39 +103,32 @@ func GenerateCircomVerifierProof(ctx context.Context,
 	if err != nil && err != merkletree.ErrKeyNotFound {
 		return nil, err
 	}
-	key, err := merkletree.NewHashFromBigInt(k)
-	if err != nil {
-		return nil, err
-	}
-	value, err := merkletree.NewHashFromBigInt(v)
-	if err != nil {
-		return nil, err
-	}
-	cd := &ConvertData{
-		Proof:   p,
-		RootKey: rootKey,
-		Key:     key,
-		Value:   value,
-		Depth:   mt.MaxLevels(),
-	}
-	return ProofToCircomFormat(cd), nil
-}
-
-type ConvertData struct {
-	Proof   *merkletree.Proof
-	RootKey *merkletree.Hash
-	Key     *merkletree.Hash
-	Value   *merkletree.Hash
-	Depth   int
+	return ProofToCircomFormat(p, rootKey, k, v, mt.MaxLevels())
 }
 
 // ProofToCircomFormat convert merkletree.Proof to circom compatible proof.
-func ProofToCircomFormat(src *ConvertData) *CircomVerifierProof {
+func ProofToCircomFormat(
+	proof *merkletree.Proof,
+	rootKey *merkletree.Hash,
+	key, value *big.Int,
+	depth int,
+) (*CircomVerifierProof, error) {
 	dst := new(CircomVerifierProof)
-	dst.Root = src.RootKey
-	dst.Siblings = src.Proof.Siblings()
-	if src.Proof.NodeAux == nil {
-		if !src.Proof.Existence {
+
+	var err error
+	dst.Key, err = merkletree.NewHashFromBigInt(key)
+	if err != nil {
+		return nil, err
+	}
+	dst.Value, err = merkletree.NewHashFromBigInt(value)
+	if err != nil {
+		return nil, err
+	}
+
+	dst.Root = rootKey
+	dst.Siblings = proof.Siblings()
+	if proof.NodeAux == nil {
+		if !proof.Existence {
 			dst.IsOld0 = true
 			dst.Fnc = 1 // non inclusion
 		} else {
@@ -144,13 +137,11 @@ func ProofToCircomFormat(src *ConvertData) *CircomVerifierProof {
 		dst.OldKey = &merkletree.HashZero
 		dst.OldValue = &merkletree.HashZero
 	} else {
-		dst.OldKey = src.Proof.NodeAux.Key
-		dst.OldValue = src.Proof.NodeAux.Value
+		dst.OldKey = proof.NodeAux.Key
+		dst.OldValue = proof.NodeAux.Value
 		dst.Fnc = 1 // non inclusion
 	}
-	dst.Key = src.Key
-	dst.Value = src.Value
 
-	dst.Siblings = merkletree.ZeroPaddedSiblings(dst.Siblings, src.Depth)
-	return dst
+	dst.Siblings = merkletree.ZeroPaddedSiblings(dst.Siblings, depth)
+	return dst, nil
 }
