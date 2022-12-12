@@ -3,7 +3,7 @@ package memory
 import (
 	"context"
 
-	"github.com/iden3/go-merkletree-sql/v2"
+	"github.com/private-tech-inc/go-merkletree-sql"
 )
 
 // Storage implements the db.Storage interface

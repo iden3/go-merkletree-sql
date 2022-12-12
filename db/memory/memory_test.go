@@ -1,10 +1,10 @@
 package memory
 
 import (
+	"github.com/private-tech-inc/go-merkletree-sql"
 	"testing"
 
-	"github.com/iden3/go-merkletree-sql/v2"
-	"github.com/iden3/go-merkletree-sql/v2/db/test"
+	"github.com/private-tech-inc/go-merkletree-sql/db/test"
 	"github.com/stretchr/testify/require"
 )
 

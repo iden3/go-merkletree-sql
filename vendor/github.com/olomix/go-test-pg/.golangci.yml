@@ -1,0 +1,28 @@
+service:
+  golangci-lint-version: 1.43.x
+
+run:
+  timeout: 2m
+
+linters-settings:
+  lll:
+    line-length: 80
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+    settings:
+      hugeParam:
+        sizeThreshold: 128
+
+linters:
+  enable:
+    - lll
+    - gocritic
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - lll

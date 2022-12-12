@@ -2,13 +2,13 @@ package sql
 
 import (
 	"errors"
+	"github.com/private-tech-inc/go-merkletree-sql"
 	"io"
 	"sync/atomic"
 	"testing"
 
-	"github.com/iden3/go-merkletree-sql/v2"
-	"github.com/iden3/go-merkletree-sql/v2/db/test"
 	go_test_pg "github.com/olomix/go-test-pg"
+	"github.com/private-tech-inc/go-merkletree-sql/db/test"
 	"github.com/stretchr/testify/require"
 )
 
