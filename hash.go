@@ -21,8 +21,8 @@ var (
 type Hash [32]byte
 
 // MarshalText implements the marshaler for the Hash type
-func (h Hash) MarshalText() ([]byte, error) {
-	return []byte(h.BigInt().String()), nil
+func (h *Hash) MarshalText() []byte {
+	return []byte(h.BigInt().String())
 }
 
 // UnmarshalText implements the unmarshaler for the Hash type
@@ -36,7 +36,7 @@ func (h *Hash) UnmarshalText(b []byte) error {
 }
 
 // String returns decimal representation in string format of the Hash
-func (h Hash) String() string {
+func (h *Hash) String() string {
 	s := h.BigInt().String()
 	if len(s) < numCharPrint {
 		return s
@@ -45,21 +45,16 @@ func (h Hash) String() string {
 }
 
 // Hex returns the hexadecimal representation of the Hash
-func (h Hash) Hex() string {
+func (h *Hash) Hex() string {
 	return hex.EncodeToString(h[:])
-	// alternatively equivalent, but with too extra steps:
-	// bRaw := h.BigInt().Bytes()
-	// b := [32]byte{}
-	// copy(b[:], SwapEndianness(bRaw[:]))
-	// return hex.EncodeToString(b[:])
 }
 
 // BigInt returns the *big.Int representation of the *Hash
 func (h *Hash) BigInt() *big.Int {
-	if new(big.Int).SetBytes(SwapEndianness(h[:])) == nil {
+	if h == nil {
 		return big.NewInt(0)
 	}
-	return new(big.Int).SetBytes(SwapEndianness(h[:]))
+	return new(big.Int).SetBytes(h[:])
 }
 
 func (h *Hash) Equals(h2 *Hash) bool {
@@ -88,7 +83,7 @@ func NewHashFromBigInt(b *big.Int) (*Hash, error) {
 			"NewHashFromBigInt: Value not inside the Finite Field")
 	}
 	r := &Hash{}
-	copy(r[:], SwapEndianness(b.Bytes()))
+	copy(r[:], b.Bytes())
 	return r, nil
 }
 
