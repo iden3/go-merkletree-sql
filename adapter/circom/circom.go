@@ -96,20 +96,6 @@ func (c *CircomVerifierProof) UnmarshalJSON(data []byte) error {
 // is used.
 func GenerateCircomVerifierProof(ctx context.Context,
 	k *big.Int, rootKey *merkletree.Hash, mt *merkletree.MerkleTree) (*CircomVerifierProof, error) {
-	cp, err := GenerateSCVerifierProof(ctx, k, rootKey, mt)
-	if err != nil {
-		return nil, err
-	}
-	cp.Siblings = merkletree.ZeroPaddedSiblings(cp.Siblings, mt.MaxLevels())
-	return cp, nil
-}
-
-// GenerateSCVerifierProof returns the CircomVerifierProof for a certain key in
-// the MerkleTree with the Siblings without the extra 0 needed at the circom
-// circuits, which makes it straight forward to verifiy inside a Smart
-// Contract.  If the rootKey is nil, the current merkletree root is used.
-func GenerateSCVerifierProof(ctx context.Context, k *big.Int,
-	rootKey *merkletree.Hash, mt *merkletree.MerkleTree) (*CircomVerifierProof, error) {
 	if rootKey == nil {
 		rootKey = mt.Root()
 	}
@@ -117,32 +103,54 @@ func GenerateSCVerifierProof(ctx context.Context, k *big.Int,
 	if err != nil && err != merkletree.ErrKeyNotFound {
 		return nil, err
 	}
-	var cp CircomVerifierProof
-	cp.Root = rootKey
-	cp.Siblings = p.Siblings()
-	if p.NodeAux == nil {
-		if !p.Existence {
-			cp.IsOld0 = true
-			cp.Fnc = 1 // non inclusion
+	key, err := merkletree.NewHashFromBigInt(k)
+	if err != nil {
+		return nil, err
+	}
+	value, err := merkletree.NewHashFromBigInt(v)
+	if err != nil {
+		return nil, err
+	}
+	cd := &ConvertData{
+		Proof:   p,
+		RootKey: rootKey,
+		Key:     key,
+		Value:   value,
+		Depth:   mt.MaxLevels(),
+	}
+	return ProofToCircomFormat(cd), nil
+}
+
+type ConvertData struct {
+	Proof   *merkletree.Proof
+	RootKey *merkletree.Hash
+	Key     *merkletree.Hash
+	Value   *merkletree.Hash
+	Depth   int
+}
+
+// ProofToCircomFormat convert merkletree.Proof to circom compatible proof.
+func ProofToCircomFormat(src *ConvertData) *CircomVerifierProof {
+	dst := new(CircomVerifierProof)
+	dst.Root = src.RootKey
+	dst.Siblings = src.Proof.Siblings()
+	if src.Proof.NodeAux == nil {
+		if !src.Proof.Existence {
+			dst.IsOld0 = true
+			dst.Fnc = 1 // non inclusion
 		} else {
-			cp.Fnc = 0 // inclusion
+			dst.Fnc = 0 // inclusion
 		}
-
-		cp.OldKey = &merkletree.HashZero
-		cp.OldValue = &merkletree.HashZero
+		dst.OldKey = &merkletree.HashZero
+		dst.OldValue = &merkletree.HashZero
 	} else {
-		cp.OldKey = p.NodeAux.Key
-		cp.OldValue = p.NodeAux.Value
-		cp.Fnc = 1 // non inclusion
+		dst.OldKey = src.Proof.NodeAux.Key
+		dst.OldValue = src.Proof.NodeAux.Value
+		dst.Fnc = 1 // non inclusion
 	}
-	cp.Key, err = merkletree.NewHashFromBigInt(k)
-	if err != nil {
-		return nil, err
-	}
-	cp.Value, err = merkletree.NewHashFromBigInt(v)
-	if err != nil {
-		return nil, err
-	}
+	dst.Key = src.Key
+	dst.Value = src.Value
 
-	return &cp, nil
+	dst.Siblings = merkletree.ZeroPaddedSiblings(dst.Siblings, src.Depth)
+	return dst
 }

@@ -20,12 +20,12 @@ func TestSmtVerifier(t *testing.T) {
 	_, err = mt.Add(ctx, big.NewInt(1), big.NewInt(11))
 	require.Nil(t, err)
 
-	cvp, err := GenerateSCVerifierProof(ctx, big.NewInt(1), nil, mt)
+	cvp, err := GenerateCircomVerifierProof(ctx, big.NewInt(1), nil, mt)
 	require.Nil(t, err)
 	jCvp, err := json.Marshal(cvp)
 	require.Nil(t, err)
 	// expect siblings to be '[]', instead of 'null'
-	expected := `{"root":"6525056641794203554583616941316772618766382307684970171204065038799368146416","siblings":[],"oldKey":"0","oldValue":"0","isOld0":false,"key":"1","value":"11","fnc":0}` //nolint:lll
+	expected := `{"root":"6525056641794203554583616941316772618766382307684970171204065038799368146416","siblings":["0","0","0","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"1","value":"11","fnc":0}` //nolint:lll
 
 	require.Equal(t, expected, string(jCvp))
 	_, err = mt.Add(ctx, big.NewInt(2), big.NewInt(22))
@@ -45,7 +45,7 @@ func TestSmtVerifier(t *testing.T) {
 	expected = `{"root":"13558168455220559042747853958949063046226645447188878859760119761585093422436","siblings":["11620130507635441932056895853942898236773847390796721536119314875877874016518","5158240518874928563648144881543092238925265313977134167935552944620041388700","0","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
 	require.Equal(t, expected, string(jCvp))
 
-	cvp, err = GenerateSCVerifierProof(ctx, big.NewInt(2), nil, mt)
+	cvp, err = GenerateCircomVerifierProof(ctx, big.NewInt(2), nil, mt)
 	require.Nil(t, err)
 
 	jCvp, err = json.Marshal(cvp)
@@ -53,7 +53,7 @@ func TestSmtVerifier(t *testing.T) {
 	// Test vectors generated using https://github.com/iden3/circomlib smt.js
 	// Without the extra 0 that the circom circuits need, but that are not
 	// needed at a smart contract verification
-	expected = `{"root":"13558168455220559042747853958949063046226645447188878859760119761585093422436","siblings":["11620130507635441932056895853942898236773847390796721536119314875877874016518","5158240518874928563648144881543092238925265313977134167935552944620041388700"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
+	expected = `{"root":"13558168455220559042747853958949063046226645447188878859760119761585093422436","siblings":["11620130507635441932056895853942898236773847390796721536119314875877874016518","5158240518874928563648144881543092238925265313977134167935552944620041388700","0","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
 	require.Equal(t, expected, string(jCvp))
 }
 
@@ -80,7 +80,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 			},
 			expected: &CircomVerifierProof{
 				Root:     requireLeafKey(big.NewInt(1), big.NewInt(2)),
-				Siblings: []*merkletree.Hash{},
+				Siblings: defaultZeroPadding([]*merkletree.Hash{}),
 				OldKey:   &merkletree.HashZero,
 				OldValue: &merkletree.HashZero,
 				IsOld0:   false,
@@ -107,9 +107,9 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 					requireLeafKey(big.NewInt(2), big.NewInt(2)).BigInt(), // go to left
 					requireLeafKey(big.NewInt(1), big.NewInt(1)).BigInt(), // go to right
 				),
-				Siblings: []*merkletree.Hash{
+				Siblings: defaultZeroPadding([]*merkletree.Hash{
 					requireLeafKey(big.NewInt(1), big.NewInt(1)),
-				},
+				}),
 				OldKey:   &merkletree.HashZero,
 				OldValue: &merkletree.HashZero,
 				IsOld0:   false,
@@ -129,7 +129,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 			},
 			expected: &CircomVerifierProof{
 				Root:     requireLeafKey(big.NewInt(1), big.NewInt(1)),
-				Siblings: []*merkletree.Hash{},
+				Siblings: defaultZeroPadding([]*merkletree.Hash{}),
 				OldKey:   requireSingleHash(big.NewInt(1)),
 				OldValue: requireSingleHash(big.NewInt(1)),
 				IsOld0:   false,
@@ -156,9 +156,9 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 					requireLeafKey(big.NewInt(2), big.NewInt(2)).BigInt(), // go to left
 					requireLeafKey(big.NewInt(1), big.NewInt(1)).BigInt(), // go to right
 				),
-				Siblings: []*merkletree.Hash{
+				Siblings: defaultZeroPadding([]*merkletree.Hash{
 					requireLeafKey(big.NewInt(2), big.NewInt(2)),
-				},
+				}),
 				OldKey:   requireSingleHash(big.NewInt(1)),
 				OldValue: requireSingleHash(big.NewInt(1)),
 				IsOld0:   false,
@@ -173,7 +173,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 			nodes:     []node{},
 			expected: &CircomVerifierProof{
 				Root:     &merkletree.HashZero,
-				Siblings: []*merkletree.Hash{},
+				Siblings: defaultZeroPadding([]*merkletree.Hash{}),
 				OldKey:   &merkletree.HashZero,
 				OldValue: &merkletree.HashZero,
 				IsOld0:   true,
@@ -218,7 +218,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 
 					return root
 				}(),
-				Siblings: []*merkletree.Hash{
+				Siblings: defaultZeroPadding([]*merkletree.Hash{
 					requireLeafKey(big.NewInt(2), big.NewInt(2)),
 					func() *merkletree.Hash {
 						botR := requireHash(
@@ -227,7 +227,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 						)
 						return botR
 					}(),
-				},
+				}),
 				OldKey:   &merkletree.HashZero,
 				OldValue: &merkletree.HashZero,
 				IsOld0:   true,
@@ -249,10 +249,10 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			circomProof, err := GenerateSCVerifierProof(context.Background(), tt.searchKey, nil, mt)
+			circomProof, err := GenerateCircomVerifierProof(context.Background(), tt.searchKey, nil, mt)
 			require.NoError(t, err)
-			// debugEqual(t, tt.expected, circomProof)
-			require.Equal(t, tt.expected, circomProof)
+			debugEqual(t, tt.expected, circomProof)
+			// require.Equal(t, tt.expected, circomProof)
 		})
 	}
 }
@@ -276,6 +276,17 @@ func debugEqual(t *testing.T, expected, actual *CircomVerifierProof) {
 	require.Equal(t, expected.Key, actual.Key, "new key")
 	require.Equal(t, expected.Value, actual.Value, "new value")
 	require.Equal(t, expected.Fnc, actual.Fnc, "fun")
+}
+
+func defaultZeroPadding(sib []*merkletree.Hash) []*merkletree.Hash {
+	return addZeroPadding(sib, 10)
+}
+
+func addZeroPadding(sib []*merkletree.Hash, n int) []*merkletree.Hash {
+	for i := len(sib) - 1; i < n; i++ {
+		sib = append(sib, &merkletree.HashZero)
+	}
+	return sib
 }
 
 func requireLeafKey(k *big.Int, v *big.Int) *merkletree.Hash {
