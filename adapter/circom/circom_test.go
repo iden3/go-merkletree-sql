@@ -251,8 +251,8 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 
 			circomProof, err := GenerateCircomVerifierProof(context.Background(), tt.searchKey, nil, mt)
 			require.NoError(t, err)
-			debugEqual(t, tt.expected, circomProof)
-			// require.Equal(t, tt.expected, circomProof)
+			// debugEqual(t, tt.expected, circomProof)
+			require.Equal(t, tt.expected, circomProof)
 		})
 	}
 }
