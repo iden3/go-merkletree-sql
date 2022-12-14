@@ -1,6 +1,6 @@
 module github.com/iden3/go-merkletree-sql/dump
 
-go 1.19
+go 1.18
 
 require (
 	github.com/iden3/go-iden3-crypto v0.0.13

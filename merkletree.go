@@ -11,16 +11,18 @@ import (
 	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
 )
 
-const (
-	// proofFlagsLen is the byte length of the flags in the proof header
-	// (first 32 bytes).
-	proofFlagsLen = 2
+type TreeOperation int
 
-	// IndexLen indicates how many elements are used for the index.
-	IndexLen = 4
-	// DataLen indicates how many elements are used for the data.
-	DataLen = 8
+const (
+	NOP TreeOperation = iota
+	Update
+	Insert
+	Delete
 )
+
+// proofFlagsLen is the byte length of the flags in the proof header
+// (first 32 bytes).
+const proofFlagsLen = 2
 
 var (
 	// ErrNodeKeyAlreadyExists is used when a node key already exists.
@@ -117,7 +119,7 @@ func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) (*TransactionInfo,
 	defer mt.Unlock()
 
 	ti := &TransactionInfo{
-		Fnc:     2,
+		Fnc:     Insert,
 		OldRoot: mt.rootKey,
 	}
 	gotK, gotV, siblings, err := mt.Get(ctx, k)
@@ -371,7 +373,7 @@ func (mt *MerkleTree) Update(ctx context.Context,
 	path := getPath(mt.maxLevels, kHash[:])
 
 	var ti TransactionInfo
-	ti.Fnc = 1
+	ti.Fnc = Update
 	ti.OldRoot = mt.rootKey
 	ti.OldKey = kHash
 	ti.NewKey = kHash
@@ -470,7 +472,13 @@ func (mt *MerkleTree) Delete(ctx context.Context, k *big.Int) (*TransactionInfo,
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
 				// remove and go up with the sibling
 				err = mt.rmAndUpload(ctx, path, siblings)
-				return nil, err
+
+				ti.NewRoot = mt.Root()
+				ti.Siblings = siblings
+				ti.OldValue = n.Entry[1]
+				ti.Fnc = Delete
+
+				return ti, err
 			}
 			return nil, ErrKeyNotFound
 		case NodeTypeMiddle:
@@ -486,10 +494,7 @@ func (mt *MerkleTree) Delete(ctx context.Context, k *big.Int) (*TransactionInfo,
 		}
 	}
 
-	ti.NewRoot = mt.Root()
-	ti.Siblings = siblings
-
-	return ti, ErrKeyNotFound
+	return nil, ErrKeyNotFound
 }
 
 // rmAndUpload removes the key, and goes up until the root updating all the
@@ -622,8 +627,7 @@ type TransactionInfo struct {
 	NewKey    *Hash
 	NewValue  *Hash
 	IsOldKey0 bool
-	// 0: NOP, 1: Update, 2: Insert, 3: Delete
-	Fnc int
+	Fnc       TreeOperation
 }
 
 // GenerateProof generates the proof of existence (or non-existence) of an

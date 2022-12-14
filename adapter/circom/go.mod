@@ -1,6 +1,6 @@
 module github.com/iden3/go-merkletree-sql/adapter/circom
 
-go 1.19
+go 1.18
 
 require (
 	github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221202174329-7155cafa2213

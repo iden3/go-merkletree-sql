@@ -86,7 +86,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 				IsOld0:   false,
 				Key:      requireSingleHash(big.NewInt(1)),
 				Value:    requireSingleHash(big.NewInt(2)),
-				Fnc:      0,
+				Fnc:      Inclusion,
 			},
 		},
 		{
@@ -115,7 +115,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 				IsOld0:   false,
 				Key:      requireSingleHash(big.NewInt(2)),
 				Value:    requireSingleHash(big.NewInt(2)),
-				Fnc:      0,
+				Fnc:      Inclusion,
 			},
 		},
 		{
@@ -135,7 +135,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 				IsOld0:   false,
 				Key:      requireSingleHash(big.NewInt(3)),
 				Value:    &merkletree.HashZero,
-				Fnc:      1,
+				Fnc:      NonInclusion,
 			},
 		},
 		{
@@ -164,7 +164,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 				IsOld0:   false,
 				Key:      requireSingleHash(big.NewInt(3)),
 				Value:    &merkletree.HashZero,
-				Fnc:      1,
+				Fnc:      NonInclusion,
 			},
 		},
 		{
@@ -179,7 +179,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 				IsOld0:   true,
 				Key:      requireSingleHash(big.NewInt(3)),
 				Value:    &merkletree.HashZero,
-				Fnc:      1,
+				Fnc:      NonInclusion,
 			},
 		},
 		{
@@ -233,7 +233,7 @@ func TestGenerateSCVerifierProof_Success(t *testing.T) {
 				IsOld0:   true,
 				Key:      requireSingleHash(big.NewInt(5)),
 				Value:    &merkletree.HashZero,
-				Fnc:      1,
+				Fnc:      NonInclusion,
 			},
 		},
 	}
@@ -283,7 +283,7 @@ func defaultZeroPadding(sib []*merkletree.Hash) []*merkletree.Hash {
 }
 
 func addZeroPadding(sib []*merkletree.Hash, n int) []*merkletree.Hash {
-	for i := len(sib) - 1; i < n; i++ {
+	for i := len(sib); i <= n; i++ {
 		sib = append(sib, &merkletree.HashZero)
 	}
 	return sib

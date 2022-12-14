@@ -8,6 +8,13 @@ import (
 	"github.com/iden3/go-merkletree-sql/v3"
 )
 
+type ProofType int
+
+const (
+	Inclusion = iota
+	NonInclusion
+)
+
 type circomVerifierProofJSON struct {
 	Root     string   `json:"root"`
 	Siblings []string `json:"siblings"`
@@ -29,7 +36,7 @@ type CircomVerifierProof struct {
 	IsOld0   bool
 	Key      *merkletree.Hash
 	Value    *merkletree.Hash
-	Fnc      int
+	Fnc      ProofType
 }
 
 func (c *CircomVerifierProof) MarshalJSON() ([]byte, error) {
@@ -40,7 +47,7 @@ func (c *CircomVerifierProof) MarshalJSON() ([]byte, error) {
 		IsOld0:   c.IsOld0,
 		Key:      c.Key.String(),
 		Value:    c.Value.String(),
-		Fnc:      c.Fnc,
+		Fnc:      int(c.Fnc),
 	}
 	cjson.Siblings = make([]string, len(c.Siblings))
 	for i := range c.Siblings {
@@ -78,7 +85,7 @@ func (c *CircomVerifierProof) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	c.Fnc = cjson.Fnc
+	c.Fnc = ProofType(cjson.Fnc)
 
 	c.Siblings = make([]*merkletree.Hash, len(cjson.Siblings))
 	for i := range cjson.Siblings {
