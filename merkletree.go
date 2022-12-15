@@ -138,7 +138,7 @@ func (mt *MerkleTree) Add(ctx context.Context, k, v *big.Int) (*TransactionInfo,
 		ti.IsOldKey0 = true
 	}
 
-	ti.Siblings = ZeroPaddedSiblings(siblings, mt.maxLevels)
+	ti.Siblings = siblings
 
 	ti.NewKey, err = NewHashFromBigInt(k)
 	if err != nil {
@@ -392,7 +392,7 @@ func (mt *MerkleTree) Update(ctx context.Context,
 		case NodeTypeLeaf:
 			if bytes.Equal(kHash[:], n.Entry[0][:]) {
 				ti.OldValue = n.Entry[1]
-				ti.Siblings = ZeroPaddedSiblings(siblings, mt.maxLevels)
+				ti.Siblings = siblings
 				// update leaf and upload to the root
 				newNodeLeaf := NewNodeLeaf(kHash, vHash)
 				_, err := mt.updateNode(ctx, newNodeLeaf)
@@ -606,15 +606,6 @@ func getPath(numLevels int, k []byte) []bool {
 type NodeAux struct {
 	Key   *Hash `json:"key"`
 	Value *Hash `json:"value"`
-}
-
-// ZeroPaddedSiblings returns the full siblings compatible with circom
-func ZeroPaddedSiblings(siblings []*Hash, levels int) []*Hash {
-	// Add the rest of empty levels to the siblings
-	for i := len(siblings); i < levels+1; i++ {
-		siblings = append(siblings, &HashZero)
-	}
-	return siblings
 }
 
 // TransactionInfo defines information about change merkletree.

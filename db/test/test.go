@@ -686,8 +686,8 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "1", cpp.NewKey.String())
 	assert.Equal(t, "2", cpp.NewValue.String())
 	assert.Equal(t, true, cpp.IsOldKey0)
-	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
-	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
+	assert.Equal(t, "[]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, 0, len(cpp.Siblings))
 
 	cpp, err = mt.Add(ctx, big.NewInt(33), big.NewInt(44))
 	assert.Nil(t, err)
@@ -702,8 +702,8 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "33", cpp.NewKey.String())
 	assert.Equal(t, "44", cpp.NewValue.String())
 	assert.Equal(t, false, cpp.IsOldKey0)
-	assert.Equal(t, "[0 0 0 0 0 0 0 0 0 0 0]", fmt.Sprintf("%v", cpp.Siblings))
-	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
+	assert.Equal(t, "[]", fmt.Sprintf("%v", cpp.Siblings))
+	assert.Equal(t, 0, len(cpp.Siblings))
 
 	cpp, err = mt.Add(ctx, big.NewInt(55), big.NewInt(66))
 	assert.Nil(t, err)
@@ -718,12 +718,10 @@ func TestAddAndGetCircomProof(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, "55", cpp.NewKey.String())
 	assert.Equal(t, "66", cpp.NewValue.String())
 	assert.Equal(t, true, cpp.IsOldKey0)
-	assert.Equal(t,
-		"[0 "+
-			"21312042436525850949775663177240566532157857119003189090405819719191539342280"+
-			" 0 0 0 0 0 0 0 0 0]",
+	assert.Equal(t, "[0 "+
+		"21312042436525850949775663177240566532157857119003189090405819719191539342280]",
 		fmt.Sprintf("%v", cpp.Siblings))
-	assert.Equal(t, mt.MaxLevels()+1, len(cpp.Siblings))
+	assert.Equal(t, 2, len(cpp.Siblings))
 }
 
 func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {
@@ -757,8 +755,7 @@ func TestUpdateCircomProcessorProof(t *testing.T, sto merkletree.Storage) {
 		"[3493055760199345983787399479799897884337329583575225430469748865784580035592"+
 			" 20201609720365205433999360001442791710365537253733030676534981802168302054263 "+
 			"18790542149740435554763618183910097219145811410462734411095932062387939731734 "+
-			"15930030482599007570177067416534114035267479078907080052418814162004846408322 "+
-			"0 0 0 0 0 0 0]",
+			"15930030482599007570177067416534114035267479078907080052418814162004846408322]",
 		fmt.Sprintf("%v", cpp.Siblings))
 }
 

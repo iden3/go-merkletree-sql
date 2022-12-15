@@ -149,6 +149,15 @@ func ProofToCircomFormat(
 		dst.Fnc = 1 // non inclusion
 	}
 
-	dst.Siblings = merkletree.ZeroPaddedSiblings(dst.Siblings, depth)
+	dst.Siblings = ZeroPaddedSiblings(dst.Siblings, depth)
 	return dst, nil
+}
+
+// ZeroPaddedSiblings returns the full siblings compatible with circom
+func ZeroPaddedSiblings(siblings []*merkletree.Hash, levels int) []*merkletree.Hash {
+	// Add the rest of empty levels to the siblings
+	for i := len(siblings); i < levels; i++ {
+		siblings = append(siblings, &merkletree.HashZero)
+	}
+	return siblings
 }

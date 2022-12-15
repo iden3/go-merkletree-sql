@@ -25,7 +25,7 @@ func TestSmtVerifier(t *testing.T) {
 	jCvp, err := json.Marshal(cvp)
 	require.Nil(t, err)
 	// expect siblings to be '[]', instead of 'null'
-	expected := `{"root":"6525056641794203554583616941316772618766382307684970171204065038799368146416","siblings":["0","0","0","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"1","value":"11","fnc":0}` //nolint:lll
+	expected := `{"root":"6525056641794203554583616941316772618766382307684970171204065038799368146416","siblings":["0","0","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"1","value":"11","fnc":0}` //nolint:lll
 
 	require.Equal(t, expected, string(jCvp))
 	_, err = mt.Add(ctx, big.NewInt(2), big.NewInt(22))
@@ -42,7 +42,7 @@ func TestSmtVerifier(t *testing.T) {
 	require.Nil(t, err)
 	// Test vectors generated using https://github.com/iden3/circomlib smt.js
 	// Expect siblings with the extra 0 that the circom circuits need
-	expected = `{"root":"13558168455220559042747853958949063046226645447188878859760119761585093422436","siblings":["11620130507635441932056895853942898236773847390796721536119314875877874016518","5158240518874928563648144881543092238925265313977134167935552944620041388700","0","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
+	expected = `{"root":"13558168455220559042747853958949063046226645447188878859760119761585093422436","siblings":["11620130507635441932056895853942898236773847390796721536119314875877874016518","5158240518874928563648144881543092238925265313977134167935552944620041388700","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
 	require.Equal(t, expected, string(jCvp))
 
 	cvp, err = GenerateCircomVerifierProof(ctx, big.NewInt(2), nil, mt)
@@ -53,7 +53,7 @@ func TestSmtVerifier(t *testing.T) {
 	// Test vectors generated using https://github.com/iden3/circomlib smt.js
 	// Without the extra 0 that the circom circuits need, but that are not
 	// needed at a smart contract verification
-	expected = `{"root":"13558168455220559042747853958949063046226645447188878859760119761585093422436","siblings":["11620130507635441932056895853942898236773847390796721536119314875877874016518","5158240518874928563648144881543092238925265313977134167935552944620041388700","0","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
+	expected = `{"root":"13558168455220559042747853958949063046226645447188878859760119761585093422436","siblings":["11620130507635441932056895853942898236773847390796721536119314875877874016518","5158240518874928563648144881543092238925265313977134167935552944620041388700","0","0"],"oldKey":"0","oldValue":"0","isOld0":false,"key":"2","value":"22","fnc":0}` //nolint:lll
 	require.Equal(t, expected, string(jCvp))
 }
 
@@ -283,7 +283,7 @@ func defaultZeroPadding(sib []*merkletree.Hash) []*merkletree.Hash {
 }
 
 func addZeroPadding(sib []*merkletree.Hash, n int) []*merkletree.Hash {
-	for i := len(sib); i <= n; i++ {
+	for i := len(sib); i < n; i++ {
 		sib = append(sib, &merkletree.HashZero)
 	}
 	return sib
