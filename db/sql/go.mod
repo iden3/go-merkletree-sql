@@ -3,7 +3,7 @@ module github.com/iden3/go-merkletree-sql/db/sql/v2
 go 1.18
 
 require (
-	github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221214130143-61153961ae29
+	github.com/iden3/go-merkletree-sql/v3 v3.0.0-20221215110401-d4a9f7c1ad27
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/olomix/go-test-pg v1.0.1
 	github.com/stretchr/testify v1.7.0
