@@ -51,10 +51,10 @@ func (h *Hash) Hex() string {
 
 // BigInt returns the *big.Int representation of the *Hash
 func (h *Hash) BigInt() *big.Int {
-	if h == nil {
+	if new(big.Int).SetBytes(SwapEndianness(h[:])) == nil {
 		return big.NewInt(0)
 	}
-	return new(big.Int).SetBytes(h[:])
+	return new(big.Int).SetBytes(SwapEndianness(h[:]))
 }
 
 func (h *Hash) Equals(h2 *Hash) bool {
@@ -67,7 +67,7 @@ func (h *Hash) Equals(h2 *Hash) bool {
 // method.
 func NewBigIntFromHashBytes(b []byte) (*big.Int, error) {
 	if len(b) != ElemBytesLen {
-		return nil, fmt.Errorf("Expected 32 bytes, found %d bytes", len(b))
+		return nil, fmt.Errorf("expected 32 bytes, found %d bytes", len(b))
 	}
 	bi := new(big.Int).SetBytes(b[:ElemBytesLen])
 	if !cryptoUtils.CheckBigIntInField(bi) {
@@ -83,7 +83,7 @@ func NewHashFromBigInt(b *big.Int) (*Hash, error) {
 			"NewHashFromBigInt: Value not inside the Finite Field")
 	}
 	r := &Hash{}
-	copy(r[:], b.Bytes())
+	copy(r[:], SwapEndianness(b.Bytes()))
 	return r, nil
 }
 
