@@ -653,7 +653,7 @@ type NodeAux struct {
 // CircomSiblingsFromSiblings returns the full siblings compatible with circom
 func CircomSiblingsFromSiblings(siblings []*Hash, levels int) []*Hash {
 	// Add the rest of empty levels to the siblings
-	for i := len(siblings); i < levels+1; i++ {
+	for i := len(siblings); i < levels; i++ {
 		siblings = append(siblings, &HashZero)
 	}
 	return siblings
