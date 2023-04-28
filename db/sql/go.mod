@@ -3,7 +3,7 @@ module github.com/iden3/go-merkletree-sql/db/sql/v2
 go 1.18
 
 require (
-	github.com/iden3/go-merkletree-sql/v2 v2.0.2
+	github.com/iden3/go-merkletree-sql/v2 v2.0.4
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/olomix/go-test-pg v1.0.2
 	github.com/stretchr/testify v1.8.2
@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/iden3/go-iden3-crypto v0.0.14 // indirect
+	github.com/iden3/go-iden3-crypto v0.0.15 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
