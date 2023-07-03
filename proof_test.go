@@ -165,3 +165,35 @@ func TestProof_MarshalJSON_NonInclusionProofWithNodeAux(t *testing.T) {
 	valid = merkletree.VerifyProof(mt.Root(), &p, big.NewInt(11), big.NewInt(0))
 	assert.True(t, valid)
 }
+
+func TestProof_UnmarshalJSON_NonInclusionProofWithNodeAuxAllSiblings(t *testing.T) {
+	db := memory.NewMemoryStorage()
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, db, 40)
+	require.NoError(t, err)
+
+	_ = mt.Add(ctx, big.NewInt(1), big.NewInt(2)) // 1 0b000001
+	_ = mt.Add(ctx, big.NewInt(3), big.NewInt(8)) // 3 0b000011
+	_ = mt.Add(ctx, big.NewInt(7), big.NewInt(8)) // 7 0b000111
+	_ = mt.Add(ctx, big.NewInt(9), big.NewInt(8)) // 9 0b001001
+
+	//nolint:lll
+	given := `{ "existence": false, "siblings": [ "0", "12166698708103333637493481507263348370172773813051235807348785759284762677336", "7750564177398573185975752951631372712868228752107043582052272719841058100111", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ], "node_aux": { "key": "3", "value": "8" }}`
+
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(11), mt.Root()) // 11 0b001011
+	require.NoError(t, err)
+
+	var p merkletree.Proof
+	err = json.Unmarshal([]byte(given), &p)
+	require.NoError(t, err)
+
+	assert.Equal(t, proof.AllSiblings(), p.AllSiblings())
+	assert.Equal(t, proof.NodeAux, p.NodeAux)
+	assert.Equal(t, proof.Existence, p.Existence)
+
+	valid := merkletree.VerifyProof(mt.Root(), proof, big.NewInt(11), big.NewInt(0))
+	assert.True(t, valid)
+
+	valid = merkletree.VerifyProof(mt.Root(), &p, big.NewInt(11), big.NewInt(0))
+	assert.True(t, valid)
+}
