@@ -80,11 +80,12 @@ func NewProofFromData(existence bool,
 	p.Existence = existence
 	p.NodeAux = nodeAux
 	var siblings []*Hash
-	p.depth = uint(len(allSiblings))
+	p.depth = 0
 	for lvl, sibling := range allSiblings {
 		if !sibling.Equals(&HashZero) {
 			SetBitBigEndian(p.notempties[:], uint(lvl))
 			siblings = append(siblings, sibling)
+			p.depth = uint(lvl) + 1
 		}
 	}
 	p.siblings = siblings
