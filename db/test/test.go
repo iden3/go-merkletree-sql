@@ -109,6 +109,9 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 	t.Run("TestTypesMarshalers", func(t *testing.T) {
 		TestTypesMarshalers(t, sb.NewStorage(t))
 	})
+	t.Run("TestRemoveLeafNearMiddleNode", func(t *testing.T) {
+		TestRemoveLeafNearMiddleNode(t, sb.NewStorage(t))
+	})
 }
 
 // TestReturnKnownErrIfNotExists checks that the implementation of the
@@ -926,4 +929,25 @@ func TestTypesMarshalers(t *testing.T, sto merkletree.Storage) {
 	err = json.Unmarshal(b, &cpp2)
 	assert.Nil(t, err)
 	assert.Equal(t, cpp, cpp2)
+}
+
+func TestRemoveLeafNearMiddleNode(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
+	require.Nil(t, err)
+
+	values := []*big.Int{big.NewInt(7), big.NewInt(1), big.NewInt(5)}
+
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	for _, v := range values {
+		err = mt.Delete(ctx, v)
+		require.NoError(t, err)
+		existProof, _, err := mt.GenerateProof(ctx, v, mt.Root())
+		require.NoError(t, err)
+		require.False(t, existProof.Existence)
+	}
 }
