@@ -559,10 +559,8 @@ func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 		}
 	}
 
-	/* 
-	When deleting a leaf node that is on the same level as middleNode, 
-	need to nullify the leaf node instead of removing it from the tree.
-	*/
+	//When deleting a leaf node that is on the same level as middleNode,
+	//need to nullify the leaf node instead of removing it from the tree.
 	nearestSibling, err := mt.db.Get(ctx, toUpload[:])
 	if err != nil {
 		return err
