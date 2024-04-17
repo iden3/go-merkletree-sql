@@ -985,8 +985,6 @@ func TestRemoveLeafNearMiddleNodeRightForkDeep(t *testing.T, sto merkletree.Stor
 		require.NoError(t, err)
 	}
 
-	mt.PrintGraphViz(ctx, mt.Root())
-
 	for _, v := range values {
 		err = mt.Delete(ctx, v)
 		require.NoError(t, err)
@@ -1031,8 +1029,6 @@ func TestRemoveLeafNearMiddleNodeLeftForkDeep(t *testing.T, sto merkletree.Stora
 		err = mt.Add(ctx, v, v)
 		require.NoError(t, err)
 	}
-
-	mt.PrintGraphViz(ctx, mt.Root())
 
 	for _, v := range values {
 		err = mt.Delete(ctx, v)
