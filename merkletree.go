@@ -558,6 +558,37 @@ func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 			return err
 		}
 	}
+
+	//When deleting a leaf node that is on the same level as middleNode,
+	//need to nullify the leaf node instead of removing it from the tree.
+	nearestSibling, err := mt.db.Get(ctx, toUpload[:])
+	if err != nil {
+		return err
+	}
+	if nearestSibling.Type == NodeTypeMiddle {
+		var newNode *Node
+		if path[len(siblings)-1] {
+			newNode = NewNodeMiddle(toUpload, &HashZero)
+		} else {
+			newNode = NewNodeMiddle(&HashZero, toUpload)
+		}
+		_, err = mt.addNode(ctx, newNode)
+		if err != nil {
+			return err
+		}
+		newRootKey, err := mt.recalculatePathUntilRoot(path, newNode,
+			siblings[:len(siblings)-1])
+		if err != nil {
+			return err
+		}
+		mt.rootKey = newRootKey
+		err = mt.db.SetRoot(ctx, mt.rootKey)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	for i := len(siblings) - 2; i >= 0; i-- {
 		if !bytes.Equal(siblings[i][:], HashZero[:]) {
 			var newNode *Node

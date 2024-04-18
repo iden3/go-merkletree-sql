@@ -9,9 +9,7 @@ import (
 )
 
 func TestMemoryStorageInterface(t *testing.T) {
-	var db merkletree.Storage //nolint:gosimple
-
-	db = NewMemoryStorage()
+	db := NewMemoryStorage()
 	require.NotNil(t, db)
 }
 
