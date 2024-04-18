@@ -239,11 +239,7 @@ func (mt *MerkleTree) pushLeaf(ctx context.Context, newLeaf *Node,
 		} else { // go left
 			newNodeMiddle = NewNodeMiddle(nextKey, &HashZero)
 		}
-		h, err := mt.addNode(ctx, newNodeMiddle)
-		if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
-			return nil, err
-		}
-		return h, nil
+		return mt.addNode(context.TODO(), newNodeMiddle)
 	}
 	oldLeafKey, err := oldLeaf.Key()
 	if err != nil {
@@ -262,14 +258,10 @@ func (mt *MerkleTree) pushLeaf(ctx context.Context, newLeaf *Node,
 	// We can add newLeaf now.  We don't need to add oldLeaf because it's
 	// already in the tree.
 	_, err = mt.addNode(ctx, newLeaf)
-	if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
+	if err != nil {
 		return nil, err
 	}
-	_, err = mt.addNode(ctx, newNodeMiddle)
-	if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
-		return nil, err
-	}
-	return newNodeMiddle.Key()
+	return mt.addNode(ctx, newNodeMiddle)
 }
 
 // addLeaf recursively adds a newLeaf in the MT while updating the path.
@@ -287,11 +279,7 @@ func (mt *MerkleTree) addLeaf(ctx context.Context, newLeaf *Node, key *Hash,
 	switch n.Type {
 	case NodeTypeEmpty:
 		// We can add newLeaf now
-		_, err := mt.addNode(ctx, newLeaf)
-		if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
-			return nil, err
-		}
-		return newLeaf.Key()
+		return mt.addNode(ctx, newLeaf)
 	case NodeTypeLeaf:
 		nKey := n.Entry[0]
 		// Check if leaf node found contains the leaf node we are
@@ -319,11 +307,7 @@ func (mt *MerkleTree) addLeaf(ctx context.Context, newLeaf *Node, key *Hash,
 			return nil, err
 		}
 		// Update the node to reflect the modified child
-		_, err := mt.addNode(ctx, newNodeMiddle)
-		if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
-			return nil, err
-		}
-		return newNodeMiddle.Key()
+		return mt.addNode(ctx, newNodeMiddle)
 	default:
 		return nil, ErrInvalidNodeFound
 	}
@@ -346,7 +330,7 @@ func (mt *MerkleTree) addNode(ctx context.Context, n *Node) (*Hash, error) {
 	//v := n.Value()
 	// Check that the node key doesn't already exist
 	if _, err := mt.db.Get(ctx, k[:]); err == nil {
-		return nil, ErrNodeKeyAlreadyExists
+		return k, nil
 	}
 	return k, mt.db.Put(ctx, k[:], n)
 }
@@ -589,7 +573,7 @@ func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 			newNode = NewNodeMiddle(&HashZero, toUpload)
 		}
 		_, err = mt.addNode(ctx, newNode)
-		if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
+		if err != nil {
 			return err
 		}
 		newRootKey, err := mt.recalculatePathUntilRoot(path, newNode,
@@ -614,7 +598,7 @@ func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 				newNode = NewNodeMiddle(toUpload, siblings[i])
 			}
 			_, err := mt.addNode(context.TODO(), newNode)
-			if err != ErrNodeKeyAlreadyExists && err != nil {
+			if err != nil {
 				return err
 			}
 			// go up until the root
@@ -659,7 +643,7 @@ func (mt *MerkleTree) recalculatePathUntilRoot(path []bool, node *Node,
 			node = NewNodeMiddle(nodeKey, siblings[i])
 		}
 		_, err = mt.addNode(context.TODO(), node)
-		if err != ErrNodeKeyAlreadyExists && err != nil {
+		if err != nil {
 			return nil, err
 		}
 	}
