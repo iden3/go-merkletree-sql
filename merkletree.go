@@ -239,7 +239,11 @@ func (mt *MerkleTree) pushLeaf(ctx context.Context, newLeaf *Node,
 		} else { // go left
 			newNodeMiddle = NewNodeMiddle(nextKey, &HashZero)
 		}
-		return mt.addNode(context.TODO(), newNodeMiddle)
+		h, err := mt.addNode(ctx, newNodeMiddle)
+		if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
+			return nil, err
+		}
+		return h, nil
 	}
 	oldLeafKey, err := oldLeaf.Key()
 	if err != nil {
@@ -258,10 +262,14 @@ func (mt *MerkleTree) pushLeaf(ctx context.Context, newLeaf *Node,
 	// We can add newLeaf now.  We don't need to add oldLeaf because it's
 	// already in the tree.
 	_, err = mt.addNode(ctx, newLeaf)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
 		return nil, err
 	}
-	return mt.addNode(ctx, newNodeMiddle)
+	_, err = mt.addNode(ctx, newNodeMiddle)
+	if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
+		return nil, err
+	}
+	return newNodeMiddle.Key()
 }
 
 // addLeaf recursively adds a newLeaf in the MT while updating the path.
@@ -279,7 +287,11 @@ func (mt *MerkleTree) addLeaf(ctx context.Context, newLeaf *Node, key *Hash,
 	switch n.Type {
 	case NodeTypeEmpty:
 		// We can add newLeaf now
-		return mt.addNode(ctx, newLeaf)
+		_, err := mt.addNode(ctx, newLeaf)
+		if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
+			return nil, err
+		}
+		return newLeaf.Key()
 	case NodeTypeLeaf:
 		nKey := n.Entry[0]
 		// Check if leaf node found contains the leaf node we are
@@ -307,7 +319,11 @@ func (mt *MerkleTree) addLeaf(ctx context.Context, newLeaf *Node, key *Hash,
 			return nil, err
 		}
 		// Update the node to reflect the modified child
-		return mt.addNode(ctx, newNodeMiddle)
+		_, err := mt.addNode(ctx, newNodeMiddle)
+		if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
+			return nil, err
+		}
+		return newNodeMiddle.Key()
 	default:
 		return nil, ErrInvalidNodeFound
 	}
@@ -573,7 +589,7 @@ func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 			newNode = NewNodeMiddle(&HashZero, toUpload)
 		}
 		_, err = mt.addNode(ctx, newNode)
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrNodeKeyAlreadyExists) {
 			return err
 		}
 		newRootKey, err := mt.recalculatePathUntilRoot(path, newNode,

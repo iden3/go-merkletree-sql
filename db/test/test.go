@@ -133,6 +133,21 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 	t.Run("TestCalculatingOfNewRootLeftFork", func(t *testing.T) {
 		TestCalculatingOfNewRootLeftFork(t, sb.NewStorage(t))
 	})
+	t.Run("TestIssue23", func(t *testing.T) {
+		TestIssue23(t, sb.NewStorage(t))
+	})
+	t.Run("TestInsertDeletedNodeRightFork", func(t *testing.T) {
+		TestInsertDeletedNodeRightFork(t, sb.NewStorage(t))
+	})
+	t.Run("TestInsertDeletedNodeLeftFork", func(t *testing.T) {
+		TestInsertDeletedNodeLeftFork(t, sb.NewStorage(t))
+	})
+	t.Run("TestPushLeafAlreadyExistsRightFork", func(t *testing.T) {
+		TestPushLeafAlreadyExistsRightFork(t, sb.NewStorage(t))
+	})
+	t.Run("TestPushLeafAlreadyExistsLeftFork", func(t *testing.T) {
+		TestPushLeafAlreadyExistsLeftFork(t, sb.NewStorage(t))
+	})
 }
 
 // TestReturnKnownErrIfNotExists checks that the implementation of the
@@ -1179,4 +1194,115 @@ func TestCalculatingOfNewRootLeftFork(t *testing.T, sto merkletree.Storage) {
 
 	require.Equal(t, big.NewInt(4), lLeaf.Entry[0].BigInt())
 	require.Equal(t, big.NewInt(1), rLeaf.Entry[0].BigInt())
+}
+
+// https://github.com/iden3/go-merkletree-sql/issues/23
+func TestIssue23(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(1), big.NewInt(5), big.NewInt(7)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	err = mt.Delete(ctx, big.NewInt(7))
+	require.NoError(t, err)
+
+	err = mt.Add(ctx, big.NewInt(7), big.NewInt(7))
+	require.NoError(t, err)
+}
+
+func TestInsertDeletedNodeRightFork(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(1), big.NewInt(5), big.NewInt(7)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	err = mt.Delete(ctx, big.NewInt(7))
+	require.NoError(t, err)
+
+	err = mt.Add(ctx, big.NewInt(7), big.NewInt(7))
+	require.NoError(t, err)
+
+	existProof, _, err := mt.GenerateProof(ctx, big.NewInt(7), mt.Root())
+	require.NoError(t, err)
+	require.True(t, existProof.Existence)
+
+	_, err = mt.Update(ctx, big.NewInt(7), big.NewInt(100))
+	require.NoError(t, err)
+
+	key, value, _, err := mt.Get(ctx, big.NewInt(7))
+	require.NoError(t, err)
+	require.Equal(t, key, big.NewInt(7))
+	require.Equal(t, value, big.NewInt(100))
+}
+
+func TestInsertDeletedNodeLeftFork(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(6), big.NewInt(2), big.NewInt(4)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	err = mt.Delete(ctx, big.NewInt(4))
+	require.NoError(t, err)
+
+	err = mt.Add(ctx, big.NewInt(4), big.NewInt(4))
+	require.NoError(t, err)
+
+	_, err = mt.Update(ctx, big.NewInt(4), big.NewInt(100))
+	require.NoError(t, err)
+
+	key, value, _, err := mt.Get(ctx, big.NewInt(4))
+	require.NoError(t, err)
+	require.Equal(t, key, big.NewInt(4))
+	require.Equal(t, value, big.NewInt(100))
+}
+
+func TestPushLeafAlreadyExistsRightFork(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(1), big.NewInt(5), big.NewInt(7), big.NewInt(3)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	err = mt.Delete(ctx, big.NewInt(3))
+	require.NoError(t, err)
+
+	err = mt.Add(ctx, big.NewInt(3), big.NewInt(3))
+	require.NoError(t, err)
+}
+
+func TestPushLeafAlreadyExistsLeftFork(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(6), big.NewInt(2), big.NewInt(4), big.NewInt(8)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	err = mt.Delete(ctx, big.NewInt(8))
+	require.NoError(t, err)
+
+	err = mt.Add(ctx, big.NewInt(8), big.NewInt(8))
+	require.NoError(t, err)
 }
