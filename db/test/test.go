@@ -1065,7 +1065,8 @@ func TestDeleteLeafNearMiddleNodeRightBranchDeep(t *testing.T, sto merkletree.St
 		"3": {
 			big.NewInt(0),
 			big.NewInt(0),
-			newBigIntFromString(t, "10179745751648650481317481301133564568831136415508833815669215270622331305772"),
+			newBigIntFromString(t,
+				"10179745751648650481317481301133564568831136415508833815669215270622331305772"),
 		},
 		"7":  {},
 		"15": {},
@@ -1120,7 +1121,8 @@ func TeseDeleteLeafNearMiddleNodeLeftBranch(t *testing.T, sto merkletree.Storage
 	expectedSiblingsNonExist := map[string][]*big.Int{
 		"6": {
 			big.NewInt(0),
-			newBigIntFromString(t, "9054077202653694725190129562729426419405710792276939073869944863201489138082"),
+			newBigIntFromString(t,
+				"9054077202653694725190129562729426419405710792276939073869944863201489138082"),
 		},
 		"4": {},
 		"2": {},
@@ -1175,7 +1177,8 @@ func TeseDeleteLeafNearMiddleNodeLeftBranchDeep(t *testing.T, sto merkletree.Sto
 		"4": {
 			big.NewInt(0),
 			big.NewInt(0),
-			newBigIntFromString(t, "999617652929602377745081623447845927693004638040169919261337791961364573823"),
+			newBigIntFromString(t,
+				"999617652929602377745081623447845927693004638040169919261337791961364573823"),
 		},
 		"8":  {},
 		"16": {},
@@ -1347,7 +1350,8 @@ func TestInsertNodeAfterDelete(t *testing.T, sto merkletree.Storage) {
 
 	expectedSiblings := []*big.Int{
 		big.NewInt(0),
-		newBigIntFromString(t, "4274876798241152869364032215387952876266736406919374878317677138322903129320"),
+		newBigIntFromString(t,
+			"4274876798241152869364032215387952876266736406919374878317677138322903129320"),
 	}
 
 	err = mt.Delete(ctx, big.NewInt(7))
@@ -1378,7 +1382,8 @@ func TestInsertDeletedNodeThenUpdateItRightBranch(t *testing.T, sto merkletree.S
 
 	expectedSiblings := []*big.Int{
 		big.NewInt(0),
-		newBigIntFromString(t, "4274876798241152869364032215387952876266736406919374878317677138322903129320"),
+		newBigIntFromString(t,
+			"4274876798241152869364032215387952876266736406919374878317677138322903129320"),
 	}
 
 	err = mt.Delete(ctx, big.NewInt(7))
@@ -1416,7 +1421,8 @@ func TestInsertDeletedNodeThenUpdateItLeftBranch(t *testing.T, sto merkletree.St
 
 	expectedSiblings := []*big.Int{
 		big.NewInt(0),
-		newBigIntFromString(t, "8485562453225409715331824380162827639878522662998299574537757078697535221073"),
+		newBigIntFromString(t,
+			"8485562453225409715331824380162827639878522662998299574537757078697535221073"),
 	}
 
 	err = mt.Delete(ctx, big.NewInt(4))
@@ -1454,7 +1460,8 @@ func TestPushLeafAlreadyExistsRightBranch(t *testing.T, sto merkletree.Storage) 
 
 	expectedSiblings := []*big.Int{
 		big.NewInt(0),
-		newBigIntFromString(t, "4274876798241152869364032215387952876266736406919374878317677138322903129320"),
+		newBigIntFromString(t,
+			"4274876798241152869364032215387952876266736406919374878317677138322903129320"),
 	}
 
 	err = mt.Delete(ctx, big.NewInt(3))
@@ -1466,8 +1473,10 @@ func TestPushLeafAlreadyExistsRightBranch(t *testing.T, sto merkletree.Storage) 
 
 	expectedSiblingsExist := []*big.Int{
 		big.NewInt(0),
-		newBigIntFromString(t, "4274876798241152869364032215387952876266736406919374878317677138322903129320"),
-		newBigIntFromString(t, "3968539605503372859924195689353752825000692947459401078008697788408142999740"),
+		newBigIntFromString(t,
+			"4274876798241152869364032215387952876266736406919374878317677138322903129320"),
+		newBigIntFromString(t,
+			"3968539605503372859924195689353752825000692947459401078008697788408142999740"),
 	}
 
 	err = mt.Add(ctx, big.NewInt(3), big.NewInt(3))
@@ -1491,7 +1500,8 @@ func TestPushLeafAlreadyExistsLeftBranch(t *testing.T, sto merkletree.Storage) {
 
 	expectedSiblings := []*big.Int{
 		big.NewInt(0),
-		newBigIntFromString(t, "8485562453225409715331824380162827639878522662998299574537757078697535221073"),
+		newBigIntFromString(t,
+			"8485562453225409715331824380162827639878522662998299574537757078697535221073"),
 	}
 
 	err = mt.Delete(ctx, big.NewInt(8))
@@ -1503,8 +1513,10 @@ func TestPushLeafAlreadyExistsLeftBranch(t *testing.T, sto merkletree.Storage) {
 
 	expectedSiblingsExist := []*big.Int{
 		big.NewInt(0),
-		newBigIntFromString(t, "8485562453225409715331824380162827639878522662998299574537757078697535221073"),
-		newBigIntFromString(t, "9054077202653694725190129562729426419405710792276939073869944863201489138082"),
+		newBigIntFromString(t,
+			"8485562453225409715331824380162827639878522662998299574537757078697535221073"),
+		newBigIntFromString(t,
+			"9054077202653694725190129562729426419405710792276939073869944863201489138082"),
 	}
 
 	err = mt.Add(ctx, big.NewInt(8), big.NewInt(8))
@@ -1533,7 +1545,8 @@ func TestUpNodesToTwoLevelsRightBranch(t *testing.T, sto merkletree.Storage) {
 	require.False(t, proof.Existence)
 	compareSiblings(t, []*big.Int{
 		big.NewInt(0),
-		newBigIntFromString(t, "1243904711429961858774220647610724273798918457991486031567244100767259239747"),
+		newBigIntFromString(t,
+			"1243904711429961858774220647610724273798918457991486031567244100767259239747"),
 	}, proof.AllSiblings())
 }
 
@@ -1555,7 +1568,8 @@ func TestUpNodesToTwoLevelsLeftBranch(t *testing.T, sto merkletree.Storage) {
 	require.False(t, proof.Existence)
 	compareSiblings(t, []*big.Int{
 		big.NewInt(0),
-		newBigIntFromString(t, "849831128489032619062850458217693666094013083866167024127442191257793527951"),
+		newBigIntFromString(t,
+			"849831128489032619062850458217693666094013083866167024127442191257793527951"),
 	}, proof.AllSiblings())
 }
 
