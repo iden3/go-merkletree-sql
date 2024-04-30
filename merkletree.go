@@ -330,7 +330,7 @@ func (mt *MerkleTree) addNode(ctx context.Context, n *Node) (*Hash, error) {
 	//v := n.Value()
 	// Check that the node key doesn't already exist
 	if _, err := mt.db.Get(ctx, k[:]); err == nil {
-		return nil, ErrNodeKeyAlreadyExists
+		return k, nil
 	}
 	return k, mt.db.Put(ctx, k[:], n)
 }
@@ -598,7 +598,7 @@ func (mt *MerkleTree) rmAndUpload(ctx context.Context, path []bool, kHash *Hash,
 				newNode = NewNodeMiddle(toUpload, siblings[i])
 			}
 			_, err := mt.addNode(context.TODO(), newNode)
-			if err != ErrNodeKeyAlreadyExists && err != nil {
+			if err != nil {
 				return err
 			}
 			// go up until the root
@@ -643,7 +643,7 @@ func (mt *MerkleTree) recalculatePathUntilRoot(path []bool, node *Node,
 			node = NewNodeMiddle(nodeKey, siblings[i])
 		}
 		_, err = mt.addNode(context.TODO(), node)
-		if err != ErrNodeKeyAlreadyExists && err != nil {
+		if err != nil {
 			return nil, err
 		}
 	}

@@ -109,29 +109,50 @@ func TestAll(t *testing.T, sb StorageBuilder) {
 	t.Run("TestTypesMarshalers", func(t *testing.T) {
 		TestTypesMarshalers(t, sb.NewStorage(t))
 	})
-	t.Run("TestRemoveLeafNearMiddleNodeRightFork", func(t *testing.T) {
-		TestRemoveLeafNearMiddleNodeRightFork(t, sb.NewStorage(t))
+	t.Run("TestDeleteLeafNearMiddleNodeRightBranch", func(t *testing.T) {
+		TestDeleteLeafNearMiddleNodeRightBranch(t, sb.NewStorage(t))
 	})
-	t.Run("TestRemoveLeafNearMiddleNodeRightForkDeep", func(t *testing.T) {
-		TestRemoveLeafNearMiddleNodeRightForkDeep(t, sb.NewStorage(t))
+	t.Run("TestDeleteLeafNearMiddleNodeRightBranchDeep", func(t *testing.T) {
+		TestDeleteLeafNearMiddleNodeRightBranchDeep(t, sb.NewStorage(t))
 	})
-	t.Run("TestRemoveLeafNearMiddleLeftFork", func(t *testing.T) {
-		TestRemoveLeafNearMiddleNodeLeftFork(t, sb.NewStorage(t))
+	t.Run("TeseDeleteLeafNearMiddleLeftBranch", func(t *testing.T) {
+		TeseDeleteLeafNearMiddleNodeLeftBranch(t, sb.NewStorage(t))
 	})
-	t.Run("TestRemoveLeafNearMiddleLeftForkDeep", func(t *testing.T) {
-		TestRemoveLeafNearMiddleNodeLeftForkDeep(t, sb.NewStorage(t))
+	t.Run("TeseDeleteLeafNearMiddleLeftBranchDeep", func(t *testing.T) {
+		TeseDeleteLeafNearMiddleNodeLeftBranchDeep(t, sb.NewStorage(t))
 	})
-	t.Run("TestUpToRootAfterDeleteRightFork", func(t *testing.T) {
-		TestUpToRootAfterDeleteRightFork(t, sb.NewStorage(t))
+	t.Run("TestUpToRootAfterDeleteRightBranch", func(t *testing.T) {
+		TestUpToRootAfterDeleteRightBranch(t, sb.NewStorage(t))
 	})
-	t.Run("TestUpToRootAfterDeleteLeftFork", func(t *testing.T) {
-		TestUpToRootAfterDeleteLeftFork(t, sb.NewStorage(t))
+	t.Run("TestUpToRootAfterDeleteLeftBranch", func(t *testing.T) {
+		TestUpToRootAfterDeleteLeftBranch(t, sb.NewStorage(t))
 	})
-	t.Run("TestCalculatingOfNewRootRightFork", func(t *testing.T) {
-		TestCalculatingOfNewRootRightFork(t, sb.NewStorage(t))
+	t.Run("TestCalculatingOfNewRootRightBranch", func(t *testing.T) {
+		TestCalculatingOfNewRootRightBranch(t, sb.NewStorage(t))
 	})
-	t.Run("TestCalculatingOfNewRootLeftFork", func(t *testing.T) {
-		TestCalculatingOfNewRootLeftFork(t, sb.NewStorage(t))
+	t.Run("TestCalculatingOfNewRootLeftBranch", func(t *testing.T) {
+		TestCalculatingOfNewRootLeftBranch(t, sb.NewStorage(t))
+	})
+	t.Run("TestInsertNodeAfterDelete", func(t *testing.T) {
+		TestInsertNodeAfterDelete(t, sb.NewStorage(t))
+	})
+	t.Run("TestInsertDeletedNodeThenUpdateItRightBranch", func(t *testing.T) {
+		TestInsertDeletedNodeThenUpdateItRightBranch(t, sb.NewStorage(t))
+	})
+	t.Run("TestInsertDeletedNodeThenUpdateItLeftBranch", func(t *testing.T) {
+		TestInsertDeletedNodeThenUpdateItLeftBranch(t, sb.NewStorage(t))
+	})
+	t.Run("TestPushLeafAlreadyExistsRightBranch", func(t *testing.T) {
+		TestPushLeafAlreadyExistsRightBranch(t, sb.NewStorage(t))
+	})
+	t.Run("TestPushLeafAlreadyExistsLeftBranch", func(t *testing.T) {
+		TestPushLeafAlreadyExistsLeftBranch(t, sb.NewStorage(t))
+	})
+	t.Run("TestUpNodesToTwoLevelsRightBranch", func(t *testing.T) {
+		TestUpNodesToTwoLevelsRightBranch(t, sb.NewStorage(t))
+	})
+	t.Run("TestUpNodesToTwoLevelsLeftBranch", func(t *testing.T) {
+		TestUpNodesToTwoLevelsLeftBranch(t, sb.NewStorage(t))
 	})
 }
 
@@ -952,49 +973,116 @@ func TestTypesMarshalers(t *testing.T, sto merkletree.Storage) {
 	assert.Equal(t, cpp, cpp2)
 }
 
-func TestRemoveLeafNearMiddleNodeRightFork(t *testing.T, sto merkletree.Storage) {
+func TestDeleteLeafNearMiddleNodeRightBranch(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.Nil(t, err)
 
 	values := []*big.Int{big.NewInt(7), big.NewInt(1), big.NewInt(5)}
 
+	expectedSiblings := map[string][]*big.Int{
+		"7": {},
+		"1": {
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"3968539605503372859924195689353752825000692947459401078008697788408142999740"),
+		},
+		"5": {
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"3968539605503372859924195689353752825000692947459401078008697788408142999740"),
+			newBigIntFromString(t,
+				"1243904711429961858774220647610724273798918457991486031567244100767259239747"),
+		},
+	}
+
 	for _, v := range values {
 		err = mt.Add(ctx, v, v)
 		require.NoError(t, err)
+		existProof, _, err := mt.GenerateProof(ctx, v, mt.Root())
+		require.NoError(t, err)
+		require.True(t, existProof.Existence)
+		compareSiblings(t,
+			expectedSiblings[v.String()], existProof.AllSiblings())
 	}
 
+	expectedSiblingsNonExist := map[string][]*big.Int{
+		"7": {
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"4274876798241152869364032215387952876266736406919374878317677138322903129320"),
+		},
+		"1": {},
+		"5": {},
+	}
 	for _, v := range values {
 		err = mt.Delete(ctx, v)
 		require.NoError(t, err)
 		existProof, _, err := mt.GenerateProof(ctx, v, mt.Root())
 		require.NoError(t, err)
 		require.False(t, existProof.Existence)
+		compareSiblings(t,
+			expectedSiblingsNonExist[v.String()], existProof.AllSiblings())
 	}
 }
 
-func TestRemoveLeafNearMiddleNodeRightForkDeep(t *testing.T, sto merkletree.Storage) {
+func TestDeleteLeafNearMiddleNodeRightBranchDeep(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.Nil(t, err)
 
 	values := []*big.Int{big.NewInt(3), big.NewInt(7), big.NewInt(15)}
 
+	expectedSiblings := map[string][]*big.Int{
+		"3": {},
+		"7": {
+			big.NewInt(0),
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"14218827602097913497782608311388761513660285528499590827800641410537362569671"),
+		},
+		"15": {
+			big.NewInt(0),
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"14218827602097913497782608311388761513660285528499590827800641410537362569671"),
+			newBigIntFromString(t,
+				"3968539605503372859924195689353752825000692947459401078008697788408142999740"),
+		},
+	}
+
 	for _, v := range values {
 		err = mt.Add(ctx, v, v)
 		require.NoError(t, err)
+		existProof, _, err := mt.GenerateProof(ctx, v, mt.Root())
+		require.NoError(t, err)
+		require.True(t, existProof.Existence)
+		compareSiblings(t,
+			expectedSiblings[v.String()], existProof.AllSiblings())
 	}
 
+	expectedSiblingsNonExist := map[string][]*big.Int{
+		"3": {
+			big.NewInt(0),
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"10179745751648650481317481301133564568831136415508833815669215270622331305772"),
+		},
+		"7":  {},
+		"15": {},
+	}
 	for _, v := range values {
 		err = mt.Delete(ctx, v)
 		require.NoError(t, err)
 		existProof, _, err := mt.GenerateProof(ctx, v, mt.Root())
 		require.NoError(t, err)
 		require.False(t, existProof.Existence)
+		compareSiblings(t,
+			expectedSiblingsNonExist[v.String()], existProof.AllSiblings())
 	}
 }
 
-func TestRemoveLeafNearMiddleNodeLeftFork(t *testing.T, sto merkletree.Storage) {
+func TeseDeleteLeafNearMiddleNodeLeftBranch(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.NoError(t, err)
@@ -1004,38 +1092,105 @@ func TestRemoveLeafNearMiddleNodeLeftFork(t *testing.T, sto merkletree.Storage) 
 	// 010 / 2
 	values := []*big.Int{big.NewInt(6), big.NewInt(4), big.NewInt(2)}
 
+	expectedSiblings := map[string][]*big.Int{
+		"6": {},
+		"4": {
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"8281804442553804052634892902276241371362897230229887706643673501401618941157"),
+		},
+		"2": {
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"9054077202653694725190129562729426419405710792276939073869944863201489138082"),
+			newBigIntFromString(t,
+				"8281804442553804052634892902276241371362897230229887706643673501401618941157"),
+		},
+	}
+
 	for _, v := range values {
 		err = mt.Add(ctx, v, v)
 		require.NoError(t, err)
+		existProof, _, err := mt.GenerateProof(ctx, v, mt.Root())
+		require.NoError(t, err)
+		require.True(t, existProof.Existence)
+		compareSiblings(t,
+			expectedSiblings[v.String()], existProof.AllSiblings())
 	}
 
+	expectedSiblingsNonExist := map[string][]*big.Int{
+		"6": {
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"9054077202653694725190129562729426419405710792276939073869944863201489138082"),
+		},
+		"4": {},
+		"2": {},
+	}
 	for _, v := range values {
 		err = mt.Delete(ctx, v)
 		require.NoError(t, err)
 		existProof, _, err := mt.GenerateProof(ctx, v, mt.Root())
 		require.NoError(t, err)
 		require.False(t, existProof.Existence)
+		compareSiblings(t,
+			expectedSiblingsNonExist[v.String()], existProof.AllSiblings())
 	}
 }
 
-func TestRemoveLeafNearMiddleNodeLeftForkDeep(t *testing.T, sto merkletree.Storage) {
+func TeseDeleteLeafNearMiddleNodeLeftBranchDeep(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.Nil(t, err)
 
 	values := []*big.Int{big.NewInt(4), big.NewInt(8), big.NewInt(16)}
 
+	expectedSiblings := map[string][]*big.Int{
+		"4": {},
+		"8": {
+			big.NewInt(0),
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"9054077202653694725190129562729426419405710792276939073869944863201489138082"),
+		},
+		"16": {
+			big.NewInt(0),
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"9054077202653694725190129562729426419405710792276939073869944863201489138082"),
+			newBigIntFromString(t,
+				"16390924951002018924619640791777477120654009069056735603697729984158734051481"),
+		},
+	}
+
 	for _, v := range values {
 		err = mt.Add(ctx, v, v)
 		require.NoError(t, err)
+		existProof, _, err := mt.GenerateProof(ctx, v, mt.Root())
+		require.NoError(t, err)
+		require.True(t, existProof.Existence)
+		compareSiblings(t,
+			expectedSiblings[v.String()], existProof.AllSiblings())
 	}
 
+	expectedSiblingsNonExist := map[string][]*big.Int{
+		"4": {
+			big.NewInt(0),
+			big.NewInt(0),
+			newBigIntFromString(t,
+				"999617652929602377745081623447845927693004638040169919261337791961364573823"),
+		},
+		"8":  {},
+		"16": {},
+	}
 	for _, v := range values {
 		err = mt.Delete(ctx, v)
 		require.NoError(t, err)
 		existProof, _, err := mt.GenerateProof(ctx, v, mt.Root())
 		require.NoError(t, err)
 		require.False(t, existProof.Existence)
+		compareSiblings(t,
+			expectedSiblingsNonExist[v.String()], existProof.AllSiblings())
 	}
 }
 
@@ -1050,7 +1205,7 @@ func TestRemoveLeafNearMiddleNodeLeftForkDeep(t *testing.T, sto merkletree.Stora
 // Up to:
 //
 //	root(11)
-func TestUpToRootAfterDeleteRightFork(t *testing.T, sto merkletree.Storage) {
+func TestUpToRootAfterDeleteRightBranch(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.NoError(t, err)
@@ -1081,7 +1236,7 @@ func TestUpToRootAfterDeleteRightFork(t *testing.T, sto merkletree.Storage) {
 // Up to:
 //
 //	root(100)
-func TestUpToRootAfterDeleteLeftFork(t *testing.T, sto merkletree.Storage) {
+func TestUpToRootAfterDeleteLeftBranch(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.NoError(t, err)
@@ -1114,7 +1269,7 @@ func TestUpToRootAfterDeleteLeftFork(t *testing.T, sto merkletree.Storage) {
 //	 root
 //	 /  \
 //	10  11
-func TestCalculatingOfNewRootRightFork(t *testing.T, sto merkletree.Storage) {
+func TestCalculatingOfNewRootRightBranch(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.NoError(t, err)
@@ -1154,7 +1309,7 @@ func TestCalculatingOfNewRootRightFork(t *testing.T, sto merkletree.Storage) {
 //	  root
 //	 /   \
 //	100  001
-func TestCalculatingOfNewRootLeftFork(t *testing.T, sto merkletree.Storage) {
+func TestCalculatingOfNewRootLeftBranch(t *testing.T, sto merkletree.Storage) {
 	ctx := context.Background()
 	mt, err := merkletree.NewMerkleTree(ctx, sto, 140)
 	require.NoError(t, err)
@@ -1179,4 +1334,258 @@ func TestCalculatingOfNewRootLeftFork(t *testing.T, sto merkletree.Storage) {
 
 	require.Equal(t, big.NewInt(4), lLeaf.Entry[0].BigInt())
 	require.Equal(t, big.NewInt(1), rLeaf.Entry[0].BigInt())
+}
+
+// https://github.com/iden3/go-merkletree-sql/issues/23
+func TestInsertNodeAfterDelete(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(1), big.NewInt(5), big.NewInt(7)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	expectedSiblings := []*big.Int{
+		big.NewInt(0),
+		newBigIntFromString(t,
+			"4274876798241152869364032215387952876266736406919374878317677138322903129320"),
+	}
+
+	err = mt.Delete(ctx, big.NewInt(7))
+	require.NoError(t, err)
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(7), mt.Root())
+	require.NoError(t, err)
+	require.False(t, proof.Existence)
+	compareSiblings(t, expectedSiblings, proof.AllSiblings())
+
+	err = mt.Add(ctx, big.NewInt(7), big.NewInt(7))
+	require.NoError(t, err)
+	proof, _, err = mt.GenerateProof(ctx, big.NewInt(7), mt.Root())
+	require.NoError(t, err)
+	require.True(t, proof.Existence)
+	compareSiblings(t, expectedSiblings, proof.AllSiblings())
+}
+
+func TestInsertDeletedNodeThenUpdateItRightBranch(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(1), big.NewInt(5), big.NewInt(7)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	expectedSiblings := []*big.Int{
+		big.NewInt(0),
+		newBigIntFromString(t,
+			"4274876798241152869364032215387952876266736406919374878317677138322903129320"),
+	}
+
+	err = mt.Delete(ctx, big.NewInt(7))
+	require.NoError(t, err)
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(7), mt.Root())
+	require.NoError(t, err)
+	require.False(t, proof.Existence)
+	compareSiblings(t, expectedSiblings, proof.AllSiblings())
+
+	err = mt.Add(ctx, big.NewInt(7), big.NewInt(7))
+	require.NoError(t, err)
+	proof, _, err = mt.GenerateProof(ctx, big.NewInt(7), mt.Root())
+	require.NoError(t, err)
+	require.True(t, proof.Existence)
+	compareSiblings(t, expectedSiblings, proof.AllSiblings())
+
+	_, err = mt.Update(ctx, big.NewInt(7), big.NewInt(100))
+	require.NoError(t, err)
+	key, value, _, err := mt.Get(ctx, big.NewInt(7))
+	require.NoError(t, err)
+	require.Equal(t, key, big.NewInt(7))
+	require.Equal(t, value, big.NewInt(100))
+}
+
+func TestInsertDeletedNodeThenUpdateItLeftBranch(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(6), big.NewInt(2), big.NewInt(4)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	expectedSiblings := []*big.Int{
+		big.NewInt(0),
+		newBigIntFromString(t,
+			"8485562453225409715331824380162827639878522662998299574537757078697535221073"),
+	}
+
+	err = mt.Delete(ctx, big.NewInt(4))
+	require.NoError(t, err)
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(4), mt.Root())
+	require.NoError(t, err)
+	require.False(t, proof.Existence)
+	compareSiblings(t, expectedSiblings, proof.AllSiblings())
+
+	err = mt.Add(ctx, big.NewInt(4), big.NewInt(4))
+	require.NoError(t, err)
+	proof, _, err = mt.GenerateProof(ctx, big.NewInt(4), mt.Root())
+	require.NoError(t, err)
+	require.True(t, proof.Existence)
+	compareSiblings(t, expectedSiblings, proof.AllSiblings())
+
+	_, err = mt.Update(ctx, big.NewInt(4), big.NewInt(100))
+	require.NoError(t, err)
+	key, value, _, err := mt.Get(ctx, big.NewInt(4))
+	require.NoError(t, err)
+	require.Equal(t, key, big.NewInt(4))
+	require.Equal(t, value, big.NewInt(100))
+}
+
+func TestPushLeafAlreadyExistsRightBranch(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(1), big.NewInt(5), big.NewInt(7), big.NewInt(3)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	expectedSiblings := []*big.Int{
+		big.NewInt(0),
+		newBigIntFromString(t,
+			"4274876798241152869364032215387952876266736406919374878317677138322903129320"),
+	}
+
+	err = mt.Delete(ctx, big.NewInt(3))
+	require.NoError(t, err)
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(3), mt.Root())
+	require.NoError(t, err)
+	require.False(t, proof.Existence)
+	compareSiblings(t, expectedSiblings, proof.AllSiblings())
+
+	expectedSiblingsExist := []*big.Int{
+		big.NewInt(0),
+		newBigIntFromString(t,
+			"4274876798241152869364032215387952876266736406919374878317677138322903129320"),
+		newBigIntFromString(t,
+			"3968539605503372859924195689353752825000692947459401078008697788408142999740"),
+	}
+
+	err = mt.Add(ctx, big.NewInt(3), big.NewInt(3))
+	require.NoError(t, err)
+	proof, _, err = mt.GenerateProof(ctx, big.NewInt(3), mt.Root())
+	require.NoError(t, err)
+	require.True(t, proof.Existence)
+	compareSiblings(t, expectedSiblingsExist, proof.AllSiblings())
+}
+
+func TestPushLeafAlreadyExistsLeftBranch(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(6), big.NewInt(2), big.NewInt(4), big.NewInt(8)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+
+	expectedSiblings := []*big.Int{
+		big.NewInt(0),
+		newBigIntFromString(t,
+			"8485562453225409715331824380162827639878522662998299574537757078697535221073"),
+	}
+
+	err = mt.Delete(ctx, big.NewInt(8))
+	require.NoError(t, err)
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(8), mt.Root())
+	require.NoError(t, err)
+	require.False(t, proof.Existence)
+	compareSiblings(t, expectedSiblings, proof.AllSiblings())
+
+	expectedSiblingsExist := []*big.Int{
+		big.NewInt(0),
+		newBigIntFromString(t,
+			"8485562453225409715331824380162827639878522662998299574537757078697535221073"),
+		newBigIntFromString(t,
+			"9054077202653694725190129562729426419405710792276939073869944863201489138082"),
+	}
+
+	err = mt.Add(ctx, big.NewInt(8), big.NewInt(8))
+	require.NoError(t, err)
+	proof, _, err = mt.GenerateProof(ctx, big.NewInt(8), mt.Root())
+	require.NoError(t, err)
+	require.True(t, proof.Existence)
+	compareSiblings(t, expectedSiblingsExist, proof.AllSiblings())
+}
+
+func TestUpNodesToTwoLevelsRightBranch(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(1), big.NewInt(7), big.NewInt(15)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+	err = mt.Delete(ctx, big.NewInt(15))
+	require.NoError(t, err)
+
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(15), mt.Root())
+	require.NoError(t, err)
+	require.False(t, proof.Existence)
+	compareSiblings(t, []*big.Int{
+		big.NewInt(0),
+		newBigIntFromString(t,
+			"1243904711429961858774220647610724273798918457991486031567244100767259239747"),
+	}, proof.AllSiblings())
+}
+
+func TestUpNodesToTwoLevelsLeftBranch(t *testing.T, sto merkletree.Storage) {
+	ctx := context.Background()
+	mt, err := merkletree.NewMerkleTree(ctx, sto, 40)
+	require.NoError(t, err)
+
+	values := []*big.Int{big.NewInt(2), big.NewInt(8), big.NewInt(16)}
+	for _, v := range values {
+		err = mt.Add(ctx, v, v)
+		require.NoError(t, err)
+	}
+	err = mt.Delete(ctx, big.NewInt(16))
+	require.NoError(t, err)
+
+	proof, _, err := mt.GenerateProof(ctx, big.NewInt(16), mt.Root())
+	require.NoError(t, err)
+	require.False(t, proof.Existence)
+	compareSiblings(t, []*big.Int{
+		big.NewInt(0),
+		newBigIntFromString(t,
+			"849831128489032619062850458217693666094013083866167024127442191257793527951"),
+	}, proof.AllSiblings())
+}
+
+func newBigIntFromString(t *testing.T, str string) *big.Int {
+	bi, ok := big.NewInt(0).SetString(str, 10)
+	require.True(t, ok)
+	return bi
+}
+
+func compareSiblings(t *testing.T,
+	expectedSiblings []*big.Int, actualSiblings []*merkletree.Hash) {
+	require.Equal(
+		t,
+		len(expectedSiblings), len(actualSiblings),
+	)
+	for i := range expectedSiblings {
+		require.Equal(t, expectedSiblings[i].String(), actualSiblings[i].BigInt().String())
+	}
 }
